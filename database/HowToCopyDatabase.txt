@@ -1,0 +1,52 @@
+
+===========================================
+  VEHICLE RENTAL SYSTEM - DATABASE MANUAL
+===========================================
+
+This guide explains how to create a backup (copy) of your MySQL database and how to import (restore) it on another system.
+
+-------------------------------------------------
+📤 HOW TO EXPORT (BACKUP) THE DATABASE
+-------------------------------------------------
+
+To create a copy of the database including all schema and data:
+
+1. Open Terminal or Command Prompt.
+2. Run the following command:
+
+   mysqldump -u [your_username] -p DBMS_CP > dbms_cp_backup.sql
+ :-example   mysqldump -u root -p DBMS_CP > dbms_cp_backup.sql  
+ 
+NOTE:The file will be created in the folder which is open in the cmd.
+3. Enter your MySQL password when prompted.
+4. This will generate a file named 'dbms_cp_backup.sql' containing:
+   - All CREATE TABLE statements (schema)
+   - All INSERT statements (data)
+
+💡 You can commit this `.sql` file to your GitHub repository under a folder like `database/`.
+
+-------------------------------------------------
+📥 HOW TO IMPORT (RESTORE) THE DATABASE COPY
+-------------------------------------------------
+
+To use the exported `.sql` file on another system:
+
+1. Ensure MySQL is installed and running.
+2. Open Terminal or MySQL Workbench.
+3. Create the database (if it doesn't already exist):
+
+   CREATE DATABASE DBMS_CP;
+
+4. Run this command to import the backup:
+
+   mysql -u [your_username] -p DBMS_CP < dbms_cp_backup.sql
+
+5. You now have a full copy of the original database including structure and data.
+
+-------------------------------------------------
+📝 NOTES:
+-------------------------------------------------
+- Replace [your_username] with your actual MySQL username (e.g., root).
+- Make sure you're in the same directory as the `.sql` file, or use the full file path.
+- Works on Windows, Linux, and macOS.
+
