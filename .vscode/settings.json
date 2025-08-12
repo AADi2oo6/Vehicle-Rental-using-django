@@ -13,6 +13,19 @@
             "database": "DBMS_CP",
             "username": "root",
             "password": "202510"
+        },
+        {
+            "mysqlOptions": {
+                "authProtocol": "default",
+                "enableSsl": "Disabled"
+            },
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 3306,
+            "driver": "MySQL",
+            "name": "CP",
+            "database": "DBMS_CP",
+            "username": "root"
         }
     ]
 }
