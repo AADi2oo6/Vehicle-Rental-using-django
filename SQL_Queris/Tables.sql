@@ -15,7 +15,8 @@ CREATE TABLE CUSTOMERS (
     date_of_birth DATE NOT NULL,
     registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_active BOOLEAN DEFAULT TRUE,
-    credit_score INT CHECK (credit_score >= 300 AND credit_score <= 850)
+    credit_score INT CHECK (credit_score >= 300 AND credit_score <= 850),
+    profile_picture VARCHAR(255) DEFAULT 'none'
 );
 
 
@@ -37,6 +38,8 @@ CREATE TABLE VEHICLES (
     last_service_date DATE,
     status ENUM('Available', 'Rented', 'Maintenance', 'Retired') DEFAULT 'Available',
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    vehicle_picture VARCHAR(255) DEFAULT 'none'
+
 );
 
 -- 3. RENTAL_BOOKINGS Table

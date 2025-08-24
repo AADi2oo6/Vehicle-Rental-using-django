@@ -55,7 +55,7 @@ ROOT_URLCONF = 'Vehicle_Rental_System.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['templates',],
+        'DIRS': ['template',],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
