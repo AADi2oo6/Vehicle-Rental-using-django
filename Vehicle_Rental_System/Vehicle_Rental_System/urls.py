@@ -20,11 +20,15 @@ from django.conf.urls.static import static
 # from Vehicle_Rental_System import views
 from rental import views
 
-from django.urls import path
+from django.urls import path,include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("", views.hello_view, name="home")
+    path("",include("rental.urls")),
+    # path("", views.hello_view, name="home"),
+    # path('register/', views.register_view, name='register'),
+    # path('login/', views.login_view, name='login'),
+    # path('logout/', views.logout_view, name='logout'),
 ]
 
 
