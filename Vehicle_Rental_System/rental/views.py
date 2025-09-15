@@ -4,6 +4,7 @@ from .models import Vehicle, Customer, FeedbackReview, RentalBooking
 from django.contrib.auth.hashers import make_password, check_password
 from django.utils.dateparse import parse_datetime
 from django.db.models import Q
+from django.core.cache import cache
 
 def home_view(request):
     """
@@ -136,4 +137,15 @@ def logout_view(request):
         pass
     messages.success(request, "You have been logged out.")
     return redirect('home')
+
+def query_viewer_view(request):
+    """
+    Fetches the list of captured SQL queries from the cache
+    and displays them on the queries.html page.
+    """
+    queries = cache.get('all_sql_queries', [])
+    context = {
+        'queries': queries
+    }
+    return render(request, "queries.html", context)
 
