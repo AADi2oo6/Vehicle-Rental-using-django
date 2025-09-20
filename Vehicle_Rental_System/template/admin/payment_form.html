@@ -1,0 +1,38 @@
+{% extends "admin/bases.html" %}
+
+{% block content %}
+    <h2>{% if payment %}Edit Payment{% else %}Add New Payment{% endif %}</h2>
+    <form method="post" class="mt-4">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="booking">Booking ID</label>
+            <input type="text" class="form-control" id="booking" name="booking" value="{{ payment.booking.id|default:'' }}" required>
+        </div>
+        <div class="form-group">
+            <label for="customer">Customer ID</label>
+            <input type="text" class="form-control" id="customer" name="customer" value="{{ payment.customer.id|default:'' }}" required>
+        </div>
+        <div class="form-group">
+            <label for="amount">Amount</label>
+            <input type="number" class="form-control" id="amount" name="amount" value="{{ payment.amount|default:'' }}" required>
+        </div>
+        <div class="form-group">
+            <label for="payment_method">Payment Method</label>
+            <select class="form-control" id="payment_method" name="payment_method" required>
+                {% for value, label in payment.PAYMENT_METHODS %}
+                    <option value="{{ value }}" {% if payment.payment_method == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="payment_status">Payment Status</label>
+            <select class="form-control" id="payment_status" name="payment_status" required>
+                {% for value, label in payment.PAYMENT_STATUS %}
+                    <option value="{{ value }}" {% if payment.payment_status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">{% if payment %}Update{% else %}Add{% endif %} Payment</button>
+        <a href="{% url 'payments_management' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+{% endblock %}

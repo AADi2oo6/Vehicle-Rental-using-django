@@ -14,22 +14,20 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+# Vehicle_Rental_System/Vehicle_Rental_System/urls.py
 from django.contrib import admin
+from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-# from Vehicle_Rental_System import views
-from rental import views
-
-from django.urls import path,include
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path("",include("rental.urls")),
-    # path("", views.hello_view, name="home"),
-    # path('register/', views.register_view, name='register'),
-    # path('login/', views.login_view, name='login'),
-    # path('logout/', views.logout_view, name='logout'),
+    # This line points to Django's built-in admin site.
+    path('admin/', admin.site.urls),  
+    
+    # This line includes all the custom URLs from your 'rental' app.
+    path("", include("rental.urls")),
 ]
 
-
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Serves media files during development.
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

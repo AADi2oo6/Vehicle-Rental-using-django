@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Vehicle Rental System</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa; 
+        }
+        .sidebar { 
+            height: 100vh; 
+            background-color: #343a40; 
+            padding-top: 20px; 
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+        }
+        .sidebar a { 
+            color: #fff; 
+            text-decoration: none; 
+            padding: 10px 15px; 
+            display: block; 
+        }
+        .sidebar a:hover { 
+            background-color: #495057; 
+        }
+        .main-content { 
+            margin-left: 16.666667%; 
+            padding: 30px; 
+        }
+        .card { 
+            margin-bottom: 20px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <nav class="col-md-2 d-none d-md-block sidebar">
+                <div class="sidebar-sticky">
+                    <h5 class="text-white text-center mb-4">Admin Panel</h5>
+                    <ul class="nav flex-column">
+                        <li class="nav-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+                        <li class="nav-item"><a href="{% url 'payments_management' %}">Payments</a></li>
+                        <li class="nav-item"><a href="{% url 'admin_maintenance' %}">Maintenance</a></li>
+                        <li class="nav-item"><a href="{% url 'admin_queries' %}">SQL Queries</a></li>
+                        <li class="nav-item"><a href="#">Customers</a></li>
+                        <li class="nav-item"><a href="#">Vehicles</a></li>
+                        <li class="nav-item"><a href="{% url 'logout' %}">Logout</a></li>
+                    </ul>
+                </div>
+            </nav>
+            <main role="main" class="col-md-10 ml-sm-auto px-4 main-content">
+                {% block content %}
+                {% endblock %}
+            </main>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</body>
+</html>
