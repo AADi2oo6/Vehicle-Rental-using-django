@@ -5,11 +5,15 @@ from django.db.models import Q, Sum, F
 from django.db.models.functions import TruncMonth, TruncDay
 from django.core.cache import cache
 from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import update_session_auth_hash
 from django.utils.dateparse import parse_datetime
 from datetime import date, timedelta
 from .models import Vehicle, Customer, FeedbackReview, RentalBooking, Payment, MaintenanceRecord
 from django.http import JsonResponse
 from django.db.models import Sum
+from .forms import PaymentForm  # Import the new form
+from .models import Payment
 
 @login_required
 def get_dashboard_data(request):
@@ -127,15 +131,23 @@ def admin_dashboard_view(request):
     if not request.user.is_superuser:
         messages.error(request, "You do not have permission to view this page.")
         return redirect('home')
+
     total_revenue = Payment.objects.filter(payment_status='Completed').aggregate(total=Sum('amount'))['total'] or 0
     pending_payments_count = Payment.objects.filter(payment_status='Pending').count()
     active_rentals_count = RentalBooking.objects.filter(booking_status='Active').count()
     maintenance_vehicles_count = Vehicle.objects.filter(status='Maintenance').count()
+    
+    # Fetch recent activities
+    recent_payments = Payment.objects.select_related('customer').order_by('-payment_date')[:5]
+    recent_bookings = RentalBooking.objects.select_related('customer').order_by('-booking_date')[:5]
+    
     context = {
         'total_revenue': total_revenue,
         'pending_payments_count': pending_payments_count,
         'active_rentals_count': active_rentals_count,
         'maintenance_vehicles_count': maintenance_vehicles_count,
+        'recent_payments': recent_payments,
+        'recent_bookings': recent_bookings,
     }
     return render(request, "admin/dashboard.html", context)
 
@@ -241,7 +253,6 @@ def payments_management_view(request):
     }
     return render(request, "admin/payments.html", context)
 
-@login_required
 def payment_form_view(request, payment_id=None):
     if not request.user.is_superuser:
         messages.error(request, "You do not have permission to view this page.")
@@ -252,45 +263,15 @@ def payment_form_view(request, payment_id=None):
         payment = get_object_or_404(Payment, id=payment_id)
     
     if request.method == 'POST':
-        # Get data from the POST request
-        booking_id = request.POST.get('booking')
-        customer_id = request.POST.get('customer')
-        amount = request.POST.get('amount')
-        payment_method = request.POST.get('payment_method')
-        payment_status = request.POST.get('payment_status')
-
-        try:
-            # Retrieve the related objects from the database
-            booking = get_object_or_404(RentalBooking, id=booking_id)
-            customer = get_object_or_404(Customer, id=customer_id)
-
-            if payment_id:
-                # Update existing payment instance
-                payment.booking = booking
-                payment.customer = customer
-                payment.amount = amount
-                payment.payment_method = payment_method
-                payment.payment_status = payment_status
-                payment.save()
-                messages.success(request, "Payment updated successfully.")
-            else:
-                # Create a new Payment instance
-                Payment.objects.create(
-                    booking=booking,
-                    customer=customer,
-                    amount=amount,
-                    payment_method=payment_method,
-                    payment_status=payment_status,
-                )
-                messages.success(request, "New payment added successfully.")
-            
+        form = PaymentForm(request.POST, instance=payment)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Payment saved successfully.")
             return redirect('payments_management')
-
-        except (RentalBooking.DoesNotExist, Customer.DoesNotExist):
-            messages.error(request, "One or more provided IDs (Booking or Customer) do not exist. Please check your input.")
-            return redirect(request.path) # Stay on the same page with an error message
-
-    context = {'payment': payment}
+    else:
+        form = PaymentForm(instance=payment)
+    
+    context = {'form': form}
     return render(request, "admin/payment_form.html", context)
 
 @login_required
@@ -304,3 +285,27 @@ def payment_delete_view(request, payment_id):
         messages.success(request, f"Payment ID {payment.id} deleted successfully.")
     return redirect('payments_management')
     pass
+
+def change_password_view(request):
+    """
+    Allows a logged-in admin to change their password.
+    """
+    if not request.user.is_superuser:
+        messages.error(request, "You do not have permission to change passwords.")
+        return redirect('admin_dashboard')
+
+    if request.method == 'POST':
+        form = PasswordChangeForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)  # Prevents the user from being logged out
+            messages.success(request, 'Your password was successfully updated!')
+            return redirect('admin_dashboard')
+        else:
+            messages.error(request, 'Please correct the error below.')
+    else:
+        form = PasswordChangeForm(user=request.user)
+
+    context = {'form': form}
+    return render(request, 'admin/change_password.html', context)
+

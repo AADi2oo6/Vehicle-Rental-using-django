@@ -103,9 +103,10 @@ class Payment(models.Model):
     payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPES)
     transaction_id = models.CharField(max_length=50, unique=True, blank=True, null=True)
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS, default='Completed')
+    processed_by = models.CharField(max_length=50, default='System', blank=True, null=True)
     reference_number = models.CharField(max_length=50, blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
-    processed_by = models.CharField(max_length=50, default='System')
+    
 
     def __str__(self):
         return f"Payment {self.id}"

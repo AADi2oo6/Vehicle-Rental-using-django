@@ -21,4 +21,5 @@ urlpatterns = [
     path("admin_new/payments/delete/<int:payment_id>/", views.payment_delete_view, name="payment_delete"),
 
     path("admin_new/api/data/", views.get_dashboard_data, name="get_dashboard_data"),
+     path("admin_new/change-password/", views.change_password_view, name="change_password"),
 ]
