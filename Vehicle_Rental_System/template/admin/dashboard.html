@@ -7,7 +7,7 @@
             <div class="card text-white bg-primary">
                 <div class="card-body">
                     <h5 class="card-title">Total Revenue</h5>
-                    <p class="card-text h2" id="total-revenue">${{ total_revenue }}</p>
+                    <p class="card-text h2">${{ total_revenue }}</p>
                 </div>
             </div>
         </div>
@@ -15,7 +15,7 @@
             <div class="card text-white bg-warning">
                 <div class="card-body">
                     <h5 class="card-title">Pending Payments</h5>
-                    <p class="card-text h2" id="pending-payments">{{ pending_payments_count }}</p>
+                    <p class="card-text h2">{{ pending_payments_count }}</p>
                 </div>
             </div>
         </div>
@@ -23,7 +23,7 @@
             <div class="card text-white bg-success">
                 <div class="card-body">
                     <h5 class="card-title">Active Rentals</h5>
-                    <p class="card-text h2" id="active-rentals">{{ active_rentals_count }}</p>
+                    <p class="card-text h2">{{ active_rentals_count }}</p>
                 </div>
             </div>
         </div>
@@ -31,36 +31,55 @@
             <div class="card text-white bg-info">
                 <div class="card-body">
                     <h5 class="card-title">In Maintenance</h5>
-                    <p class="card-text h2" id="in-maintenance">{{ maintenance_vehicles_count }}</p>
+                    <p class="card-text h2">{{ maintenance_vehicles_count }}</p>
                 </div>
             </div>
         </div>
     </div>
     
-    <div class="row">
+    <div class="row mt-4">
         <div class="col-md-12">
             <h3>Recent Activity</h3>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-dark text-white">
+                            <h4><i class="fas fa-money-bill-wave mr-2"></i> Recent Payments</h4>
+                        </div>
+                        <div class="list-group list-group-flush">
+                            {% for payment in recent_payments %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>
+                                        <i class="fas fa-arrow-circle-right text-success mr-2"></i> 
+                                        Payment of <strong>${{ payment.amount }}</strong> from <strong>{{ payment.customer.first_name }}</strong> on {{ payment.payment_date|date:"F d, Y" }}
+                                    </span>
+                                </li>
+                            {% empty %}
+                                <li class="list-group-item text-muted">No recent payments.</li>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-dark text-white">
+                            <h4><i class="fas fa-car mr-2"></i> Recent Bookings</h4>
+                        </div>
+                        <div class="list-group list-group-flush">
+                            {% for booking in recent_bookings %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>
+                                        <i class="fas fa-arrow-circle-right text-info mr-2"></i> 
+                                        Booking by <strong>{{ booking.customer.first_name }}</strong> for vehicle <strong>{{ booking.vehicle.vehicle_number }}</strong> on {{ booking.booking_date|date:"F d, Y" }}
+                                    </span>
+                                </li>
+                            {% empty %}
+                                <li class="list-group-item text-muted">No recent bookings.</li>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
             </div>
+        </div>
     </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    function updateDashboard() {
-        fetch("{% url 'get_dashboard_data' %}")
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('total-revenue').innerText = `$${data.total_revenue.toFixed(2)}`;
-                document.getElementById('pending-payments').innerText = data.pending_payments_count;
-                document.getElementById('active-rentals').innerText = data.active_rentals_count;
-                document.getElementById('in-maintenance').innerText = data.maintenance_vehicles_count;
-            });
-    }
-
-    // Call the function once when the page loads
-    updateDashboard();
-
-    // Then, update the dashboard every 5 seconds
-    setInterval(updateDashboard, 5000);
-</script>
 {% endblock %}

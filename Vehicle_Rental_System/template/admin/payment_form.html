@@ -1,38 +1,90 @@
 {% extends "admin/bases.html" %}
 
 {% block content %}
-    <h2>{% if payment %}Edit Payment{% else %}Add New Payment{% endif %}</h2>
-    <form method="post" class="mt-4">
-        {% csrf_token %}
-        <div class="form-group">
-            <label for="booking">Booking ID</label>
-            <input type="text" class="form-control" id="booking" name="booking" value="{{ payment.booking.id|default:'' }}" required>
+    <div class="card bg-light shadow-lg border-0 rounded-lg mt-5">
+        <div class="card-header bg-dark text-white text-center">
+            <h2 class="font-weight-light my-4">{% if payment %}Edit Payment{% else %}Add New Payment{% endif %}</h2>
         </div>
-        <div class="form-group">
-            <label for="customer">Customer ID</label>
-            <input type="text" class="form-control" id="customer" name="customer" value="{{ payment.customer.id|default:'' }}" required>
+        <div class="card-body p-5">
+            <form method="post">
+                {% csrf_token %}
+                
+                {% if form.errors %}
+                    <div class="alert alert-danger" role="alert">
+                        <strong>Please correct the following errors:</strong>
+                        <ul class="mb-0">
+                            {% for field in form %}
+                                {% if field.errors %}
+                                    <li>{{ field.label }}: {{ field.errors|striptags }}</li>
+                                {% endif %}
+                            {% endfor %}
+                            {% if form.non_field_errors %}
+                                <li>{{ form.non_field_errors|striptags }}</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="form-floating mb-3 mb-md-0">
+                            <label for="{{ form.booking.id_for_label }}">Booking ID</label>
+                            {{ form.booking }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            <label for="{{ form.customer.id_for_label }}">Customer ID</label>
+                            {{ form.customer }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="form-floating mb-3 mb-md-0">
+                            <label for="{{ form.amount.id_for_label }}">Amount</label>
+                            {{ form.amount }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            <label for="{{ form.payment_method.id_for_label }}">Payment Method</label>
+                            {{ form.payment_method }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="form-floating mb-3 mb-md-0">
+                            <label for="{{ form.payment_type.id_for_label }}">Payment Type</label>
+                            {{ form.payment_type }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            <label for="{{ form.payment_status.id_for_label }}">Payment Status</label>
+                            {{ form.payment_status }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-floating mb-3">
+                    <label for="{{ form.transaction_id.id_for_label }}">Transaction ID</label>
+                    {{ form.transaction_id }}
+                </div>
+
+                <div class="form-floating mb-3">
+                    <label for="{{ form.notes.id_for_label }}">Notes</label>
+                    {{ form.notes }}
+                </div>
+                
+                <div class="d-flex align-items-center justify-content-between mt-4 mb-0">
+                    <a class="btn btn-secondary" href="{% url 'payments_management' %}">Cancel</a>
+                    <button type="submit" class="btn btn-primary">{% if payment %}Update{% else %}Add{% endif %} Payment</button>
+                </div>
+            </form>
         </div>
-        <div class="form-group">
-            <label for="amount">Amount</label>
-            <input type="number" class="form-control" id="amount" name="amount" value="{{ payment.amount|default:'' }}" required>
-        </div>
-        <div class="form-group">
-            <label for="payment_method">Payment Method</label>
-            <select class="form-control" id="payment_method" name="payment_method" required>
-                {% for value, label in payment.PAYMENT_METHODS %}
-                    <option value="{{ value }}" {% if payment.payment_method == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="payment_status">Payment Status</label>
-            <select class="form-control" id="payment_status" name="payment_status" required>
-                {% for value, label in payment.PAYMENT_STATUS %}
-                    <option value="{{ value }}" {% if payment.payment_status == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <button type="submit" class="btn btn-primary">{% if payment %}Update{% else %}Add{% endif %} Payment</button>
-        <a href="{% url 'payments_management' %}" class="btn btn-secondary">Cancel</a>
-    </form>
+    </div>
 {% endblock %}
