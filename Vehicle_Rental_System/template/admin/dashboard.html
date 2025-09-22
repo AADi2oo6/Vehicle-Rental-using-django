@@ -1,85 +1,143 @@
-{% extends "admin/bases.html" %}
+{% extends 'admin/base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
 
 {% block content %}
-    <h2>Dashboard Overview</h2>
-    <div class="row">
-        <div class="col-md-3">
-            <div class="card text-white bg-primary">
-                <div class="card-body">
-                    <h5 class="card-title">Total Revenue</h5>
-                    <p class="card-text h2">${{ total_revenue }}</p>
-                </div>
-            </div>
+<!-- Stat Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
+        <div>
+            <p class="text-sm font-medium text-gray-500">Total Revenue</p>
+            <p class="text-3xl font-bold text-gray-800">₹{{ total_revenue|floatformat:2 }}</p>
         </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-warning">
-                <div class="card-body">
-                    <h5 class="card-title">Pending Payments</h5>
-                    <p class="card-text h2">{{ pending_payments_count }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-success">
-                <div class="card-body">
-                    <h5 class="card-title">Active Rentals</h5>
-                    <p class="card-text h2">{{ active_rentals_count }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-info">
-                <div class="card-body">
-                    <h5 class="card-title">In Maintenance</h5>
-                    <p class="card-text h2">{{ maintenance_vehicles_count }}</p>
-                </div>
-            </div>
+        <div class="bg-blue-100 text-blue-600 p-3 rounded-full">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01"></path></svg>
         </div>
     </div>
+    <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
+        <div>
+            <p class="text-sm font-medium text-gray-500">Active Rentals</p>
+            <p class="text-3xl font-bold text-gray-800">{{ active_rentals_count }}</p>
+        </div>
+        <div class="bg-green-100 text-green-600 p-3 rounded-full">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 16.5V18a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-1.5"></path><circle cx="16" cy="6.5" r="2.5"></circle><path d="M18.5 9 14 12 9.5 9"></path></svg>
+        </div>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
+        <div>
+            <p class="text-sm font-medium text-gray-500">Pending Payments</p>
+            <p class="text-3xl font-bold text-gray-800">{{ pending_payments_count }}</p>
+        </div>
+        <div class="bg-yellow-100 text-yellow-600 p-3 rounded-full">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        </div>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
+        <div>
+            <p class="text-sm font-medium text-gray-500">Vehicles in Maintenance</p>
+            <p class="text-3xl font-bold text-gray-800">{{ maintenance_vehicles_count }}</p>
+        </div>
+        <div class="bg-red-100 text-red-600 p-3 rounded-full">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        </div>
+    </div>
+</div>
+
+<!-- Charts and Recent Activities -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Monthly Revenue Chart -->
+    <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+        <h3 class="text-xl font-semibold mb-4">Monthly Revenue</h3>
+        <canvas id="revenueChart"></canvas>
+    </div>
+
+    <!-- Recent Bookings -->
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h3 class="text-xl font-semibold mb-4">Recent Bookings</h3>
+        <div class="space-y-4">
+            {% for booking in recent_bookings %}
+            <div class="flex items-center">
+                <div class="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+                    {{ booking.customer.first_name.0 }}
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-900">{{ booking.customer.first_name }} {{ booking.customer.last_name }}</p>
+                    <p class="text-sm text-gray-500">Booked on {{ booking.booking_date|date:"M d, Y" }}</p>
+                </div>
+                <div class="ml-auto text-sm font-semibold text-gray-700">
+                    ₹{{ booking.total_amount|floatformat:0 }}
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-gray-500">No recent bookings.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('revenueChart').getContext('2d');
     
-    <div class="row mt-4">
-        <div class="col-md-12">
-            <h3>Recent Activity</h3>
-            <div class="row mt-3">
-                <div class="col-md-6">
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-dark text-white">
-                            <h4><i class="fas fa-money-bill-wave mr-2"></i> Recent Payments</h4>
-                        </div>
-                        <div class="list-group list-group-flush">
-                            {% for payment in recent_payments %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>
-                                        <i class="fas fa-arrow-circle-right text-success mr-2"></i> 
-                                        Payment of <strong>${{ payment.amount }}</strong> from <strong>{{ payment.customer.first_name }}</strong> on {{ payment.payment_date|date:"F d, Y" }}
-                                    </span>
-                                </li>
-                            {% empty %}
-                                <li class="list-group-item text-muted">No recent payments.</li>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-dark text-white">
-                            <h4><i class="fas fa-car mr-2"></i> Recent Bookings</h4>
-                        </div>
-                        <div class="list-group list-group-flush">
-                            {% for booking in recent_bookings %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>
-                                        <i class="fas fa-arrow-circle-right text-info mr-2"></i> 
-                                        Booking by <strong>{{ booking.customer.first_name }}</strong> for vehicle <strong>{{ booking.vehicle.vehicle_number }}</strong> on {{ booking.booking_date|date:"F d, Y" }}
-                                    </span>
-                                </li>
-                            {% empty %}
-                                <li class="list-group-item text-muted">No recent bookings.</li>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    // Prepare data from Django context
+    const labels = [
+        {% for item in monthly_revenue %}
+            "{{ item.month|date:'Y-m-d' }}",
+        {% endfor %}
+    ];
+    const data = [
+        {% for item in monthly_revenue %}
+            {{ item.total_revenue }},
+        {% endfor %}
+    ];
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Revenue',
+                data: data,
+                backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                borderColor: 'rgba(59, 130, 246, 1)',
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true,
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'month',
+                        tooltipFormat: 'MMMM yyyy',
+                        displayFormats: {
+                            month: 'MMM yyyy'
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Month'
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Revenue (₹)'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+});
+</script>
 {% endblock %}

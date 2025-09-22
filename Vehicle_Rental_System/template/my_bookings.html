@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bookings - Velo-Rent</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .profile-nav-link.active {
+            background-color: #eff6ff;
+            color: #1d4ed8;
+            border-right: 3px solid #1d4ed8;
+        }
+        .pagination-link.active {
+            background-color: #1d4ed8;
+            color: white;
+            border-color: #1d4ed8;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Header Section -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="{% url 'home' %}" class="text-2xl font-bold text-blue-700">Velo-Rent</a>
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="{% url 'home' %}" class="text-gray-600 hover:text-blue-700">Home</a>
+                <a href="{% url 'vehicle_list' %}" class="text-gray-600 hover:text-blue-700">Vehicles</a>
+                <a href="{% url 'about_us' %}" class="text-gray-600 hover:text-blue-700">About Us</a>
+                <a href="#" class="text-gray-600 hover:text-blue-700">Contact</a>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="{% url 'my_profile' %}" class="text-blue-700 font-semibold hidden sm:block">Welcome, {{ customer.first_name }}</a>
+                <a href="{% url 'logout' %}" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">Logout</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-6 py-12">
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Profile Sidebar -->
+            <aside class="lg:w-1/4">
+                <div class="bg-white p-4 rounded-lg shadow-md">
+                    <div class="flex flex-col items-center text-center border-b pb-4 mb-4">
+                        <img class="h-24 w-24 rounded-full object-cover mb-3" src="{{ customer.profile_picture.url }}" alt="Profile Picture">
+                        <h2 class="text-xl font-bold">{{ customer.first_name }} {{ customer.last_name }}</h2>
+                        <p class="text-sm text-gray-500">{{ customer.email }}</p>
+                    </div>
+                    <nav class="flex flex-col space-y-1">
+                        <a href="{% url 'my_profile' %}" class="profile-nav-link flex items-center gap-3 px-4 py-2.5 rounded-md font-medium text-gray-700 hover:bg-gray-100">
+                            <i class="fa-solid fa-user w-5 text-center"></i> My Profile
+                        </a>
+                        <a href="{% url 'my_bookings' %}" class="profile-nav-link active flex items-center gap-3 px-4 py-2.5 rounded-md font-medium text-gray-700 hover:bg-gray-100">
+                            <i class="fa-solid fa-car w-5 text-center"></i> My Bookings
+                        </a>
+                        <a href="#" class="profile-nav-link flex items-center gap-3 px-4 py-2.5 rounded-md font-medium text-gray-700 hover:bg-gray-100">
+                            <i class="fa-solid fa-shield-halved w-5 text-center"></i> Security
+                        </a>
+                        <a href="{% url 'logout' %}" class="profile-nav-link flex items-center gap-3 px-4 py-2.5 rounded-md font-medium text-red-600 hover:bg-red-50">
+                            <i class="fa-solid fa-right-from-bracket w-5 text-center"></i> Logout
+                        </a>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <div class="lg:w-3/4">
+                <div class="bg-white p-8 rounded-lg shadow-md">
+                    <h3 class="text-2xl font-bold mb-6">My Bookings</h3>
+                    <div class="space-y-6">
+                        {% for booking in bookings %}
+                        <div class="border rounded-lg overflow-hidden">
+                            <div class="bg-gray-50 p-4 flex justify-between items-center border-b">
+                                <div>
+                                    <p class="font-bold text-lg">{{ booking.vehicle.make }} {{ booking.vehicle.model }}</p>
+                                    <p class="text-sm text-gray-500">Booking ID: #{{ booking.id }}</p>
+                                </div>
+                                <span class="px-3 py-1 text-sm font-semibold rounded-full 
+                                    {% if booking.booking_status == 'Completed' %}bg-green-100 text-green-800
+                                    {% elif booking.booking_status == 'Active' %}bg-blue-100 text-blue-800
+                                    {% elif booking.booking_status == 'Confirmed' %}bg-yellow-100 text-yellow-800
+                                    {% elif booking.booking_status == 'Cancelled' %}bg-red-100 text-red-800
+                                    {% endif %}">
+                                    {{ booking.booking_status }}
+                                </span>
+                            </div>
+                            <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                <div>
+                                    <p class="font-semibold text-gray-900">Pickup</p>
+                                    <p class="text-gray-600">{{ booking.pickup_datetime|date:"M d, Y, P" }}</p>
+                                    <p class="text-gray-500">{{ booking.pickup_location }}</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-900">Return</p>
+                                    <p class="text-gray-600">{{ booking.return_datetime|date:"M d, Y, P" }}</p>
+                                    <p class="text-gray-500">{{ booking.return_location }}</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-900">Total Amount</p>
+                                    <p class="text-gray-600 font-bold">₹{{ booking.total_amount|floatformat:2 }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-center text-gray-500 py-10">You have no bookings yet. <a href="{% url 'vehicle_list' %}" class="text-blue-700 hover:underline">Find a vehicle to rent!</a></p>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if bookings.has_other_pages %}
+                    <div class="mt-8 flex justify-center items-center space-x-2">
+                        {% if bookings.has_previous %}<a href="?page={{ bookings.previous_page_number }}" class="pagination-link px-4 py-2 border rounded-lg hover:bg-gray-200">&laquo; Prev</a>{% endif %}
+                        {% for i in bookings.paginator.page_range %}
+                            <a href="?page={{ i }}" class="pagination-link px-4 py-2 border rounded-lg hover:bg-gray-200 {% if bookings.number == i %}active{% endif %}">{{ i }}</a>
+                        {% endfor %}
+                        {% if bookings.has_next %}<a href="?page={{ bookings.next_page_number }}" class="pagination-link px-4 py-2 border rounded-lg hover:bg-gray-200">Next &raquo;</a>{% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

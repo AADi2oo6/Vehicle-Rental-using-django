@@ -1,0 +1,127 @@
+{% extends "admin/bases.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Bookings Management</h2>
+    <div>
+        <a href="?{{ request.GET.urlencode }}&export=csv" class="btn btn-success">Export CSV</a>
+        <a href="#" class="btn btn-primary">Add New Booking</a>
+    </div>
+</div>
+<p class="text-muted">This page provides a single table view of all rental bookings, with options for filtering and sorting.</p>
+
+<!-- Search and Filter Form -->
+<form method="get" class="card card-body mb-4">
+    <div class="row">
+        <div class="col-md-4">
+            <input type="text" name="q" class="form-control" placeholder="Search by ID, Customer, Vehicle..." value="{{ search_query|default:'' }}">
+        </div>
+        <div class="col-md-3">
+            <input type="date" name="start_date" class="form-control" value="{{ start_date|default:'' }}">
+        </div>
+        <div class="col-md-3">
+            <input type="date" name="end_date" class="form-control" value="{{ end_date|default:'' }}">
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-info btn-block">Filter</button>
+        </div>
+    </div>
+</form>
+
+<form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="bulk_action" value="true">
+
+    <!-- Filter & Bulk Action Controls -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <a href="?status=Confirmed" class="btn btn-sm {% if selected_status == 'Confirmed' %}btn-primary{% else %}btn-outline-primary{% endif %}">Confirmed</a>
+            <a href="?status=Active" class="btn btn-sm {% if selected_status == 'Active' %}btn-info{% else %}btn-outline-info{% endif %}">Active</a>
+            <a href="?status=Completed" class="btn btn-sm {% if selected_status == 'Completed' %}btn-success{% else %}btn-outline-success{% endif %}">Completed</a>
+            <a href="?status=Cancelled" class="btn btn-sm {% if selected_status == 'Cancelled' %}btn-danger{% else %}btn-outline-danger{% endif %}">Cancelled</a>
+            <a href="{% url 'bookings_management' %}" class="btn btn-sm btn-secondary">All</a>
+        </div>
+        <div class="form-inline">
+            <select name="action" class="form-control form-control-sm mr-2">
+                <option value="">Bulk Actions...</option>
+                <option value="mark_completed">Mark as Completed</option>
+                <option value="cancel_selected">Cancel Selected</option>
+            </select>
+            <button type="submit" class="btn btn-sm btn-dark">Apply</button>
+        </div>
+    </div>
+
+    <!-- Bookings Table -->
+    <table class="table table-striped table-bordered">
+        <thead class="thead-dark">
+            <tr>
+                <th><input type="checkbox" id="select-all"></th>
+                <th><a href="?sort=booking_date&order={% if sort_by == 'booking_date' and order == 'asc' %}desc{% else %}asc{% endif %}&status={{ selected_status|default:'' }}">Booking Date</a></th>
+                <th>Customer</th>
+                <th>Vehicle</th>
+                <th><a href="?sort=pickup_datetime&order={% if sort_by == 'pickup_datetime' and order == 'asc' %}desc{% else %}asc{% endif %}&status={{ selected_status|default:'' }}">Pickup</a></th>
+                <th><a href="?sort=return_datetime&order={% if sort_by == 'return_datetime' and order == 'asc' %}desc{% else %}asc{% endif %}&status={{ selected_status|default:'' }}">Return</a></th>
+                <th><a href="?sort=total_amount&order={% if sort_by == 'total_amount' and order == 'asc' %}desc{% else %}asc{% endif %}&status={{ selected_status|default:'' }}">Total (₹)</a></th>
+                <th><a href="?sort=booking_status&order={% if sort_by == 'booking_status' and order == 'asc' %}desc{% else %}asc{% endif %}&status={{ selected_status|default:'' }}">Status</a></th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for booking in bookings %}
+            <tr>
+                <td><input type="checkbox" name="booking_ids" value="{{ booking.id }}" class="booking-checkbox"></td>
+                <td>{{ booking.booking_date|date:"Y-m-d" }}</td>
+                <td>{{ booking.customer.first_name }} {{ booking.customer.last_name }}</td>
+                <td>{{ booking.vehicle.make }} {{ booking.vehicle.model }}</td>
+                <td>{{ booking.pickup_datetime|date:"Y-m-d H:i" }}</td>
+                <td>{{ booking.return_datetime|date:"Y-m-d H:i" }}</td>
+                <td>₹{{ booking.total_amount|floatformat:2 }}</td>
+                <td>
+                    <span class="badge 
+                        {% if booking.booking_status == 'Completed' %} badge-success
+                        {% elif booking.booking_status == 'Active' %} badge-info
+                        {% elif booking.booking_status == 'Confirmed' %} badge-warning
+                        {% elif booking.booking_status == 'Cancelled' %} badge-danger
+                        {% endif %}">
+                        {{ booking.booking_status }}
+                    </span>
+                </td>
+                <td>
+                    <a href="#" class="btn btn-sm btn-primary">View</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" class="text-center">No bookings found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</form>
+
+<!-- Pagination Controls -->
+<nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+        {% if bookings.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page=1&{{ request.GET.urlencode|cut:'page=' }}">First</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ bookings.previous_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">Previous</a></li>
+        {% endif %}
+
+        <li class="page-item active"><a class="page-link" href="#">{{ bookings.number }}</a></li>
+
+        {% if bookings.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ bookings.next_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">Next</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ bookings.paginator.num_pages }}&{{ request.GET.urlencode|cut:'page=' }}">Last</a></li>
+        {% endif %}
+    </ul>
+</nav>
+
+<script>
+    document.getElementById('select-all').addEventListener('click', function(event) {
+        const checkboxes = document.querySelectorAll('.booking-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = event.target.checked;
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Your Booking - Velo-Rent</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            filter: invert(0.5);
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Header Section -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="{% url 'home' %}" class="text-2xl font-bold text-blue-600">Velo-Rent</a>
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="{% url 'home' %}" class="text-gray-600 hover:text-blue-600">Home</a>
+                <a href="{% url 'vehicle_list' %}" class="text-gray-600 hover:text-blue-600">Vehicles</a>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="{% url 'my_profile' %}" class="text-gray-700 hidden sm:block hover:text-blue-600">Welcome, {{ customer.first_name }}</a>
+                <a href="{% url 'logout' %}" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">Logout</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-6 py-12">
+        <h1 class="text-3xl font-bold mb-8 text-center">Confirm Your Booking</h1>
+        
+        <div class="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <!-- Vehicle Details -->
+            <div class="bg-white p-8 rounded-lg shadow-lg">
+                <h2 class="text-2xl font-bold mb-4">{{ vehicle.make }} {{ vehicle.model }}</h2>
+                <img src="{% if vehicle.vehicle_picture and vehicle.vehicle_picture.url != '/media/vehicle_pics/default.jpg' %}{{ vehicle.vehicle_picture.url }}{% else %}https://placehold.co/600x400/e2e8f0/cbd5e0?text={{vehicle.make|urlencode}}{% endif %}" alt="{{ vehicle.make }} {{ vehicle.model }}" class="w-full h-64 object-cover rounded-lg mb-6">
+                
+                <div class="space-y-3 text-gray-600">
+                    <div class="flex justify-between items-center">
+                        <span class="font-semibold">Hourly Rate:</span>
+                        <span class="text-lg font-bold text-blue-600">₹{{ vehicle.hourly_rate|floatformat:0 }}/hr</span>
+                    </div>
+                    <div class="flex justify-between items-center border-t pt-3">
+                        <span class="font-semibold">Type:</span>
+                        <span>{{ vehicle.vehicle_type }}</span>
+                    </div>
+                    <div class="flex justify-between items-center border-t pt-3">
+                        <span class="font-semibold">Fuel:</span>
+                        <span>{{ vehicle.fuel_type }}</span>
+                    </div>
+                    <div class="flex justify-between items-center border-t pt-3">
+                        <span class="font-semibold">Transmission:</span>
+                        <span>{{ vehicle.transmission }}</span>
+                    </div>
+                    <div class="flex justify-between items-center border-t pt-3">
+                        <span class="font-semibold">Seats:</span>
+                        <span>{{ vehicle.seating_capacity }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Booking Form -->
+            <div class="bg-white p-8 rounded-lg shadow-lg">
+                <h2 class="text-2xl font-bold mb-6">Booking Details</h2>
+                <form method="POST" action="{% url 'booking' vehicle.id %}">
+                    {% csrf_token %}
+                    <div class="space-y-6">
+                        <div>
+                            <label for="pickup_datetime" class="block text-sm font-medium text-gray-700 mb-1">Pickup Date & Time</label>
+                            <input type="datetime-local" name="pickup_datetime" id="pickup_datetime" value="{{ values.pickup_datetime }}" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="return_datetime" class="block text-sm font-medium text-gray-700 mb-1">Return Date & Time</label>
+                            <input type="datetime-local" name="return_datetime" id="return_datetime" value="{{ values.return_datetime }}" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="pickup_location" class="block text-sm font-medium text-gray-700 mb-1">Pickup Location</label>
+                            <input type="text" name="pickup_location" id="pickup_location" value="{{ values.location }}" placeholder="e.g., Pune Airport" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="return_location" class="block text-sm font-medium text-gray-700 mb-1">Return Location</label>
+                            <input type="text" name="return_location" id="return_location" value="{{ values.location }}" placeholder="e.g., Pune Airport" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="border-t pt-4">
+                            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition duration-300">
+                                Confirm & Book
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

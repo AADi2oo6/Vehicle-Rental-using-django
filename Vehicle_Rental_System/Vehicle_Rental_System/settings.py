@@ -78,9 +78,9 @@ WSGI_APPLICATION = 'Vehicle_Rental_System.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'course',  # Replace with your database name
+        'NAME': 'DBMS_CP',  # Use the database name from the setup guide
         'USER': 'root',    # Replace with your MySQL username
-        'PASSWORD': 'Ishubhai@6655',  # Replace with your MySQL password
+        'PASSWORD': '241533591',  # IMPORTANT: Replace with your actual MySQL password
         'HOST': 'localhost',          # Or your MySQL server address
         'PORT': '3306',               # Default MySQL port
     }

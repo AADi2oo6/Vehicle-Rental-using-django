@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Fleet - Velo-Rent</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .pagination-link {
+            transition: all 0.2s ease-in-out;
+        }
+        .pagination-link.active {
+            background-color: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+        .filter-control {
+            transition: all 0.2s ease-in-out;
+        }
+        .vehicle-card {
+            transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Header Section (Re-using the same structure as index.html for consistency) -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="{% url 'home' %}" class="text-2xl font-bold text-blue-600">Velo-Rent</a>
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="{% url 'home' %}" class="text-gray-600 hover:text-blue-600">Home</a>
+                <a href="{% url 'vehicle_list' %}" class="text-blue-600 font-semibold">Vehicles</a>
+                <a href="{% url 'about_us' %}" class="text-gray-600 hover:text-blue-600">About Us</a>
+                <a href="#" class="text-gray-600 hover:text-blue-600">Contact</a>
+            </div>
+            <div class="flex items-center space-x-4">
+                {% if customer %}
+                    <a href="{% url 'my_profile' %}" class="text-gray-700 hidden sm:block hover:text-blue-600">Welcome, {{ customer.first_name }}</a>
+                    <a href="{% url 'logout' %}" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">Logout</a>
+                {% else %}
+                    <button onclick="window.location.href='{% url 'home' %}'" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Login</button>
+                    <button onclick="window.location.href='{% url 'home' %}'" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">Register</button>
+                {% endif %}
+                <div class="relative ml-2">
+                    <button class="flex items-center space-x-2">
+                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <div class="absolute bottom-0 right-0">
+                            <span class="flex h-3 w-3">
+                                {% if customer %}{% if customer.is_verified %}<span class="relative inline-flex rounded-full h-3 w-3 bg-green-500" title="Verified"></span>{% else %}<span class="relative inline-flex rounded-full h-3 w-3 bg-yellow-400" title="Not Verified"></span>{% endif %}{% else %}<span class="relative inline-flex rounded-full h-3 w-3 bg-red-500" title="Logged Out"></span>{% endif %}
+                            </span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-6 py-12">
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Filters Sidebar -->
+            <aside class="lg:w-1/4">
+                <div class="bg-white p-6 rounded-lg shadow-md sticky top-24">
+                    <h3 class="text-xl font-bold mb-6 border-b pb-3">Filter & Sort</h3>
+                    <form method="GET" action="{% url 'vehicle_list' %}">
+                        <div class="mb-5">
+                            <label for="type" class="block text-sm font-medium text-gray-700 mb-2">Vehicle Type</label>
+                            <select name="type" id="type" class="filter-control w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 hover:border-blue-400">
+                                <option value="">All Types</option>
+                                <option value="Car" {% if values.type == 'Car' %}selected{% endif %}>Car</option>
+                                <option value="SUV" {% if values.type == 'SUV' %}selected{% endif %}>SUV</option>
+                                <option value="Truck" {% if values.type == 'Truck' %}selected{% endif %}>Truck</option>
+                                <option value="Motorcycle" {% if values.type == 'Motorcycle' %}selected{% endif %}>Motorcycle</option>
+                                <option value="Van" {% if values.type == 'Van' %}selected{% endif %}>Van</option>
+                            </select>
+                        </div>
+                        <div class="mb-5">
+                            <label for="fuel" class="block text-sm font-medium text-gray-700 mb-2">Fuel Type</label>
+                            <select name="fuel" id="fuel" class="filter-control w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 hover:border-blue-400">
+                                <option value="">All Fuel Types</option>
+                                <option value="Petrol" {% if values.fuel == 'Petrol' %}selected{% endif %}>Petrol</option>
+                                <option value="Diesel" {% if values.fuel == 'Diesel' %}selected{% endif %}>Diesel</option>
+                                <option value="Electric" {% if values.fuel == 'Electric' %}selected{% endif %}>Electric</option>
+                                <option value="Hybrid" {% if values.fuel == 'Hybrid' %}selected{% endif %}>Hybrid</option>
+                            </select>
+                        </div>
+                        <div class="mb-8">
+                            <label for="sort" class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                            <select name="sort" id="sort" class="filter-control w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 hover:border-blue-400">
+                                <option value="make" {% if values.sort == 'make' %}selected{% endif %}>Name (A-Z)</option>
+                                <option value="price_asc" {% if values.sort == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+                                <option value="price_desc" {% if values.sort == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-lg hover:bg-blue-700 transition">Apply Filters</button>
+                        <a href="{% url 'vehicle_list' %}" class="block text-center w-full mt-2 text-sm text-gray-600 hover:text-blue-600">Reset Filters</a>
+                    </form>
+                </div>
+            </aside>
+
+            <!-- Vehicle Grid -->
+            <div class="lg:w-3/4">
+                <h1 class="text-3xl font-bold mb-6">Explore Our Fleet</h1>
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                    {% for vehicle in vehicles %}
+                    <div class="vehicle-card bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 flex flex-col">
+                        <img src="{% if vehicle.vehicle_picture and vehicle.vehicle_picture.url != '/media/vehicle_pics/default.jpg' %}{{ vehicle.vehicle_picture.url }}{% else %}https://placehold.co/600x400/e2e8f0/cbd5e0?text={{vehicle.make|urlencode}}{% endif %}" alt="{{ vehicle.make }} {{ vehicle.model }}" class="w-full h-48 object-cover">
+                        <div class="p-5 flex flex-col flex-grow">
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">{{ vehicle.make }} {{ vehicle.model }}</h3>
+                            <div class="flex items-center text-sm text-gray-500 space-x-4 mb-4">
+                                <span class="flex items-center gap-1.5"><i class="fa-solid fa-gas-pump w-4 text-center"></i> {{ vehicle.fuel_type }}</span>
+                                <span class="flex items-center gap-1.5"><i class="fa-solid fa-gears w-4 text-center"></i> {{ vehicle.transmission }}</span>
+                                <span class="flex items-center gap-1.5"><i class="fa-solid fa-users w-4 text-center"></i> {{ vehicle.seating_capacity }}</span>
+                            </div>
+                            <div class="flex justify-between items-center mt-auto pt-4 border-t">
+                                <p class="text-xl font-bold text-blue-600">₹{{ vehicle.hourly_rate|floatformat:0 }}<span class="text-sm font-normal text-gray-500">/hr</span></p>
+                                {% if customer %}
+                                    <a href="{% url 'booking' vehicle.id %}" class="px-5 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition duration-300">Book Now</a>
+                                {% else %}
+                                    <a href="#" onclick="alert('Please log in to book a vehicle.');" title="Please log in to book" class="px-5 py-2 text-sm font-semibold text-white bg-gray-400 rounded-lg cursor-not-allowed">
+                                        Book Now
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="col-span-full text-center text-gray-500 py-10">No vehicles match your current filters. Try adjusting your search.</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Pagination -->
+                {% if vehicles.has_other_pages %}
+                <div class="mt-12 flex justify-center items-center space-x-2">
+                    {% if vehicles.has_previous %}<a href="?page={{ vehicles.previous_page_number }}&{{ request.GET.urlencode|cut:'page='|cut:vehicles.previous_page_number }}" class="pagination-link px-4 py-2 border rounded-lg hover:bg-gray-200">&laquo; Prev</a>{% endif %}
+                    {% for i in vehicles.paginator.page_range %}
+                        <a href="?page={{ i }}&{{ request.GET.urlencode|cut:'page='|cut:i }}" class="pagination-link px-4 py-2 border rounded-lg hover:bg-gray-200 {% if vehicles.number == i %}active{% endif %}">{{ i }}</a>
+                    {% endfor %}
+                    {% if vehicles.has_next %}<a href="?page={{ vehicles.next_page_number }}&{{ request.GET.urlencode|cut:'page='|cut:vehicles.next_page_number }}" class="pagination-link px-4 py-2 border rounded-lg hover:bg-gray-200">Next &raquo;</a>{% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

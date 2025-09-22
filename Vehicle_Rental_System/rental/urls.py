@@ -8,10 +8,16 @@ urlpatterns = [
     path("register/", views.register_view, name="register"),
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
+    path("vehicles/", views.vehicle_list_view, name="vehicle_list"),
+    path("book/<int:vehicle_id>/", views.booking_view, name="booking"),
+    path("about/", views.about_us_view, name="about_us"),
+    path("profile/", views.my_profile_view, name="my_profile"),
+    path("profile/bookings/", views.my_bookings_view, name="my_bookings"),
     
     # Custom admin dashboard URLs
     path("admin_new/", views.admin_dashboard_view, name="admin_dashboard"),
     path("admin_new/maintenance/", views.admin_maintenance_view, name="admin_maintenance"),
+    path("admin_new/bookings/", views.bookings_management_view, name="bookings_management"),
     path("admin_new/queries/", views.admin_queries_view, name="admin_queries"),
     
     # Payments Management URLs (consolidated)

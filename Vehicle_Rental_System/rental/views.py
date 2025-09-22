@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q, Sum, F
 from django.db.models.functions import TruncMonth, TruncDay
 from django.core.cache import cache
@@ -8,6 +9,7 @@ from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 from django.utils.dateparse import parse_datetime
+from django.db import transaction
 from datetime import date, timedelta
 from .models import Vehicle, Customer, FeedbackReview, RentalBooking, Payment, MaintenanceRecord
 from django.http import JsonResponse
@@ -109,6 +111,11 @@ def login_view(request):
             customer = Customer.objects.get(email=email)
             if check_password(password, customer.password):
                 request.session['customer_id'] = customer.id
+                # Check if the associated user is a superuser
+                if hasattr(customer, 'user') and customer.user.is_superuser:
+                    messages.success(request, f'Welcome back, Admin!')
+                    return redirect('admin_dashboard')
+
                 messages.success(request, f'Welcome back, {customer.first_name}!')
             else:
                 messages.error(request, 'Invalid email or password.')
@@ -123,6 +130,194 @@ def logout_view(request):
         pass
     messages.success(request, "You have been logged out.")
     return redirect('home')
+
+def vehicle_list_view(request):
+    """
+    Displays a filterable and paginated list of all available vehicles.
+    """
+    customer = None
+    customer_id = request.session.get('customer_id')
+    if customer_id:
+        try:
+            customer = Customer.objects.get(id=customer_id)
+        except Customer.DoesNotExist:
+            # If customer not found, clear the session
+            del request.session['customer_id']
+
+    # Base queryset for available vehicles
+    vehicle_list = Vehicle.objects.filter(status='Available').order_by('make', 'model')
+
+    # Apply filters from GET request
+    selected_type = request.GET.get('type')
+    selected_fuel = request.GET.get('fuel')
+    sort_by = request.GET.get('sort', 'make')
+
+    if selected_type:
+        vehicle_list = vehicle_list.filter(vehicle_type=selected_type)
+    if selected_fuel:
+        vehicle_list = vehicle_list.filter(fuel_type=selected_fuel)
+
+    # Apply sorting
+    if sort_by == 'price_asc':
+        vehicle_list = vehicle_list.order_by('hourly_rate')
+    elif sort_by == 'price_desc':
+        vehicle_list = vehicle_list.order_by('-hourly_rate')
+    else: # Default sort by make
+        vehicle_list = vehicle_list.order_by('make', 'model')
+
+    # Pagination
+    paginator = Paginator(vehicle_list, 9) # 9 vehicles per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'customer': customer,
+        'vehicles': page_obj,
+        'values': request.GET, # To retain filter values in the form
+    }
+    return render(request, "vehicles.html", context)
+
+@login_required
+def booking_view(request, vehicle_id):
+    """
+    Handles the vehicle booking process.
+    - GET: Displays the booking form with vehicle details.
+    - POST: Creates the booking and initial payment record.
+    """
+    customer_id = request.session.get('customer_id')
+    if not customer_id:
+        messages.error(request, "You must be logged in to make a booking.")
+        return redirect('home')
+
+    customer = get_object_or_404(Customer, id=customer_id)
+    vehicle = get_object_or_404(Vehicle, id=vehicle_id)
+
+    if request.method == 'POST':
+        pickup_str = request.POST.get('pickup_datetime')
+        return_str = request.POST.get('return_datetime')
+        pickup_location = request.POST.get('pickup_location')
+        return_location = request.POST.get('return_location')
+
+        # --- Validation ---
+        if not all([pickup_str, return_str, pickup_location, return_location]):
+            messages.error(request, "All fields are required.")
+            return redirect('booking', vehicle_id=vehicle.id)
+
+        pickup_datetime = parse_datetime(pickup_str)
+        return_datetime = parse_datetime(return_str)
+
+        if not (pickup_datetime and return_datetime and return_datetime > pickup_datetime):
+            messages.error(request, "Invalid pickup or return date.")
+            return redirect('booking', vehicle_id=vehicle.id)
+
+        try:
+            with transaction.atomic():
+                # Check for booking conflicts within a transaction to prevent race conditions
+                conflicting_bookings = RentalBooking.objects.filter(
+                    vehicle=vehicle,
+                    pickup_datetime__lt=return_datetime,
+                    return_datetime__gt=pickup_datetime,
+                    booking_status__in=['Confirmed', 'Active']
+                ).exists()
+
+                if conflicting_bookings:
+                    messages.error(request, "Sorry, this vehicle is already booked for the selected time slot.")
+                    return redirect('booking', vehicle_id=vehicle.id)
+
+                # Calculate total amount
+                duration_hours = (return_datetime - pickup_datetime).total_seconds() / 3600
+                total_amount = duration_hours * vehicle.hourly_rate
+                security_deposit = total_amount * 0.2 # Example: 20% security deposit
+
+                # Create the booking
+                new_booking = RentalBooking.objects.create(
+                    customer=customer,
+                    vehicle=vehicle,
+                    pickup_datetime=pickup_datetime,
+                    return_datetime=return_datetime,
+                    pickup_location=pickup_location,
+                    return_location=return_location,
+                    hourly_rate=vehicle.hourly_rate,
+                    total_amount=total_amount,
+                    security_deposit=security_deposit,
+                    booking_status='Confirmed'
+                )
+
+                messages.success(request, f"Booking successful! Your booking ID is #{new_booking.id}.")
+                return redirect('home') # Redirect to a 'My Bookings' page would be ideal
+
+        except Exception as e:
+            messages.error(request, f"An error occurred: {e}")
+            return redirect('booking', vehicle_id=vehicle.id)
+
+    # For GET request
+    context = {'vehicle': vehicle, 'customer': customer, 'values': request.GET}
+    return render(request, "booking.html", context)
+
+def about_us_view(request):
+    """
+    Renders the About Us page.
+    """
+    customer = None
+    customer_id = request.session.get('customer_id')
+    if customer_id:
+        try:
+            customer = Customer.objects.get(id=customer_id)
+        except Customer.DoesNotExist:
+            del request.session['customer_id']
+    
+    context = {
+        'customer': customer,
+    }
+    return render(request, "about_us.html", context)
+
+@login_required
+def my_profile_view(request):
+    """
+    Displays the logged-in user's profile information and booking history.
+    """
+    customer_id = request.session.get('customer_id')
+    if not customer_id:
+        messages.error(request, "You need to be logged in to view your profile.")
+        return redirect('home')
+
+    customer = get_object_or_404(Customer, id=customer_id)
+    
+    # Fetch the user's bookings
+    bookings = RentalBooking.objects.filter(customer=customer).select_related('vehicle').order_by('-booking_date')
+
+    context = {
+        'customer': customer,
+        'bookings': bookings,
+    }
+    return render(request, "my_profile.html", context)
+
+@login_required
+def my_bookings_view(request):
+    """
+    Displays a paginated list of all bookings for the logged-in user.
+    """
+    customer_id = request.session.get('customer_id')
+    if not customer_id:
+        messages.error(request, "You need to be logged in to view your bookings.")
+        return redirect('home')
+
+    customer = get_object_or_404(Customer, id=customer_id)
+    
+    # Fetch all user's bookings
+    booking_list = RentalBooking.objects.filter(customer=customer).select_related('vehicle').order_by('-booking_date')
+
+    # Pagination
+    paginator = Paginator(booking_list, 5) # 5 bookings per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'customer': customer,
+        'bookings': page_obj,
+    }
+    return render(request, "my_bookings.html", context)
+
 
 # New custom admin dashboard views
 
@@ -149,7 +344,7 @@ def admin_dashboard_view(request):
         'recent_payments': recent_payments,
         'recent_bookings': recent_bookings,
     }
-    return render(request, "admin/dashboard.html", context)
+    return render(request, "admin_dashboard_bootstrap.html", context)
 
 # Add this new view for AJAX requests
 @login_required
@@ -309,3 +504,111 @@ def change_password_view(request):
     context = {'form': form}
     return render(request, 'admin/change_password.html', context)
 
+@login_required
+def bookings_management_view(request):
+    """
+    Provides a comprehensive view for managing rental bookings.
+    - Displays all bookings in a filterable and sortable table.
+    - Includes multi-table data from Customer and Vehicle.
+    """
+    if not request.user.is_superuser:
+        messages.error(request, "You do not have permission to view this page.")
+        return redirect('home')
+
+    # Start with a base queryset, prefetching related data for efficiency
+    bookings = RentalBooking.objects.select_related('customer', 'vehicle').order_by('-booking_date')
+
+    # Universal Search
+    search_query = request.GET.get('q', '')
+    if search_query:
+        bookings = bookings.filter(
+            Q(id__icontains=search_query) |
+            Q(customer__first_name__icontains=search_query) |
+            Q(customer__last_name__icontains=search_query) |
+            Q(vehicle__make__icontains=search_query) |
+            Q(vehicle__model__icontains=search_query)
+        )
+
+    # Date Range Filtering
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    if start_date_str and end_date_str:
+        bookings = bookings.filter(booking_date__range=[start_date_str, end_date_str])
+
+    # Filtering logic
+    booking_status = request.GET.get('status')
+    if booking_status:
+        bookings = bookings.filter(booking_status=booking_status)
+
+    # CSV Export
+    if 'export' in request.GET and request.GET['export'] == 'csv':
+        from django.http import HttpResponse
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="bookings.csv"'
+        writer = csv.writer(response)
+        writer.writerow(['ID', 'Customer', 'Vehicle', 'Pickup Date', 'Return Date', 'Total Amount', 'Status'])
+        for booking in bookings: # Use the filtered queryset
+            writer.writerow([
+                booking.id,
+                f"{booking.customer.first_name} {booking.customer.last_name}",
+                f"{booking.vehicle.make} {booking.vehicle.model}",
+                booking.pickup_datetime,
+                booking.return_datetime,
+                booking.total_amount,
+                booking.booking_status
+            ])
+        return response
+
+    # Bulk Actions
+    if request.method == 'POST' and 'bulk_action' in request.POST:
+        booking_ids = request.POST.getlist('booking_ids')
+        action = request.POST.get('action')
+        if booking_ids and action:
+            selected_bookings = RentalBooking.objects.filter(id__in=booking_ids)
+            if action == 'mark_completed':
+                updated_count = selected_bookings.update(booking_status='Completed')
+                messages.success(request, f"{updated_count} bookings marked as completed.")
+            elif action == 'cancel_selected':
+                updated_count = selected_bookings.update(booking_status='Cancelled')
+                messages.success(request, f"{updated_count} bookings have been cancelled.")
+            return redirect('bookings_management')
+
+    total_bookings_count = bookings.count()
+    confirmed_bookings_count = bookings.filter(booking_status='Confirmed').count()
+    active_bookings_count = bookings.filter(booking_status='Active').count()
+    completed_bookings_count = bookings.filter(booking_status='Completed').count()
+
+    # Sorting logic
+    sort_by = request.GET.get('sort', 'booking_date')
+    order = request.GET.get('order', 'desc') # Default to descending
+    valid_sort_fields = ['booking_date', 'pickup_date', 'return_date', 'total_amount', 'booking_status']
+    if sort_by in valid_sort_fields:
+        if order == 'asc':
+            bookings = bookings.order_by(sort_by)
+        else:
+            bookings = bookings.order_by(f'-{sort_by}')
+
+    # Pagination logic
+    paginator = Paginator(bookings, 15) # Show 15 bookings per page
+    page_number = request.GET.get('page')
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
+    context = {
+        'bookings': page_obj, # Pass the paginated object to the template
+        'selected_status': booking_status,
+        'total_bookings_count': total_bookings_count,
+        'confirmed_bookings_count': confirmed_bookings_count,
+        'active_bookings_count': active_bookings_count,
+        'completed_bookings_count': completed_bookings_count,
+        'sort_by': sort_by,
+        'order': order,
+        'search_query': search_query,
+        'start_date': start_date_str,
+        'end_date': end_date_str,
+    }
+    return render(request, "admin/rental_bookings.html", context)
