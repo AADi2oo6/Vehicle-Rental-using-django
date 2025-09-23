@@ -35,6 +35,10 @@
         .vehicle-card {
             transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
         }
+        .vehicle-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
     </style>
 </head>
 <body class="text-gray-800">
@@ -118,8 +122,8 @@
                 <h1 class="text-3xl font-bold mb-6">Explore Our Fleet</h1>
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                     {% for vehicle in vehicles %}
-                    <div class="vehicle-card bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 flex flex-col">
-                        <img src="{% if vehicle.vehicle_picture and vehicle.vehicle_picture.url != '/media/vehicle_pics/default.jpg' %}{{ vehicle.vehicle_picture.url }}{% else %}https://placehold.co/600x400/e2e8f0/cbd5e0?text={{vehicle.make|urlencode}}{% endif %}" alt="{{ vehicle.make }} {{ vehicle.model }}" class="w-full h-48 object-cover">
+                    <div class="vehicle-card bg-white rounded-lg shadow-md overflow-hidden flex flex-col">
+                        <img src="{% if vehicle.vehicle_picture and vehicle.vehicle_picture.url != '/media/vehicle_pics/default.jpg' %}{{ vehicle.vehicle_picture.url }}{% else %}https://placehold.co/600x400/e2e8f0/cbd5e0?text={{vehicle.make|urlencode}}+{{vehicle.model|urlencode}}{% endif %}" alt="{{ vehicle.make }} {{ vehicle.model }}" class="w-full h-48 object-cover">
                         <div class="p-5 flex flex-col flex-grow">
                             <h3 class="text-xl font-bold text-gray-900 mb-2">{{ vehicle.make }} {{ vehicle.model }}</h3>
                             <div class="flex items-center text-sm text-gray-500 space-x-4 mb-4">
@@ -132,7 +136,7 @@
                                 {% if customer %}
                                     <a href="{% url 'booking' vehicle.id %}" class="px-5 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition duration-300">Book Now</a>
                                 {% else %}
-                                    <a href="#" onclick="alert('Please log in to book a vehicle.');" title="Please log in to book" class="px-5 py-2 text-sm font-semibold text-white bg-gray-400 rounded-lg cursor-not-allowed">
+                                    <a href="#" onclick="alert('Please log in to book a vehicle.');" title="Please log in to book" class="px-5 py-2 text-sm font-semibold text-white bg-gray-400 rounded-lg cursor-not-allowed" data-tooltip-target="tooltip-login">
                                         Book Now
                                     </a>
                                 {% endif %}
@@ -145,13 +149,14 @@
                 </div>
 
                 <!-- Pagination -->
+                {% load query_tags %}
                 {% if vehicles.has_other_pages %}
                 <div class="mt-12 flex justify-center items-center space-x-2">
-                    {% if vehicles.has_previous %}<a href="?page={{ vehicles.previous_page_number }}&{{ request.GET.urlencode|cut:'page='|cut:vehicles.previous_page_number }}" class="pagination-link px-4 py-2 border rounded-lg hover:bg-gray-200">&laquo; Prev</a>{% endif %}
+                    {% if vehicles.has_previous %}<a href="?{% query_transform request page=vehicles.previous_page_number %}" class="pagination-link px-4 py-2 border rounded-lg hover:bg-gray-200">&laquo; Prev</a>{% endif %}
                     {% for i in vehicles.paginator.page_range %}
-                        <a href="?page={{ i }}&{{ request.GET.urlencode|cut:'page='|cut:i }}" class="pagination-link px-4 py-2 border rounded-lg hover:bg-gray-200 {% if vehicles.number == i %}active{% endif %}">{{ i }}</a>
+                        <a href="?{% query_transform request page=i %}" class="pagination-link px-4 py-2 border rounded-lg hover:bg-gray-200 {% if vehicles.number == i %}active{% endif %}">{{ i }}</a>
                     {% endfor %}
-                    {% if vehicles.has_next %}<a href="?page={{ vehicles.next_page_number }}&{{ request.GET.urlencode|cut:'page='|cut:vehicles.next_page_number }}" class="pagination-link px-4 py-2 border rounded-lg hover:bg-gray-200">Next &raquo;</a>{% endif %}
+                    {% if vehicles.has_next %}<a href="?{% query_transform request page=vehicles.next_page_number %}" class="pagination-link px-4 py-2 border rounded-lg hover:bg-gray-200">Next &raquo;</a>{% endif %}
                 </div>
                 {% endif %}
             </div>
