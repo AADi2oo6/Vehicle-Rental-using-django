@@ -1,0 +1,74 @@
+{% extends "admin/bases.html" %}
+
+{% block content %}
+    <h2>Admin Dashboard</h2>
+    <p class="text-muted">Welcome to the Velo-Rent administration panel. Here's a summary of your rental business.</p>
+
+    <!-- Stat Cards -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-header">Total Revenue</div>
+                <div class="card-body">
+                    <h5 class="card-title">₹{{ total_revenue|floatformat:2 }}</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info mb-3">
+                <div class="card-header">Active Rentals</div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ active_rentals_count }}</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning mb-3">
+                <div class="card-header">Pending Payments</div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ pending_payments_count }}</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-danger mb-3">
+                <div class="card-header">Vehicles in Maintenance</div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ maintenance_vehicles_count }}</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activities -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">Recent Bookings</div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% for booking in recent_bookings %}
+                            <li class="list-group-item">{{ booking.customer.first_name }} booked a {{ booking.vehicle.make }} on {{ booking.booking_date|date:"M d" }}</li>
+                        {% empty %}
+                            <li class="list-group-item">No recent bookings.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">Recent Payments</div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% for payment in recent_payments %}
+                            <li class="list-group-item">{{ payment.customer.first_name }} paid ₹{{ payment.amount|floatformat:2 }} on {{ payment.payment_date|date:"M d" }}</li>
+                        {% empty %}
+                            <li class="list-group-item">No recent payments.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

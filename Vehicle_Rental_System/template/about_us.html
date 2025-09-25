@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us - Velo-Rent</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .hero-about {
+            background-color: #1d4ed8; /* fallback */
+            background-image: linear-gradient(to right, #1e3a8a, #1d4ed8);
+        }
+        .value-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Header Section -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="{% url 'home' %}" class="text-2xl font-bold text-blue-700">Velo-Rent</a>
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="{% url 'home' %}" class="text-gray-600 hover:text-blue-700">Home</a>
+                <a href="{% url 'vehicle_list' %}" class="text-gray-600 hover:text-blue-700">Vehicles</a>
+                <a href="{% url 'about_us' %}" class="text-blue-700 font-semibold">About Us</a>
+                <a href="#" class="text-gray-600 hover:text-blue-700">Contact</a>
+            </div>
+            <div class="flex items-center space-x-4">
+                {% if customer %}
+                    <a href="{% url 'my_profile' %}" class="text-gray-700 hidden sm:block hover:text-blue-700">Welcome, {{ customer.first_name }}</a>
+                    <a href="{% url 'logout' %}" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">Logout</a>
+                {% else %}
+                    <button onclick="window.location.href='{% url 'home' %}'" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Login</button>
+                    <button onclick="window.location.href='{% url 'home' %}'" class="px-4 py-2 text-sm font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800 transition-colors">Register</button>
+                {% endif %}
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="hero-about text-white">
+            <div class="container mx-auto px-6 py-20 text-center">
+                <h1 class="text-4xl md:text-5xl font-extrabold leading-tight mb-4">About Velo-Rent</h1>
+                <p class="text-lg md:text-xl text-blue-200 max-w-3xl mx-auto">Driving your adventures with trust, quality, and convenience since 2024.</p>
+            </div>
+        </section>
+
+        <!-- Our Mission Section -->
+        <section class="py-16 bg-white">
+            <div class="container mx-auto px-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900 mb-4">Our Mission</h2>
+                        <p class="text-gray-600 leading-relaxed mb-4">
+                            At Velo-Rent, our mission is to provide a seamless, reliable, and affordable vehicle rental experience. We believe that travel should be accessible to everyone, and we are committed to offering a diverse fleet of high-quality vehicles to meet the unique needs of every customer.
+                        </p>
+                        <p class="text-gray-600 leading-relaxed">
+                            We strive to simplify the rental process through user-friendly technology, transparent pricing, and exceptional customer service, ensuring your journey is smooth from start to finish.
+                        </p>
+                    </div>
+                    <div>
+                        <img src="https://images.unsplash.com/photo-1494976388531-d1058494cdd8?q=80&w=2070&auto=format&fit=crop" alt="A yellow sports car on an open road, representing freedom and travel" class="rounded-lg shadow-xl">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Our Values Section -->
+        <section class="py-16 bg-gray-50">
+            <div class="container mx-auto px-6">
+                <h2 class="text-3xl font-bold text-center mb-12">Our Core Values</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-10 text-center">
+                    <div class="value-card p-8 bg-white rounded-lg shadow-sm hover:shadow-xl hover:-translate-y-1">
+                        <div class="flex items-center justify-center h-20 w-20 rounded-full bg-blue-100 text-blue-700 mx-auto mb-4"><i class="fa-solid fa-shield-halved text-3xl"></i></div>
+                        <h3 class="text-xl font-bold mb-2">Integrity</h3>
+                        <p class="text-gray-500">We operate with honesty and transparency in all our dealings. No hidden fees, no surprises.</p>
+                    </div>
+                    <div class="value-card p-8 bg-white rounded-lg shadow-sm hover:shadow-xl hover:-translate-y-1">
+                        <div class="flex items-center justify-center h-20 w-20 rounded-full bg-blue-100 text-blue-700 mx-auto mb-4"><i class="fa-solid fa-star text-3xl"></i></div>
+                        <h3 class="text-xl font-bold mb-2">Quality</h3>
+                        <p class="text-gray-500">We maintain a modern, well-serviced fleet to ensure your safety and comfort on the road.</p>
+                    </div>
+                    <div class="value-card p-8 bg-white rounded-lg shadow-sm hover:shadow-xl hover:-translate-y-1">
+                        <div class="flex items-center justify-center h-20 w-20 rounded-full bg-blue-100 text-blue-700 mx-auto mb-4"><i class="fa-solid fa-handshake-angle text-3xl"></i></div>
+                        <h3 class="text-xl font-bold mb-2">Customer Focus</h3>
+                        <p class="text-gray-500">Your satisfaction is our priority. We are here to support you at every step of your rental journey.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Meet the Team Section -->
+        <section class="py-16 bg-white">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="text-3xl font-bold mb-12">Meet Our Team</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-4xl mx-auto">
+                    <!-- Team Member 1 -->
+                    <div class="flex flex-col items-center p-4">
+                        <img class="h-32 w-32 rounded-full object-cover mb-4 shadow-lg" src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=256&h=256&fit=crop" alt="Alex Johnson">
+                        <h3 class="text-xl font-bold text-gray-900">Alex Johnson</h3>
+                        <p class="text-blue-700 font-medium">Founder & CEO</p>
+                    </div>
+                    <!-- Team Member 2 -->
+                    <div class="flex flex-col items-center p-4">
+                        <img class="h-32 w-32 rounded-full object-cover mb-4 shadow-lg" src="https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=256&h=256&fit=crop" alt="Maria Garcia">
+                        <h3 class="text-xl font-bold text-gray-900">Maria Garcia</h3>
+                        <p class="text-blue-700 font-medium">Head of Operations</p>
+                    </div>
+                    <!-- Team Member 3 -->
+                    <div class="flex flex-col items-center p-4">
+                        <img class="h-32 w-32 rounded-full object-cover mb-4 shadow-lg" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=256&h=256&fit=crop" alt="Chen Wei">
+                        <h3 class="text-xl font-bold text-gray-900">Chen Wei</h3>
+                        <p class="text-blue-700 font-medium">Lead Developer</p>
+                    </div>
+                    <!-- Add more team members as needed -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer (You can reuse the footer from index.html) -->
+
+</body>
+</html>

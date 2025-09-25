@@ -92,16 +92,16 @@ class RentalBooking(models.Model):
 
 class Payment(models.Model):
     PAYMENT_METHODS = [('Cash', 'Cash'), ('Credit Card', 'Credit Card'), ('Debit Card', 'Debit Card'), ('UPI', 'UPI'), ('Net Banking', 'Net Banking')]
-    PAYMENT_TYPES = [('Advance', 'Advance'), ('Full Payment', 'Full Payment'), ('Security Deposit', 'Security Deposit'), ('Fine', 'Fine'), ('Refund', 'Refund')]
-    PAYMENT_STATUS = [('Pending', 'Pending'), ('Completed', 'Completed'), ('Failed', 'Failed'), ('Refunded', 'Refunded')]
+    PAY_TYPES = [('Advance', 'Advance'), ('Full Payment', 'Full Payment'), ('Security Deposit', 'Security Deposit'), ('Fine', 'Fine')]
+    PAYMENT_STATUS = [('Pending', 'Pending'), ('Completed', 'Completed'), ('Failed', 'Failed')]
 
     booking = models.ForeignKey(RentalBooking, on_delete=models.CASCADE)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     payment_date = models.DateTimeField(auto_now_add=True)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS)
-    payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPES)
-    transaction_id = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    payment_type = models.CharField(max_length=20, choices=PAY_TYPES)
+    transaction_id = models.CharField(max_length=100, unique=True, blank=True, null=True)
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS, default='Completed')
     processed_by = models.CharField(max_length=50, default='System', blank=True, null=True)
     reference_number = models.CharField(max_length=50, blank=True, null=True)
@@ -146,4 +146,3 @@ class FeedbackReview(models.Model):
 
     def __str__(self):
         return f"Review {self.id}"
-
