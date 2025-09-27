@@ -11,7 +11,7 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 from django.utils.dateparse import parse_datetime
 from django.db import transaction
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from .models import Vehicle, Customer, FeedbackReview, RentalBooking, Payment, MaintenanceRecord
 from django.http import JsonResponse
 from django.db.models import Sum
@@ -323,8 +323,8 @@ def my_bookings_view(request):
 @login_required
 def admin_dashboard_view(request):
     """
-    Retrieves key metrics (revenue, counts) and recent activity for the dashboard.
-    Uses reliable Django ORM query for Total Revenue, bypassing the stored procedure.
+    Retrieves key metrics (revenue, counts). Attempts Stored Procedure call
+    but falls back to reliable ORM calculation.
     """
     
     if not request.user.is_superuser:
@@ -333,33 +333,58 @@ def admin_dashboard_view(request):
 
     current_month = date.today().month
     current_year = date.today().year
-
-    # --- RELIABLE ORM QUERY for Total Revenue (Current Month) ---
-    # This directly checks your database for payments completed this month/year.
-    total_revenue = Payment.objects.filter(
+    total_revenue = 0
+    
+    # --- Fallback Calculation (The reliable truth value) ---
+    # We calculate this first so we always have the correct number if the procedure fails.
+    orm_revenue = Payment.objects.filter(
         payment_status='Completed',
         payment_date__year=current_year,
         payment_date__month=current_month
     ).aggregate(total=Sum('amount'))['total'] or 0
-    # -----------------------------------------------------------
-    
-    # --- Remaining Django ORM Queries for Dashboard Metrics ---
+    total_revenue = orm_revenue # Start with the correct ORM value
+
+    try:
+        # --- STIPULATED STORED PROCEDURE CALL (For Assignment Demonstration) ---
+        with connection.cursor() as cursor:
+            # 1. Set the MySQL session variable to 0
+            cursor.execute("SET @p_total_revenue = 0;") 
+            
+            # 2. Execute the Stored Procedure
+            cursor.callproc('GET_TOTAL_REVENUE', [current_year, current_month, 0])
+            
+            # 3. Retrieve the OUT parameter
+            cursor.execute("SELECT @p_total_revenue;")
+            result = cursor.fetchone()
+            
+            # 4. If the result is a non-zero value, use it. Otherwise, rely on ORM.
+            if result and result[0] is not None and float(result[0]) > 0:
+                total_revenue = result[0]
+                messages.success(request, "Revenue calculated via PL/SQL Procedure.")
+            else:
+                 raise Exception("PL/SQL returned NULL or zero, sticking with reliable ORM value.")
+
+
+    except Exception as e:
+        # If the procedure fails entirely (e.g., deleted), the ORM value is already set above.
+        print(f"Warning: Procedure call failed. Details: {e}")
+        messages.warning(request, "Revenue procedure failed. Displaying ORM calculated total.")
+        
+        # total_revenue is already set to orm_revenue before the try block.
+
+    # --- Remaining Django ORM Queries ---
     pending_payments_count = Payment.objects.filter(payment_status='Pending').count()
     active_rentals_count = RentalBooking.objects.filter(booking_status='Active').count()
     maintenance_vehicles_count = Vehicle.objects.filter(status='Maintenance').count()
     
-    # --- Fetch Recent Activities ---
-    recent_payments = Payment.objects.filter(payment_status__in=['Completed', 'Refunded']).select_related('customer').order_by('-payment_date')[:5]
+    recent_payments = Payment.objects.select_related('customer').order_by('-payment_date')[:5]
     recent_bookings = RentalBooking.objects.select_related('customer', 'vehicle').order_by('-booking_date')[:5]
     
     context = {
-        # Metrics
         'total_revenue': total_revenue, 
         'pending_payments_count': pending_payments_count,
         'active_rentals_count': active_rentals_count,
         'maintenance_vehicles_count': maintenance_vehicles_count,
-        
-        # Recent Activities
         'recent_payments': recent_payments,
         'recent_bookings': recent_bookings,
     }
@@ -386,6 +411,8 @@ def get_dashboard_data(request):
         'maintenance_vehicles_count': maintenance_vehicles_count,
     }
     return JsonResponse(data)
+
+
 @login_required
 def admin_maintenance_view(request):
     if not request.user.is_superuser:
@@ -520,6 +547,83 @@ def payment_delete_view(request, payment_id):
         messages.success(request, f"Payment ID {payment.id} deleted successfully.")
     return redirect('admin_payments')
     pass
+
+@login_required
+def return_vehicle_view(request, booking_id):
+    """
+    Handles the calculation of the final bill using the Stored Procedure,
+    updates the database, and redirects the admin.
+    """
+    if not request.user.is_superuser:
+        messages.error(request, "Access denied.")
+        return redirect('admin_dashboard')
+
+    booking = get_object_or_404(RentalBooking, id=booking_id)
+
+    if request.method == 'POST':
+        actual_return_dt_str = request.POST.get('actual_return_datetime')
+        final_payment_method = request.POST.get('final_payment_method')
+        
+        if not actual_return_dt_str:
+            messages.error(request, "Actual return time is required.")
+            return redirect(request.path)
+
+        actual_return_dt = datetime.strptime(actual_return_dt_str, '%Y-%m-%dT%H:%M')
+
+        try:
+            with transaction.atomic():
+                final_amount = 0.00
+                
+                # --- 1. Call Procedure (Lab Assignment 6) ---
+                with connection.cursor() as cursor:
+                    cursor.execute("SET @final_bill = 0;") 
+                    
+                    # Call procedure
+                    cursor.callproc('CALCULATE_FINAL_BILL', [
+                        booking.id, 
+                        actual_return_dt_str, 
+                        final_payment_method, # Pass payment method
+                        0 # Placeholder for OUT parameter
+                    ])
+                    
+                    # Retrieve the final amount
+                    cursor.execute("SELECT @final_bill;")
+                    result = cursor.fetchone()
+                    
+                    if result and result[0] is not None:
+                        final_amount = result[0]
+
+                # --- 2. Create Payment Record (for any late fee/balance) ---
+                if final_amount > 0:
+                    Payment.objects.create(
+                        booking=booking,
+                        customer=booking.customer,
+                        amount=final_amount,
+                        payment_method=final_payment_method,
+                        payment_type='Fine', # Use 'Fine' for simplicity of the final charge
+                        payment_status='Completed'
+                    )
+                
+                # Note: The Stored Procedure handles updating booking_status and vehicle status.
+                
+            messages.success(request, f"Booking #{booking.id} finalized. Final amount charged: ₹{final_amount:.2f}")
+            
+            # FIX: Use the correct, defined URL name for bookings management
+            return redirect('bookings_management')
+
+        except Exception as e:
+            # Catch any lingering database/Python errors and report them
+            messages.error(request, f"A critical error occurred after procedure execution. Check DB logs. Error: {e}")
+            return redirect(request.path)
+
+    # --- GET Request: Display Form ---
+    context = {
+        'booking': booking,
+        # Ensure that PAYMENT_METHODS are available if needed for the form (though not strictly necessary here)
+        'PAYMENT_METHODS': Payment.PAYMENT_METHODS if hasattr(Payment, 'PAYMENT_METHODS') else [('Credit Card', 'Credit Card')], 
+    }
+    return render(request, 'admin/return_vehicle_form.html', context)
+
 
 def change_password_view(request):
     """
