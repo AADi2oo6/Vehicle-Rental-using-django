@@ -21,7 +21,7 @@ urlpatterns = [
     path("admin_new/queries/", views.admin_queries_view, name="admin_queries"),
     
     # Payments Management URLs (consolidated)
-    path("admin_new/payments/", views.payments_management_view, name="payments_management"),
+   path("admin_new/payments/", views.admin_payments_view, name="admin_payments"),
     path("admin_new/payments/add/", views.payment_form_view, name="payment_add"),
     path("admin_new/payments/edit/<int:payment_id>/", views.payment_form_view, name="payment_edit"),
     path("admin_new/payments/delete/<int:payment_id>/", views.payment_delete_view, name="payment_delete"),

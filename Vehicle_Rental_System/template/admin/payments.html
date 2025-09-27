@@ -1,65 +1,91 @@
 {% extends "admin/bases.html" %}
 
 {% block content %}
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>Payments Management</h2>
         <a href="{% url 'payment_add' %}" class="btn btn-primary">Add New Payment</a>
     </div>
-    <p class="text-muted">This page provides a single table view of payments, with options for filtering and sorting, as well as aggregate reports on revenue.</p>
+    <p class="text-muted">This page provides a single table view of all payment transactions, along with aggregated reports.</p>
     
-    <div class="row mt-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">Monthly Revenue</div>
-                <div class="card-body">
-                    <canvas id="monthlyRevenueChart"></canvas>
-                </div>
+    <form method="get" class="card card-body mb-4">
+        <div class="row">
+            <div class="col-md-5">
+                <input type="text" name="q" class="form-control" 
+                       placeholder="Search by Customer, Vehicle, ID, Transaction ID..." 
+                       value="{{ search_query|default:'' }}">
+            </div>
+            <div class="col-md-3">
+                <input type="date" name="start_date" class="form-control" 
+                       placeholder="dd-mm-yyyy" 
+                       value="{{ start_date|default:'' }}">
+            </div>
+            <div class="col-md-3">
+                <input type="date" name="end_date" class="form-control" 
+                       placeholder="dd-mm-yyyy" 
+                       value="{{ end_date|default:'' }}">
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-info btn-block">Filter</button>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">Top 10 Customers by Total Spend</div>
-                <div class="card-body">
-                    <ul class="list-group list-group-flush">
-                        {% for customer in top_customers %}
-                            <li class="list-group-item">{{ customer.customer__first_name }} {{ customer.customer__last_name }}: ${{ customer.total_spent }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <h3 class="mt-4">All Payments</h3>
+    </form>
+    
+    <h3 class="mt-4">All Transactions</h3>
+    
     <div class="mb-3">
-        <a href="{% url 'payments_management' %}?status=Completed" class="btn btn-sm {% if selected_status == 'Completed' %}btn-primary{% else %}btn-outline-primary{% endif %}">Completed</a>
-        <a href="{% url 'payments_management' %}?status=Pending" class="btn btn-sm {% if selected_status == 'Pending' %}btn-warning{% else %}btn-outline-warning{% endif %}">Pending</a>
-        <a href="{% url 'payments_management' %}" class="btn btn-sm btn-secondary">All</a>
+        {% with current_filters=request.GET.urlencode|cut:'status=' %}
+        
+        <a href="{% url 'admin_payments' %}?{{ current_filters }}status=Completed" 
+           class="btn btn-sm {% if selected_status == 'Completed' %}btn-success{% else %}btn-outline-success{% endif %}">Completed</a>
+        
+        <a href="{% url 'admin_payments' %}?{{ current_filters }}status=Pending" 
+           class="btn btn-sm {% if selected_status == 'Pending' %}btn-warning{% else %}btn-outline-warning{% endif %}">Pending</a>
+        
+        <a href="{% url 'admin_payments' %}?{{ current_filters }}status=Refunded" 
+           class="btn btn-sm {% if selected_status == 'Refunded' %}btn-info{% else %}btn-outline-info{% endif %}">Refunded</a>
+        
+        <a href="{% url 'admin_payments' %}?{{ current_filters }}status=Failed" 
+           class="btn btn-sm {% if selected_status == 'Failed' %}btn-danger{% else %}btn-outline-danger{% endif %}">Failed</a>
+           
+        <a href="{% url 'admin_payments' %}" class="btn btn-sm btn-secondary">All</a>
+        
+        {% endwith %}
     </div>
 
-    <table class="table table-striped table-bordered">
+    <table class="table table-striped table-bordered table-hover">
         <thead class="thead-dark">
             <tr>
-                <th><a href="{% url 'payments_management' %}?sort=id&order={% if sort_by == 'id' and order == 'asc' %}desc{% else %}asc{% endif %}">ID</a></th>
+                {% with current_filters=request.GET.urlencode|cut:'sort='|cut:'order=' %}
+                <th><a href="{% url 'admin_payments' %}?{{ current_filters }}&sort=id&order={% if sort_by == 'id' and order == 'asc' %}desc{% else %}asc{% endif %}">ID</a></th>
                 <th>Customer</th>
                 <th>Vehicle</th>
-                <th><a href="{% url 'payments_management' %}?sort=amount&order={% if sort_by == 'amount' and order == 'asc' %}desc{% else %}asc{% endif %}">Amount</a></th>
+                <th><a href="{% url 'admin_payments' %}?{{ current_filters }}&sort=amount&order={% if sort_by == 'amount' and order == 'asc' %}desc{% else %}asc{% endif %}">Amount (₹)</a></th>
                 <th>Method</th>
-                <th><a href="{% url 'payments_management' %}?sort=payment_date&order={% if sort_by == 'payment_date' and order == 'asc' %}desc{% else %}asc{% endif %}">Date</a></th>
+                <th><a href="{% url 'admin_payments' %}?{{ current_filters }}&sort=payment_date&order={% if sort_by == 'payment_date' and order == 'asc' %}desc{% else %}asc{% endif %}">Date</a></th>
                 <th>Status</th>
                 <th>Actions</th>
+                {% endwith %}
             </tr>
         </thead>
         <tbody>
             {% for payment in payments %}
             <tr>
                 <td>{{ payment.id }}</td>
-                <td>{{ payment.customer.first_name }}</td>
+                <td>{{ payment.customer.first_name }} {{ payment.customer.last_name }}</td>
                 <td>{{ payment.booking.vehicle.vehicle_number }}</td>
-                <td>${{ payment.amount }}</td>
+                <td>₹{{ payment.amount|floatformat:2 }}</td>
                 <td>{{ payment.get_payment_method_display }}</td>
                 <td>{{ payment.payment_date|date:"Y-m-d H:i" }}</td>
-                <td>{{ payment.get_payment_status_display }}</td>
+                <td>
+                    <span class="badge 
+                        {% if payment.payment_status == 'Completed' %} badge-success
+                        {% elif payment.payment_status == 'Pending' %} badge-warning
+                        {% elif payment.payment_status == 'Refunded' %} badge-info
+                        {% elif payment.payment_status == 'Failed' %} badge-danger
+                        {% endif %}">
+                        {{ payment.get_payment_status_display }}
+                    </span>
+                </td>
                 <td>
                     <a href="{% url 'payment_edit' payment.id %}" class="btn btn-sm btn-info">Edit</a>
                     <form action="{% url 'payment_delete' payment.id %}" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this payment?');">
@@ -71,25 +97,4 @@
             {% endfor %}
         </tbody>
     </table>
-    
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        const monthlyRevenueData = {
-            labels: [{% for data in monthly_revenue %}"{{ data.month|date:'M Y' }}",{% endfor %}],
-            datasets: [{
-                label: 'Monthly Revenue',
-                backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                borderColor: 'rgb(54, 162, 235)',
-                data: [{% for data in monthly_revenue %}{{ data.total_revenue }},{% endfor %}],
-            }]
-        };
-
-        const config = {
-            type: 'bar',
-            data: monthlyRevenueData,
-            options: {}
-        };
-        
-        new Chart(document.getElementById('monthlyRevenueChart'), config);
-    </script>
 {% endblock %}
