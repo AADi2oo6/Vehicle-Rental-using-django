@@ -1,11 +1,13 @@
 {% extends "admin/bases.html" %}
 
 {% block content %}
-    <div class="card bg-light shadow-lg border-0 rounded-lg mt-5">
-        <div class="card-header bg-dark text-white text-center">
-            <h2 class="font-weight-light my-4">{% if payment %}Edit Payment{% else %}Add New Payment{% endif %}</h2>
+    <div class="card border-0 rounded-0 mt-4 mb-5">
+        
+        <div class="card-header bg-secondary text-white text-left py-3 px-4">
+            <h2 class="font-weight-normal my-1">{% if payment %}Edit Payment #{{ payment.id }}{% else %}Add New Payment{% endif %}</h2>
         </div>
-        <div class="card-body p-5">
+        
+        <div class="card-body p-4">
             <form method="post">
                 {% csrf_token %}
                 
@@ -25,64 +27,74 @@
                     </div>
                 {% endif %}
 
-                <div class="row mb-3">
+                <h5 class="text-secondary mb-3 mt-0 border-bottom pb-2 font-weight-bold">Linking Records</h5>
+                <div class="row">
                     <div class="col-md-6">
-                        <div class="form-floating mb-3 mb-md-0">
-                            <label for="{{ form.booking.id_for_label }}">Booking ID</label>
+                        <div class="form-group">
+                            <label for="{{ form.booking.id_for_label }}" class="font-weight-bold text-dark">Booking ID</label>
                             {{ form.booking }}
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="form-floating">
-                            <label for="{{ form.customer.id_for_label }}">Customer ID</label>
+                        <div class="form-group">
+                            <label for="{{ form.customer.id_for_label }}" class="font-weight-bold text-dark">Customer ID</label>
                             {{ form.customer }}
                         </div>
                     </div>
                 </div>
 
-                <div class="row mb-3">
+                <h5 class="text-secondary mb-3 mt-4 border-bottom pb-2 font-weight-bold">Transaction Details</h5>
+                <div class="row">
                     <div class="col-md-6">
-                        <div class="form-floating mb-3 mb-md-0">
-                            <label for="{{ form.amount.id_for_label }}">Amount</label>
+                        <div class="form-group">
+                            <label for="{{ form.amount.id_for_label }}" class="font-weight-bold text-dark">Amount (₹)</label>
                             {{ form.amount }}
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="form-floating">
-                            <label for="{{ form.payment_method.id_for_label }}">Payment Method</label>
+                        <div class="form-group">
+                            <label for="{{ form.payment_method.id_for_label }}" class="font-weight-bold text-dark">Payment Method</label>
                             {{ form.payment_method }}
                         </div>
                     </div>
                 </div>
 
-                <div class="row mb-3">
+                <div class="row">
                     <div class="col-md-6">
-                        <div class="form-floating mb-3 mb-md-0">
-                            <label for="{{ form.payment_type.id_for_label }}">Payment Type</label>
+                        <div class="form-group">
+                            <label for="{{ form.payment_type.id_for_label }}" class="font-weight-bold text-dark">Payment Type</label>
                             {{ form.payment_type }}
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="form-floating">
-                            <label for="{{ form.payment_status.id_for_label }}">Payment Status</label>
+                        <div class="form-group">
+                            <label for="{{ form.payment_status.id_for_label }}" class="font-weight-bold text-dark">Payment Status</label>
                             {{ form.payment_status }}
                         </div>
                     </div>
                 </div>
                 
-                <div class="form-floating mb-3">
-                    <label for="{{ form.transaction_id.id_for_label }}">Transaction ID</label>
+                <div class="form-group">
+                    <label for="{{ form.transaction_id.id_for_label }}" class="font-weight-bold text-dark">Transaction ID</label>
                     {{ form.transaction_id }}
                 </div>
+                <div class="form-group">
+                    <label for="{{ form.reference_number.id_for_label }}" class="font-weight-bold text-dark">Reference Number (Optional)</label>
+                    {{ form.reference_number }}
+                </div>
 
-                <div class="form-floating mb-3">
-                    <label for="{{ form.notes.id_for_label }}">Notes</label>
+                <h5 class="text-secondary mb-3 mt-4 border-bottom pb-2 font-weight-bold">Additional Notes</h5>
+                <div class="form-group">
+                    <label for="{{ form.notes.id_for_label }}" class="font-weight-bold text-dark">Notes</label>
                     {{ form.notes }}
                 </div>
                 
-                <div class="d-flex align-items-center justify-content-between mt-4 mb-0">
-                    <a class="btn btn-secondary" href="{% url 'payments_management' %}">Cancel</a>
-                    <button type="submit" class="btn btn-primary">{% if payment %}Update{% else %}Add{% endif %} Payment</button>
+                {% if form.processed_by %}{{ form.processed_by }}{% endif %}
+                {% if form.payment_date %}{{ form.payment_date }}{% endif %}
+
+                <div class="d-flex align-items-center justify-content-between mt-5 pt-3 border-top">
+                    <a class="btn btn-secondary px-4" href="{% url 'admin_payments' %}">Cancel</a>
+                    <button type="submit" class="btn btn-primary btn-lg px-4">{% if payment %}Update Payment{% else %}Add Payment{% endif %}</button>
                 </div>
             </form>
         </div>

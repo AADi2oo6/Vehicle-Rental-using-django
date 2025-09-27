@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.db import connection, transaction 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -319,33 +320,50 @@ def my_bookings_view(request):
     return render(request, "my_bookings.html", context)
 
 
-# New custom admin dashboard views
-
 @login_required
 def admin_dashboard_view(request):
+    """
+    Retrieves key metrics (revenue, counts) and recent activity for the dashboard.
+    Uses reliable Django ORM query for Total Revenue, bypassing the stored procedure.
+    """
+    
     if not request.user.is_superuser:
         messages.error(request, "You do not have permission to view this page.")
         return redirect('home')
 
-    total_revenue = Payment.objects.filter(payment_status='Completed').aggregate(total=Sum('amount'))['total'] or 0
+    current_month = date.today().month
+    current_year = date.today().year
+
+    # --- RELIABLE ORM QUERY for Total Revenue (Current Month) ---
+    # This directly checks your database for payments completed this month/year.
+    total_revenue = Payment.objects.filter(
+        payment_status='Completed',
+        payment_date__year=current_year,
+        payment_date__month=current_month
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    # -----------------------------------------------------------
+    
+    # --- Remaining Django ORM Queries for Dashboard Metrics ---
     pending_payments_count = Payment.objects.filter(payment_status='Pending').count()
     active_rentals_count = RentalBooking.objects.filter(booking_status='Active').count()
     maintenance_vehicles_count = Vehicle.objects.filter(status='Maintenance').count()
     
-    # Fetch recent activities
-    recent_payments = Payment.objects.select_related('customer').order_by('-payment_date')[:5]
-    recent_bookings = RentalBooking.objects.select_related('customer').order_by('-booking_date')[:5]
+    # --- Fetch Recent Activities ---
+    recent_payments = Payment.objects.filter(payment_status__in=['Completed', 'Refunded']).select_related('customer').order_by('-payment_date')[:5]
+    recent_bookings = RentalBooking.objects.select_related('customer', 'vehicle').order_by('-booking_date')[:5]
     
     context = {
-        'total_revenue': total_revenue,
+        # Metrics
+        'total_revenue': total_revenue, 
         'pending_payments_count': pending_payments_count,
         'active_rentals_count': active_rentals_count,
         'maintenance_vehicles_count': maintenance_vehicles_count,
+        
+        # Recent Activities
         'recent_payments': recent_payments,
         'recent_bookings': recent_bookings,
     }
     return render(request, "admin_dashboard_bootstrap.html", context)
-
 # Add this new view for AJAX requests
 @login_required
 def get_dashboard_data(request):
@@ -398,46 +416,64 @@ def admin_queries_view(request):
     }
     return render(request, "queries.html", context)
 
-# Combined Payments Management View
 @login_required
-def payments_management_view(request):
+def admin_payments_view(request): 
     """
-    Combines all professional views for the Payment table into a single view.
-    - Single Table Read-Only
-    - Multi-table View
-    - Aggregate Functions
-    - CRUD Operations (links for add/edit/delete)
+    Handles payments list, filtering, sorting, and aggregation.
     """
     if not request.user.is_superuser:
         messages.error(request, "You do not have permission to view this page.")
         return redirect('home')
     
-    # This handles the main list view and multi-table data
+    # --- Base Query ---
     payments = Payment.objects.select_related('customer', 'booking__vehicle').order_by('-payment_date')
     
-    # Filtering and Sorting logic
+    # --- Filtering Variables ---
+    search_query = request.GET.get('q', '').strip()
+    payment_status = request.GET.get('status')
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+
+    # --- 1. Apply Universal Search (Text) ---
+    if search_query:
+        payments = payments.filter(
+            Q(id__icontains=search_query) |
+            Q(customer__first_name__icontains=search_query) |
+            Q(customer__last_name__icontains=search_query) |
+            Q(transaction_id__icontains=search_query) |
+            Q(booking__vehicle__vehicle_number__icontains=search_query)
+        )
+
+    # --- 2. Apply Date Range Filter ---
+    if start_date_str and end_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date() + timedelta(days=1)
+            payments = payments.filter(payment_date__gte=start_date, payment_date__lt=end_date)
+            
+        except ValueError:
+            messages.error(request, "Invalid date format. Please use YYYY-MM-DD.")
+
+    # --- 3. Apply Status Filter ---
+    if payment_status:
+        payments = payments.filter(payment_status=payment_status)
+    
+    # --- 4. Apply Sorting ---
     sort_by = request.GET.get('sort', 'payment_date')
     order = request.GET.get('order', 'desc')
     if order == 'asc':
         payments = payments.order_by(sort_by)
     else:
         payments = payments.order_by(f'-{sort_by}')
-    payment_status = request.GET.get('status')
-    if payment_status:
-        payments = payments.filter(payment_status=payment_status)
 
-    # Aggregation for reports
+    # --- 5. Aggregation for Reports ---
     monthly_revenue = Payment.objects.filter(payment_status='Completed').annotate(
         month=TruncMonth('payment_date')
-    ).values('month').annotate(
-        total_revenue=Sum('amount')
-    ).order_by('month')
+    ).values('month').annotate(total_revenue=Sum('amount')).order_by('month')
     top_customers = Payment.objects.filter(payment_status='Completed').values(
         'customer__first_name', 'customer__last_name'
-    ).annotate(
-        total_spent=Sum('amount')
-    ).order_by('-total_spent')[:10]
-
+    ).annotate(total_spent=Sum('amount')).order_by('-total_spent')[:10]
+    
     context = {
         'payments': payments,
         'monthly_revenue': monthly_revenue,
@@ -445,6 +481,9 @@ def payments_management_view(request):
         'selected_status': payment_status,
         'sort_by': sort_by,
         'order': order,
+        'search_query': search_query,
+        'start_date': start_date_str,
+        'end_date': end_date_str,
     }
     return render(request, "admin/payments.html", context)
 
@@ -462,12 +501,13 @@ def payment_form_view(request, payment_id=None):
         if form.is_valid():
             form.save()
             messages.success(request, "Payment saved successfully.")
-            return redirect('payments_management')
+            return redirect('admin_payments')
     else:
         form = PaymentForm(instance=payment)
     
     context = {'form': form}
     return render(request, "admin/payment_form.html", context)
+
 
 @login_required
 def payment_delete_view(request, payment_id):
@@ -478,7 +518,7 @@ def payment_delete_view(request, payment_id):
     if request.method == 'POST':
         payment.delete()
         messages.success(request, f"Payment ID {payment.id} deleted successfully.")
-    return redirect('payments_management')
+    return redirect('admin_payments')
     pass
 
 def change_password_view(request):
