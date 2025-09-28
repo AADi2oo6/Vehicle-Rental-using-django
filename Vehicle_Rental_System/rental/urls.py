@@ -29,4 +29,8 @@ urlpatterns = [
 
     path("admin_new/api/data/", views.get_dashboard_data, name="get_dashboard_data"),
      path("admin_new/change-password/", views.change_password_view, name="change_password"),
+
+         # New Self-Join Report URL
+    path("admin_new/payments/analytics/", views.payment_analytics_view, name="payment_analytics_report"),
+
 ]
