@@ -1,0 +1,109 @@
+{% extends "admin/bases.html" %}
+
+{% block content %}
+    <h2 class="mb-4">Advanced Payments Analytics </h2>
+    
+
+    {% if error_message %}
+        <div class="alert alert-danger">
+            <strong>Database Error:</strong> {{ error_message }}
+            <p class="mb-0 mt-2">Please ensure all required tables (like RENTAL_AUDIT_LOG) and Stored Procedures are correctly set up in your MySQL database.</p>
+        </div>
+    {% endif %}
+
+    <div class="card shadow-sm mb-5">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Top Customers with Repeated Transactions</h5>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-striped table-hover mb-0">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Customer Name</th>
+                        <th>Payment Method</th>
+                        <th>Total Transactions</th>
+                        <th>Total Spent (₹)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in repeated_transactions %}
+                    <tr>
+                        <td>{{ item.first_name }} {{ item.last_name }}</td>
+                        <td>
+                            <span class="badge badge-primary">{{ item.payment_method }}</span>
+                        </td>
+                        <td>{{ item.transaction_count }}</td>
+                        <td>₹{{ item.total_spent|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">No customers found with repeated transactions.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-5">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Customer First Payment Date </h5>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-striped table-hover mb-0">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Customer Name</th>
+                        <th>Total Spent (₹)</th>
+                        <th>Date of First Payment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in correlated_results %}
+                    <tr>
+                        <td>{{ item.first_name }}</td>
+                        <td>₹{{ item.total_spent|floatformat:2 }}</td>
+                        <td>{{ item.first_payment_date|date:"Y-m-d" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center text-muted">No completed payment data available for correlation.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-5">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Credit Card OR Refunded Payments</h5>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-striped table-hover mb-0">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Transaction ID</th>
+                        <th>Amount (₹)</th>
+                        <th>Combined Category</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in union_results %}
+                    <tr>
+                        <td>{{ item.id }}</td>
+                        <td>₹{{ item.amount|floatformat:2 }}</td>
+                        <td><span class="badge badge-info">{{ item.category }}</span></td>
+                        <td>{{ item.payment_date|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">No data from UNION query.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

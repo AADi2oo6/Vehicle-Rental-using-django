@@ -362,13 +362,13 @@ def admin_dashboard_view(request):
                 total_revenue = result[0]
                 messages.success(request, "Revenue calculated via PL/SQL Procedure.")
             else:
-                 raise Exception("PL/SQL returned NULL or zero, sticking with reliable ORM value.")
+                 raise Exception("success orm")
 
 
     except Exception as e:
         # If the procedure fails entirely (e.g., deleted), the ORM value is already set above.
-        print(f"Warning: Procedure call failed. Details: {e}")
-        messages.warning(request, "Revenue procedure failed. Displaying ORM calculated total.")
+        print(f"orm {e}")
+        
         
         # total_revenue is already set to orm_revenue before the try block.
 
@@ -547,6 +547,100 @@ def payment_delete_view(request, payment_id):
         messages.success(request, f"Payment ID {payment.id} deleted successfully.")
     return redirect('admin_payments')
     pass
+@login_required
+def payment_analytics_view(request):
+    """
+    Executes and consolidates the results of Self-Join, Correlated Query, 
+    and Set Operations for advanced payment analytics.
+    """
+    if not request.user.is_superuser:
+        messages.error(request, "Access denied.")
+        return redirect('admin_dashboard')
+
+    # --- 1. Self-Join Query (Repeated Transactions) ---
+    self_join_query = """
+    SELECT 
+        P1.customer_id,
+        C.first_name,
+        C.last_name,
+        P1.payment_method,
+        COUNT(P1.id) AS transaction_count,
+        SUM(P1.amount) AS total_spent
+    FROM 
+        rental_payment P1
+    JOIN 
+        rental_customer C ON P1.customer_id = C.id
+    GROUP BY 
+        P1.customer_id, P1.payment_method
+    HAVING 
+        COUNT(P1.id) > 1 
+    ORDER BY 
+        total_spent DESC
+    LIMIT 10;
+    """
+    
+    # --- 2. Correlated Subquery: Find First Payment Date ---
+    correlated_query = """
+    SELECT
+        C.first_name,
+        SUM(P.amount) AS total_spent,
+        (
+            SELECT MIN(payment_date) 
+            FROM rental_payment P_inner
+            WHERE P_inner.customer_id = P.customer_id AND P_inner.payment_status = 'Completed'
+        ) AS first_payment_date
+    FROM rental_payment P
+    JOIN rental_customer C ON P.customer_id = C.id
+    WHERE P.payment_status = 'Completed'
+    GROUP BY C.id, C.first_name
+    ORDER BY total_spent DESC
+    LIMIT 5;
+    """
+    
+    # --- 3. Set Operation: UNION (Credit Card OR Refunded) ---
+    union_query = """
+    (
+        SELECT id, customer_id, amount, 'Credit Card' AS category, payment_date
+        FROM rental_payment
+        WHERE payment_method = 'Credit Card'
+    )
+    UNION
+    (
+        SELECT id, customer_id, amount, 'Refunded Payment' AS category, payment_date
+        FROM rental_payment
+        WHERE payment_status = 'Refunded'
+    )
+    ORDER BY payment_date DESC
+    LIMIT 5;
+    """
+
+    # Execute all queries
+    data = {}
+    try:
+        with connection.cursor() as cursor:
+            # Execute Self-Join
+            cursor.execute(self_join_query)
+            columns = [col[0] for col in cursor.description]
+            data['repeated_transactions'] = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+            # Execute Correlated Query
+            cursor.execute(correlated_query)
+            columns = [col[0] for col in cursor.description]
+            data['correlated_results'] = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+            # Execute UNION Query
+            cursor.execute(union_query)
+            columns = [col[0] for col in cursor.description]
+            data['union_results'] = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+    except Exception as e:
+        messages.error(request, f"Advanced SQL Query Failed. Check if AuditLog table exists. Error: {e}")
+        data = {
+            'repeated_transactions': [], 'correlated_results': [], 'union_results': [],
+            'error_message': str(e)
+        }
+
+    return render(request, 'admin/payment_self_join_report.html', data)
 
 @login_required
 def return_vehicle_view(request, booking_id):
