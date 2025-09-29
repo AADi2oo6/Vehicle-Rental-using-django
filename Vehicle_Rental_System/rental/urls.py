@@ -18,6 +18,10 @@ urlpatterns = [
     path("admin_new/", views.admin_dashboard_view, name="admin_dashboard"),
     path("admin_new/maintenance/", views.admin_maintenance_view, name="admin_maintenance"),
     path("admin_new/bookings/", views.bookings_management_view, name="bookings_management"),
+    path("admin_new/bookings/<int:booking_id>/", views.booking_detail_view, name="booking_detail"),
+    path("admin_new/bookings/add/", views.admin_add_booking_view, name="admin_add_booking"),
+    path("admin_new/bookings/cancel/<int:booking_id>/", views.cancel_booking_view, name="cancel_booking"),
+    path("admin_new/bookings/activate/<int:booking_id>/", views.activate_booking_view, name="activate_booking"),
     path("admin_new/queries/", views.admin_queries_view, name="admin_queries"),
     
     # Payments Management URLs (consolidated)
