@@ -1,0 +1,56 @@
+# --- General ---
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore IDE/editor-specific files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Ignore log files
+*.log
+
+# --- Python ---
+# Ignore virtual environment directories
+venv/
+env/
+*.venv/
+
+# Ignore Python bytecode and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore distribution/packaging artifacts
+build/
+dist/
+*.egg-info/
+
+# --- Django ---
+# Ignore user-uploaded media files. Your settings.py specifies the 'media' directory.
+/media/
+
+# Ignore static files that are collected by collectstatic
+/staticfiles/
+
+# Ignore local settings files. It's a good practice to have a local_settings.py
+# that is not tracked by git to store sensitive information.
+local_settings.py
+
+# --- Environment Variables ---
+# Ignore environment variable files (e.g., for storing SECRET_KEY, DB passwords)
+.env
+
+# --- Database ---
+# Ignore database dumps or backups. Your 'HowToCopyDatabase.txt' mentions creating a .sql file.
+*.sql
+*.sqlite3
+
+# --- Security Recommendation ---
+# The main settings file often contains secrets. In a team, you might ignore the whole file
+# and use a template instead (e.g., settings.py.example).
+# For now, be extremely careful with Vehicle_Rental_System/settings.py
+# Vehicle_Rental_System/settings.py
