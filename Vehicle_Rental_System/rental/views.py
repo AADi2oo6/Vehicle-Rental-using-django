@@ -333,47 +333,10 @@ def admin_dashboard_view(request):
         messages.error(request, "You do not have permission to view this page.")
         return redirect('home')
 
-    current_month = date.today().month
-    current_year = date.today().year
-    total_revenue = 0
-    
-    # --- Fallback Calculation (The reliable truth value) ---
-    # We calculate this first so we always have the correct number if the procedure fails.
-    orm_revenue = Payment.objects.filter(
-        payment_status='Completed',
-        payment_date__year=current_year,
-        payment_date__month=current_month
+    # --- Calculate All-Time Total Revenue using the ORM ---
+    total_revenue = Payment.objects.filter(
+        payment_status='Completed'
     ).aggregate(total=Sum('amount'))['total'] or 0
-    total_revenue = orm_revenue # Start with the correct ORM value
-
-    try:
-        # --- STIPULATED STORED PROCEDURE CALL (For Assignment Demonstration) ---
-        with connection.cursor() as cursor:
-            # 1. Set the MySQL session variable to 0
-            cursor.execute("SET @p_total_revenue = 0;") 
-            
-            # 2. Execute the Stored Procedure using cursor.execute to ensure it's logged
-            # The third parameter is the OUT parameter.
-            cursor.execute("CALL GET_TOTAL_REVENUE(%s, %s, @p_total_revenue);", [current_year, current_month])
-            
-            # 3. Retrieve the OUT parameter's value
-            cursor.execute("SELECT @p_total_revenue;")
-            result = cursor.fetchone()
-            
-            # 4. If the result is a non-zero value, use it. Otherwise, rely on ORM.
-            if result and result[0] is not None and float(result[0]) > 0:
-                total_revenue = result[0]
-                messages.success(request, "Revenue calculated via PL/SQL Procedure.")
-            else:
-                 raise Exception("success orm")
-
-
-    except Exception as e:
-        # If the procedure fails entirely (e.g., deleted), the ORM value is already set above.
-        print(f"orm {e}")
-        
-        
-        # total_revenue is already set to orm_revenue before the try block.
 
     # --- Remaining Django ORM Queries ---
     pending_payments_count = Payment.objects.filter(payment_status='Pending').count()
