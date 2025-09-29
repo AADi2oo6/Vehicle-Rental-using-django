@@ -14,23 +14,6 @@ urlpatterns = [
     path("profile/", views.my_profile_view, name="my_profile"),
     path("profile/bookings/", views.my_bookings_view, name="my_bookings"),
     
-    # Custom admin dashboard URLs
-    path("admin_new/", views.admin_dashboard_view, name="admin_dashboard"),
-    path("admin_new/maintenance/", views.admin_maintenance_view, name="admin_maintenance"),
-    path("admin_new/bookings/", views.bookings_management_view, name="bookings_management"),
-    path("admin_new/queries/", views.admin_queries_view, name="admin_queries"),
     
-    # Payments Management URLs (consolidated)
-     path("admin_new/bookings/return/<int:booking_id>/", views.return_vehicle_view, name="return_vehicle"),
-   path("admin_new/payments/", views.admin_payments_view, name="admin_payments"),
-    path("admin_new/payments/add/", views.payment_form_view, name="payment_add"),
-    path("admin_new/payments/edit/<int:payment_id>/", views.payment_form_view, name="payment_edit"),
-    path("admin_new/payments/delete/<int:payment_id>/", views.payment_delete_view, name="payment_delete"),
-
-    path("admin_new/api/data/", views.get_dashboard_data, name="get_dashboard_data"),
-     path("admin_new/change-password/", views.change_password_view, name="change_password"),
-
-         # New Self-Join Report URL
-    path("admin_new/payments/analytics/", views.payment_analytics_view, name="payment_analytics_report"),
 
 ]

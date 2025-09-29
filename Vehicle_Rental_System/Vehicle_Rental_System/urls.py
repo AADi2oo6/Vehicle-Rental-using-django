@@ -26,6 +26,7 @@ urlpatterns = [
     
     # This line includes all the custom URLs from your 'rental' app.
     path("", include("rental.urls")),
+    path("admin_new/", include("AdminPage.urls")),
 ]
 
 # Serves media files during development.
