@@ -749,14 +749,16 @@ def bookings_management_view(request):
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="bookings.csv"'
         writer = csv.writer(response)
-        writer.writerow(['ID', 'Customer', 'Vehicle', 'Pickup Date', 'Return Date', 'Total Amount', 'Status'])
+        writer.writerow(['ID', 'Customer Name', 'Customer ID', 'Vehicle', 'Vehicle Number', 'Pickup Date', 'Return Date', 'Total Amount', 'Status'])
         for booking in bookings: # Use the filtered queryset
             writer.writerow([
                 booking.id,
                 f"{booking.customer.first_name} {booking.customer.last_name}",
+                booking.customer.id,
                 f"{booking.vehicle.make} {booking.vehicle.model}",
-                booking.pickup_datetime,
-                booking.return_datetime,
+                booking.vehicle.vehicle_number,
+                booking.pickup_datetime.strftime('%Y-%m-%d %H:%M'),
+                booking.return_datetime.strftime('%Y-%m-%d %H:%M'),
                 booking.total_amount,
                 booking.booking_status
             ])
