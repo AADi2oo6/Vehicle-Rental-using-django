@@ -1,12 +1,14 @@
 from django.db import models
 from django.contrib.auth.hashers import make_password
 from django.utils import timezone # Import timezone
+from django.contrib.auth.models import User
+import uuid
 
 class Customer(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     email = models.EmailField(unique=True)
-    password = models.CharField(max_length=128, default=make_password('12345678'))
     phone = models.CharField(max_length=15)
     address = models.TextField(blank=True, null=True)
     city = models.CharField(max_length=50, blank=True, null=True)
@@ -18,15 +20,35 @@ class Customer(models.Model):
     is_active = models.BooleanField(default=True)
     is_verified = models.BooleanField(default=False)
     credit_score = models.IntegerField(blank=True, null=True)
+    
+    MEMBERSHIP_TIER_CHOICES = [
+        ('Bronze', 'Bronze'), ('Silver', 'Silver'), ('Gold', 'Gold'), ('Platinum', 'Platinum'),
+    ]
+    membership_tier = models.CharField(max_length=10, choices=MEMBERSHIP_TIER_CHOICES, default='Bronze')
+    is_subscribed_to_newsletter = models.BooleanField(default=False)
+    referral_code = models.CharField(max_length=10, unique=True, blank=True, null=True)
+
     profile_picture = models.ImageField(upload_to='profile_pics/', default='profile_pics/default.jpg', blank=True, null=True)
 
     def save(self, *args, **kwargs):
-        if self.license_number:
-            self.is_verified = True
+        if not self.referral_code:
+            self.referral_code = str(uuid.uuid4())[:8].upper()
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+
+class CustomerActivityLog(models.Model):
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    activity_type = models.CharField(max_length=50) # e.g., 'Registration', 'Profile Update', 'Verification'
+    description = models.TextField(blank=True, null=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.customer.email} - {self.activity_type} at {self.timestamp.strftime('%Y-%m-%d %H:%M')}"
 
 class Vehicle(models.Model):
     VEHICLE_TYPES = [('Car', 'Car'), ('SUV', 'SUV'), ('Truck', 'Truck'), ('Motorcycle', 'Motorcycle'), ('Van', 'Van')]
