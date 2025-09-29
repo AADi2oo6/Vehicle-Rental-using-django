@@ -4,8 +4,8 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>Bookings Management</h2>
     <div>
-        <a href="?{{ request.GET.urlencode }}&export=csv" class="btn btn-success">Export CSV</a>
-        <a href="#" class="btn btn-primary">Add New Booking</a>
+        <a href="?{{ request.GET.urlencode }}&export=csv" class="btn btn-success"><i class="fas fa-download"></i> Export CSV</a>
+        <a href="{% url 'admin_add_booking' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Add New Booking</a>
     </div>
 </div>
 <p class="text-muted">This page provides a single table view of all rental bookings, with options for filtering and sorting.</p>
@@ -58,6 +58,7 @@
                 <th><input type="checkbox" id="select-all"></th>
                 <th><a href="?sort=booking_date&order={% if sort_by == 'booking_date' and order == 'asc' %}desc{% else %}asc{% endif %}&status={{ selected_status|default:'' }}">Booking Date</a></th>
                 <th>Customer</th>
+                <th>Customer ID</th>
                 <th>Vehicle</th>
                 <th><a href="?sort=pickup_datetime&order={% if sort_by == 'pickup_datetime' and order == 'asc' %}desc{% else %}asc{% endif %}&status={{ selected_status|default:'' }}">Pickup</a></th>
                 <th><a href="?sort=return_datetime&order={% if sort_by == 'return_datetime' and order == 'asc' %}desc{% else %}asc{% endif %}&status={{ selected_status|default:'' }}">Return</a></th>
@@ -72,6 +73,7 @@
                 <td><input type="checkbox" name="booking_ids" value="{{ booking.id }}" class="booking-checkbox"></td>
                 <td>{{ booking.booking_date|date:"Y-m-d" }}</td>
                 <td>{{ booking.customer.first_name }} {{ booking.customer.last_name }}</td>
+                <td>{{ booking.customer.id }}</td>
                 <td>{{ booking.vehicle.make }} {{ booking.vehicle.model }}</td>
                 <td>{{ booking.pickup_datetime|date:"Y-m-d H:i" }}</td>
                 <td>{{ booking.return_datetime|date:"Y-m-d H:i" }}</td>
@@ -87,12 +89,21 @@
                     </span>
                 </td>
                 <td>
-                    <a href="#" class="btn btn-sm btn-primary">View</a>
+                    <a href="{% url 'booking_detail' booking.id %}" class="btn btn-sm btn-info" title="View Details"><i class="fas fa-eye"></i> View</a>
+                    
+                    {% if booking.booking_status == 'Confirmed' %}
+                        <a href="{% url 'activate_booking' booking.id %}" class="btn btn-sm btn-success" title="Mark as Active"><i class="fas fa-play-circle"></i> Activate</a>
+                        <a href="{% url 'cancel_booking' booking.id %}" class="btn btn-sm btn-danger" title="Cancel Booking" onclick="return confirm('Are you sure you want to cancel this booking?');"><i class="fas fa-times-circle"></i> Cancel</a>
+                    {% endif %}
+
+                    {% if booking.booking_status == 'Active' %}
+                        <a href="{% url 'return_vehicle' booking.id %}" class="btn btn-sm btn-warning" title="Finalize Return"><i class="fas fa-check-circle"></i> Return</a>
+                    {% endif %}
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="9" class="text-center">No bookings found.</td>
+                <td colspan="10" class="text-center">No bookings found.</td>
             </tr>
             {% endfor %}
         </tbody>

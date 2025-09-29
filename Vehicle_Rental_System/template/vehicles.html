@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+{% load query_tags %}
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -149,7 +151,6 @@
                 </div>
 
                 <!-- Pagination -->
-                {% load query_tags %}
                 {% if vehicles.has_other_pages %}
                 <div class="mt-12 flex justify-center items-center space-x-2">
                     {% if vehicles.has_previous %}<a href="?{% query_transform request page=vehicles.previous_page_number %}" class="pagination-link px-4 py-2 border rounded-lg hover:bg-gray-200">&laquo; Prev</a>{% endif %}

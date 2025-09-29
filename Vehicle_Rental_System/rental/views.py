@@ -9,7 +9,8 @@ from django.core.cache import cache
 from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
-from django.utils.dateparse import parse_datetime
+from django.utils.dateparse import parse_datetime # Keep this for existing uses
+import csv # Added for CSV export in bookings_management_view
 from django.db import transaction
 from datetime import date, timedelta, datetime
 from .models import Vehicle, Customer, FeedbackReview, RentalBooking, Payment, MaintenanceRecord
@@ -17,6 +18,7 @@ from django.http import JsonResponse
 from django.db.models import Sum
 from .forms import PaymentForm  # Import the new form
 from .models import Payment
+from .forms import AdminBookingForm # Import the new form
 
 @login_required
 def get_dashboard_data(request):
@@ -350,10 +352,11 @@ def admin_dashboard_view(request):
             # 1. Set the MySQL session variable to 0
             cursor.execute("SET @p_total_revenue = 0;") 
             
-            # 2. Execute the Stored Procedure
-            cursor.callproc('GET_TOTAL_REVENUE', [current_year, current_month, 0])
+            # 2. Execute the Stored Procedure using cursor.execute to ensure it's logged
+            # The third parameter is the OUT parameter.
+            cursor.execute("CALL GET_TOTAL_REVENUE(%s, %s, @p_total_revenue);", [current_year, current_month])
             
-            # 3. Retrieve the OUT parameter
+            # 3. Retrieve the OUT parameter's value
             cursor.execute("SELECT @p_total_revenue;")
             result = cursor.fetchone()
             
@@ -672,14 +675,13 @@ def return_vehicle_view(request, booking_id):
                 with connection.cursor() as cursor:
                     cursor.execute("SET @final_bill = 0;") 
                     
-                    # Call procedure
-                    cursor.callproc('CALCULATE_FINAL_BILL', [
+                    # Call procedure using cursor.execute to ensure it's logged
+                    cursor.execute("CALL CALCULATE_FINAL_BILL(%s, %s, %s, @final_bill);", [
                         booking.id, 
                         actual_return_dt_str, 
-                        final_payment_method, # Pass payment method
-                        0 # Placeholder for OUT parameter
+                        final_payment_method
                     ])
-                    
+
                     # Retrieve the final amount
                     cursor.execute("SELECT @final_bill;")
                     result = cursor.fetchone()
@@ -850,3 +852,134 @@ def bookings_management_view(request):
         'end_date': end_date_str,
     }
     return render(request, "admin/rental_bookings.html", context)
+
+@login_required
+def booking_detail_view(request, booking_id):
+    """
+    Displays detailed information about a single booking for the admin.
+    """
+    if not request.user.is_superuser:
+        messages.error(request, "You do not have permission to view this page.")
+        return redirect('home')
+
+    booking = get_object_or_404(
+        RentalBooking.objects.select_related('customer', 'vehicle'),
+        id=booking_id
+    )
+    
+    # Fetch related payments for this booking
+    payments = Payment.objects.filter(booking=booking).order_by('-payment_date')
+
+    context = {
+        'booking': booking,
+        'payments': payments,
+    }
+    return render(request, 'admin/booking_detail.html', context)
+
+@login_required
+def admin_add_booking_view(request):
+    """
+    Admin view to add a new booking.
+    """
+    if not request.user.is_superuser:
+        messages.error(request, "You do not have permission to add bookings.")
+        return redirect('home')
+
+    if request.method == 'POST':
+        form = AdminBookingForm(request.POST)
+        if form.is_valid():
+            customer = form.cleaned_data['customer']
+            vehicle = form.cleaned_data['vehicle']
+            pickup_datetime = form.cleaned_data['pickup_datetime']
+            return_datetime = form.cleaned_data['return_datetime']
+            pickup_location = form.cleaned_data['pickup_location']
+            return_location = form.cleaned_data['return_location']
+            special_requests = form.cleaned_data['special_requests']
+
+            # Basic validation
+            if return_datetime <= pickup_datetime:
+                messages.error(request, "Return date/time must be after pickup date/time.")
+                return render(request, 'admin/add_booking.html', {'form': form})
+
+            try:
+                with transaction.atomic():
+                    # Check for booking conflicts
+                    conflicting_bookings = RentalBooking.objects.filter(
+                        vehicle=vehicle,
+                        pickup_datetime__lt=return_datetime,
+                        return_datetime__gt=pickup_datetime,
+                        booking_status__in=['Confirmed', 'Active']
+                    ).exists()
+
+                    if conflicting_bookings:
+                        messages.error(request, "This vehicle is not available for the selected time slot.")
+                        return render(request, 'admin/add_booking.html', {'form': form})
+
+                    # Calculate total amount and security deposit
+                    duration_hours = (return_datetime - pickup_datetime).total_seconds() / 3600
+                    hourly_rate = vehicle.hourly_rate # Use vehicle's current hourly rate
+                    total_amount = duration_hours * hourly_rate
+                    security_deposit = total_amount * 0.2 # Example: 20% security deposit
+
+                    new_booking = form.save(commit=False)
+                    new_booking.hourly_rate = hourly_rate
+                    new_booking.total_amount = total_amount
+                    new_booking.security_deposit = security_deposit
+                    new_booking.booking_status = 'Confirmed' # Admin adds confirmed booking
+                    new_booking.created_by = request.user.username # Or a more specific admin identifier
+                    new_booking.save()
+
+                    messages.success(request, f"Booking #{new_booking.id} added successfully!")
+                    return redirect('bookings_management')
+
+            except Exception as e:
+                messages.error(request, f"An error occurred while adding booking: {e}")
+        # If form is not valid, errors will be displayed by the template
+    else:
+        form = AdminBookingForm()
+
+    context = {'form': form}
+    return render(request, 'admin/add_booking.html', context)
+
+@login_required
+def cancel_booking_view(request, booking_id):
+    """
+    Admin action to cancel a confirmed booking.
+    """
+    if not request.user.is_superuser:
+        messages.error(request, "Access denied.")
+        return redirect('home')
+
+    booking = get_object_or_404(RentalBooking, id=booking_id)
+    if booking.booking_status in ['Confirmed', 'Active']:
+        with transaction.atomic():
+            booking.booking_status = 'Cancelled'
+            booking.save()
+            # Make the vehicle available again
+            booking.vehicle.status = 'Available'
+            booking.vehicle.save()
+        messages.success(request, f"Booking #{booking.id} has been cancelled.")
+    else:
+        messages.warning(request, f"Booking #{booking.id} cannot be cancelled as it is already {booking.booking_status}.")
+    return redirect('bookings_management')
+
+@login_required
+def activate_booking_view(request, booking_id):
+    """
+    Admin action to mark a booking as active when the customer picks up the vehicle.
+    """
+    if not request.user.is_superuser:
+        messages.error(request, "Access denied.")
+        return redirect('home')
+
+    booking = get_object_or_404(RentalBooking, id=booking_id)
+    if booking.booking_status == 'Confirmed':
+        with transaction.atomic():
+            booking.booking_status = 'Active'
+            booking.save()
+            booking.vehicle.status = 'Rented'
+            booking.vehicle.save()
+        messages.success(request, f"Booking #{booking.id} is now active.")
+    else:
+        messages.warning(request, f"Booking #{booking.id} cannot be activated (Status: {booking.booking_status}).")
+    return redirect('bookings_management')
