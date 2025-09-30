@@ -10,13 +10,13 @@ from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 from django.utils.dateparse import parse_datetime
-from django.db import transaction
+from django.db import transaction, DatabaseError
 from datetime import date, timedelta, datetime
-from .models import Vehicle, Customer, FeedbackReview, RentalBooking, Payment, MaintenanceRecord
+from .models import Vehicle, Customer, FeedbackReview, RentalBooking, Payment, MaintenanceRecord, ActivityLog # Import ActivityLog
 from django.http import JsonResponse
 from django.db.models import Sum
-from .forms import PaymentForm  # Import the new form
-from .models import Payment
+from .forms import PaymentForm
+from decimal import Decimal
 
 @login_required
 def get_dashboard_data(request):
@@ -32,7 +32,7 @@ def get_dashboard_data(request):
         'maintenance_vehicles_count': maintenance_vehicles_count,
     }
     return JsonResponse(data)
-# User-facing Views
+
 def home_view(request):
     customer = None
     customer_id = request.session.get('customer_id')
@@ -78,6 +78,7 @@ def home_view(request):
         'reviews': reviews,
     }
     return render(request, "index.html", context)
+
 def register_view(request):
     if request.method == 'POST':
         full_name = request.POST.get('name', '').strip()
@@ -94,16 +95,27 @@ def register_view(request):
         except ValueError:
             first_name, last_name = full_name, ""
         hashed_password = make_password(password)
-        Customer.objects.create(
+        
+        # Create customer
+        new_customer = Customer.objects.create(
             first_name=first_name,
             last_name=last_name,
             email=email,
             password=hashed_password,
             phone="0000000000",
         )
+        
+        # Create log entry
+        ActivityLog.objects.create(
+            customer=new_customer,
+            action_type='REGISTRATION',
+            details=f"New customer registered: {email}"
+        )
+
         messages.success(request, 'Registration successful! Please log in.')
         return redirect('home')
     return redirect('home')
+
 def login_view(request):
     if request.method == 'POST':
         email = request.POST.get('email')
@@ -112,11 +124,17 @@ def login_view(request):
             customer = Customer.objects.get(email=email)
             if check_password(password, customer.password):
                 request.session['customer_id'] = customer.id
-                # Check if the associated user is a superuser
+                
+                # Create log entry
+                ActivityLog.objects.create(
+                    customer=customer,
+                    action_type='LOGIN',
+                    details="Customer logged in successfully."
+                )
+
                 if hasattr(customer, 'user') and customer.user.is_superuser:
                     messages.success(request, f'Welcome back, Admin!')
                     return redirect('admin_dashboard')
-
                 messages.success(request, f'Welcome back, {customer.first_name}!')
             else:
                 messages.error(request, 'Invalid email or password.')
@@ -124,67 +142,62 @@ def login_view(request):
             messages.error(request, 'Invalid email or password.')
         return redirect('home')
     return redirect('home')
+
 def logout_view(request):
+    customer_id = request.session.get('customer_id')
+    if customer_id:
+        try:
+            customer = Customer.objects.get(id=customer_id)
+            ActivityLog.objects.create(
+                customer=customer,
+                action_type='LOGOUT',
+                details="Customer logged out."
+            )
+        except Customer.DoesNotExist:
+            pass # Customer not found, nothing to log
+    
     try:
         del request.session['customer_id']
     except KeyError:
         pass
+        
     messages.success(request, "You have been logged out.")
     return redirect('home')
 
 def vehicle_list_view(request):
-    """
-    Displays a filterable and paginated list of all available vehicles.
-    """
     customer = None
     customer_id = request.session.get('customer_id')
     if customer_id:
         try:
             customer = Customer.objects.get(id=customer_id)
         except Customer.DoesNotExist:
-            # If customer not found, clear the session
             del request.session['customer_id']
-
-    # Base queryset for available vehicles
     vehicle_list = Vehicle.objects.filter(status='Available').order_by('make', 'model')
-
-    # Apply filters from GET request
     selected_type = request.GET.get('type')
     selected_fuel = request.GET.get('fuel')
     sort_by = request.GET.get('sort', 'make')
-
     if selected_type:
         vehicle_list = vehicle_list.filter(vehicle_type=selected_type)
     if selected_fuel:
         vehicle_list = vehicle_list.filter(fuel_type=selected_fuel)
-
-    # Apply sorting
     if sort_by == 'price_asc':
         vehicle_list = vehicle_list.order_by('hourly_rate')
     elif sort_by == 'price_desc':
         vehicle_list = vehicle_list.order_by('-hourly_rate')
-    else: # Default sort by make
+    else:
         vehicle_list = vehicle_list.order_by('make', 'model')
-
-    # Pagination
-    paginator = Paginator(vehicle_list, 9) # 9 vehicles per page
+    paginator = Paginator(vehicle_list, 9)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-
     context = {
         'customer': customer,
         'vehicles': page_obj,
-        'values': request.GET, # To retain filter values in the form
+        'values': request.GET,
     }
     return render(request, "vehicles.html", context)
 
 @login_required
 def booking_view(request, vehicle_id):
-    """
-    Handles the vehicle booking process.
-    - GET: Displays the booking form with vehicle details.
-    - POST: Creates the booking and initial payment record.
-    """
     customer_id = request.session.get('customer_id')
     if not customer_id:
         messages.error(request, "You must be logged in to make a booking.")
@@ -199,7 +212,6 @@ def booking_view(request, vehicle_id):
         pickup_location = request.POST.get('pickup_location')
         return_location = request.POST.get('return_location')
 
-        # --- Validation ---
         if not all([pickup_str, return_str, pickup_location, return_location]):
             messages.error(request, "All fields are required.")
             return redirect('booking', vehicle_id=vehicle.id)
@@ -213,24 +225,10 @@ def booking_view(request, vehicle_id):
 
         try:
             with transaction.atomic():
-                # Check for booking conflicts within a transaction to prevent race conditions
-                conflicting_bookings = RentalBooking.objects.filter(
-                    vehicle=vehicle,
-                    pickup_datetime__lt=return_datetime,
-                    return_datetime__gt=pickup_datetime,
-                    booking_status__in=['Confirmed', 'Active']
-                ).exists()
-
-                if conflicting_bookings:
-                    messages.error(request, "Sorry, this vehicle is already booked for the selected time slot.")
-                    return redirect('booking', vehicle_id=vehicle.id)
-
-                # Calculate total amount
                 duration_hours = (return_datetime - pickup_datetime).total_seconds() / 3600
-                total_amount = duration_hours * vehicle.hourly_rate
-                security_deposit = total_amount * 0.2 # Example: 20% security deposit
+                total_amount = Decimal(duration_hours) * vehicle.hourly_rate
+                security_deposit = total_amount * Decimal('0.20')
 
-                # Create the booking
                 new_booking = RentalBooking.objects.create(
                     customer=customer,
                     vehicle=vehicle,
@@ -244,21 +242,30 @@ def booking_view(request, vehicle_id):
                     booking_status='Confirmed'
                 )
 
-                messages.success(request, f"Booking successful! Your booking ID is #{new_booking.id}.")
-                return redirect('home') # Redirect to a 'My Bookings' page would be ideal
+                # Create log entry
+                ActivityLog.objects.create(
+                    customer=customer,
+                    action_type='BOOKING_CREATED',
+                    details=f"Created booking #{new_booking.id} for vehicle {vehicle.vehicle_number}."
+                )
 
+                messages.success(request, f"Booking successful! Your booking ID is #{new_booking.id}.")
+                return redirect('my_bookings')
+
+        except DatabaseError as e:
+            if 'Booking conflict' in str(e):
+                messages.error(request, "Sorry, this vehicle is already booked for the selected time slot. Please choose different dates.")
+            else:
+                messages.error(request, f"A database error occurred. Please try again.")
+            return redirect('booking', vehicle_id=vehicle.id)
         except Exception as e:
-            messages.error(request, f"An error occurred: {e}")
+            messages.error(request, f"An unexpected error occurred: {e}")
             return redirect('booking', vehicle_id=vehicle.id)
 
-    # For GET request
     context = {'vehicle': vehicle, 'customer': customer, 'values': request.GET}
     return render(request, "booking.html", context)
 
 def about_us_view(request):
-    """
-    Renders the About Us page.
-    """
     customer = None
     customer_id = request.session.get('customer_id')
     if customer_id:
@@ -266,27 +273,17 @@ def about_us_view(request):
             customer = Customer.objects.get(id=customer_id)
         except Customer.DoesNotExist:
             del request.session['customer_id']
-    
-    context = {
-        'customer': customer,
-    }
+    context = {'customer': customer}
     return render(request, "about_us.html", context)
 
 @login_required
 def my_profile_view(request):
-    """
-    Displays the logged-in user's profile information and booking history.
-    """
     customer_id = request.session.get('customer_id')
     if not customer_id:
         messages.error(request, "You need to be logged in to view your profile.")
         return redirect('home')
-
     customer = get_object_or_404(Customer, id=customer_id)
-    
-    # Fetch the user's bookings
     bookings = RentalBooking.objects.filter(customer=customer).select_related('vehicle').order_by('-booking_date')
-
     context = {
         'customer': customer,
         'bookings': bookings,
@@ -295,28 +292,18 @@ def my_profile_view(request):
 
 @login_required
 def my_bookings_view(request):
-    """
-    Displays a paginated list of all bookings for the logged-in user.
-    """
     customer_id = request.session.get('customer_id')
     if not customer_id:
         messages.error(request, "You need to be logged in to view your bookings.")
         return redirect('home')
-
     customer = get_object_or_404(Customer, id=customer_id)
-    
-    # Fetch all user's bookings
     booking_list = RentalBooking.objects.filter(customer=customer).select_related('vehicle').order_by('-booking_date')
-
-    # Pagination
-    paginator = Paginator(booking_list, 5) # 5 bookings per page
+    paginator = Paginator(booking_list, 5)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-
     context = {
         'customer': customer,
         'bookings': page_obj,
     }
     return render(request, "my_bookings.html", context)
-
 

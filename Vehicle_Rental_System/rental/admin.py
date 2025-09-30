@@ -37,3 +37,12 @@ class FeedbackReviewAdmin(admin.ModelAdmin):
     list_display = ('id', 'booking', 'customer', 'vehicle', 'rating', 'review_date')
     search_fields = ('customer__first_name', 'vehicle__vehicle_number')
     list_filter = ('rating',)
+
+
+from .models import ActivityLog
+
+@admin.register(ActivityLog)
+class ActivityLogAdmin(admin.ModelAdmin):
+    list_display = ('timestamp', 'customer', 'action_type', 'details')
+    list_filter = ('action_type', 'timestamp')
+    search_fields = ('details', 'customer__email')

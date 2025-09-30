@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% load rental_tags %}
 {% block style %}
     <style>
         body {
@@ -104,11 +103,15 @@
                 <!-- Pagination -->
                 {% if vehicles.has_other_pages %}
                 <div class="mt-12 flex justify-center items-center space-x-2">
-                    {% if vehicles.has_previous %}<a href="?{% query_transform request page=vehicles.previous_page_number %}" class="pagination-link px-4 py-2 border rounded-lg hover:bg-gray-200">&laquo; Prev</a>{% endif %}
+                    {% if vehicles.has_previous %}
+                        <a href="?page={{ vehicles.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="pagination-link px-4 py-2 border rounded-lg hover:bg-gray-200">&laquo; Prev</a>
+                    {% endif %}
                     {% for i in vehicles.paginator.page_range %}
-                        <a href="?{% query_transform request page=i %}" class="pagination-link px-4 py-2 border rounded-lg hover:bg-gray-200 {% if vehicles.number == i %}active{% endif %}">{{ i }}</a>
+                        <a href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="pagination-link px-4 py-2 border rounded-lg hover:bg-gray-200 {% if vehicles.number == i %}active{% endif %}">{{ i }}</a>
                     {% endfor %}
-                    {% if vehicles.has_next %}<a href="?{% query_transform request page=vehicles.next_page_number %}" class="pagination-link px-4 py-2 border rounded-lg hover:bg-gray-200">Next &raquo;</a>{% endif %}
+                    {% if vehicles.has_next %}
+                        <a href="?page={{ vehicles.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="pagination-link px-4 py-2 border rounded-lg hover:bg-gray-200">Next &raquo;</a>
+                    {% endif %}
                 </div>
                 {% endif %}
             </div>

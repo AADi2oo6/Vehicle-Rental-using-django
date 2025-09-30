@@ -18,6 +18,19 @@ from django.db.models import Sum
 from rental.forms import PaymentForm  # Import the new form
 from rental.models import Payment
 # Create your views here.
+def get_dashboard_data(request):
+    total_revenue = Payment.objects.filter(payment_status='Completed').aggregate(total=Sum('amount'))['total'] or 0
+    pending_payments_count = Payment.objects.filter(payment_status='Pending').count()
+    active_rentals_count = RentalBooking.objects.filter(booking_status='Active').count()
+    maintenance_vehicles_count = Vehicle.objects.filter(status='Maintenance').count()
+
+    data = {
+        'total_revenue': total_revenue,
+        'pending_payments_count': pending_payments_count,
+        'active_rentals_count': active_rentals_count,
+        'maintenance_vehicles_count': maintenance_vehicles_count,
+    }
+    return JsonResponse(data)
 @login_required
 def admin_dashboard_view(request):
     """
