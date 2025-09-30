@@ -346,6 +346,7 @@ payments_data = [
 ]
 
 # Maintenance Records Data (15 records)
+''' This was the previous data which I normalised into 3 different tables so that the operations that I perform on this dataset would be relevant
 maintenance_records_data = [
     {'vehicle_id': 1, 'maintenance_date': '2024-10-15', 'maintenance_type': 'Regular Service', 'description': 'Engine oil change, air filter replacement, brake inspection', 'cost': 3500.00, 'service_provider': 'Maruti Service Center Mumbai', 'next_service_date': '2025-04-15', 'mileage_at_service': 45000.00, 'parts_replaced': 'Engine oil, Air filter, Spark plugs', 'technician_name': 'Ravi Kumar'},
     {'vehicle_id': 2, 'maintenance_date': '2024-11-01', 'maintenance_type': 'Regular Service', 'description': 'Full service including engine, transmission, and brake system check', 'cost': 4200.00, 'service_provider': 'Hyundai Service Delhi', 'next_service_date': '2025-05-01', 'mileage_at_service': 38000.00, 'parts_replaced': 'Engine oil, Oil filter, Brake pads', 'technician_name': 'Suresh Singh'},
@@ -362,6 +363,59 @@ maintenance_records_data = [
     {'vehicle_id': 13, 'maintenance_date': '2024-10-08', 'maintenance_type': 'Regular Service', 'description': 'Royal Enfield complete engine service', 'cost': 1500.00, 'service_provider': 'Royal Enfield Shimla', 'next_service_date': '2025-01-08', 'mileage_at_service': 18000.00, 'parts_replaced': 'Engine oil, Oil filter, Chain', 'technician_name': 'Himanshu Thakur'},
     {'vehicle_id': 14, 'maintenance_date': '2024-11-12', 'maintenance_type': 'Inspection', 'description': 'Pre-delivery inspection and minor adjustments', 'cost': 1800.00, 'service_provider': 'Tata Motors Pune', 'next_service_date': '2025-02-12', 'mileage_at_service': 8000.00, 'parts_replaced': 'None - Inspection only', 'technician_name': 'Sachin Patil'},
     {'vehicle_id': 15, 'maintenance_date': '2024-10-18', 'maintenance_type': 'Repair', 'description': 'Diesel engine repair and clutch adjustment', 'cost': 15000.00, 'service_provider': 'Force Motors Kochi', 'next_service_date': '2025-01-18', 'mileage_at_service': 85000.00, 'parts_replaced': 'Clutch plate, Pressure plate, Engine gaskets', 'technician_name': 'Biju Thomas'}
+]'''
+maintenance_records_data = [
+    {'maintenance_id': 1, 'vehicle_id': 1, 'maintenance_date': '2024-10-15', 'maintenance_type': 'Regular Service', 'description': 'Engine oil change, air filter replacement, brake inspection', 'service_provider': 'Maruti Service Center Mumbai', 'status': 'Completed'},
+    {'maintenance_id': 2, 'vehicle_id': 2, 'maintenance_date': '2024-11-01', 'maintenance_type': 'Regular Service', 'description': 'Full service including engine, transmission, and brake system check', 'service_provider': 'Hyundai Service Delhi', 'status': 'Completed'},
+    {'maintenance_id': 3, 'vehicle_id': 3, 'maintenance_date': '2024-09-20', 'maintenance_type': 'Inspection', 'description': 'Electric vehicle battery health check and software update', 'service_provider': 'Tata Motors Bangalore', 'status': 'Completed'},
+    {'maintenance_id': 4, 'vehicle_id': 4, 'maintenance_date': '2024-10-30', 'maintenance_type': 'Regular Service', 'description': 'Routine maintenance with transmission fluid change', 'service_provider': 'Honda Service Ahmedabad', 'status': 'Completed'},
+    {'maintenance_id': 5, 'vehicle_id': 5, 'maintenance_date': '2024-11-05', 'maintenance_type': 'Repair', 'description': 'AC compressor repair and coolant top-up', 'service_provider': 'Toyota Service Hyderabad', 'status': 'Completed'},
+    {'maintenance_id': 6, 'vehicle_id': 6, 'maintenance_date': '2024-10-12', 'maintenance_type': 'Regular Service', 'description': 'Complete service with diesel filter replacement', 'service_provider': 'Mahindra Service Kochi', 'status': 'Completed'},
+    {'maintenance_id': 7, 'vehicle_id': 7, 'maintenance_date': '2024-09-15', 'maintenance_type': 'Tire Change', 'description': 'All four tires replaced due to wear and tear', 'service_provider': 'MRF Tire Shop Kolkata', 'status': 'Completed'},
+    {'maintenance_id': 8, 'vehicle_id': 8, 'maintenance_date': '2024-10-25', 'maintenance_type': 'Regular Service', 'description': 'Engine service with timing belt inspection', 'service_provider': 'Hyundai Service Chennai', 'status': 'Completed'},
+    {'maintenance_id': 9, 'vehicle_id': 9, 'maintenance_date': '2024-11-10', 'maintenance_type': 'Regular Service', 'description': 'Complete SUV service with suspension check', 'service_provider': 'Kia Service Pune', 'status': 'Completed'},
+    {'maintenance_id': 10, 'vehicle_id': 10, 'maintenance_date': '2024-10-20', 'maintenance_type': 'Cleaning', 'description': 'Deep interior and exterior cleaning with wax coating', 'service_provider': 'Auto Spa Jaipur', 'status': 'Completed'},
+    {'maintenance_id': 11, 'vehicle_id': 11, 'maintenance_date': '2024-09-30', 'maintenance_type': 'Regular Service', 'description': 'Basic service with battery check', 'service_provider': 'Honda Service Lucknow', 'status': 'Completed'},
+    {'maintenance_id': 12, 'vehicle_id': 12, 'maintenance_date': '2024-11-01', 'maintenance_type': 'Regular Service', 'description': 'Motorcycle chain cleaning and engine tune-up', 'service_provider': 'Bajaj Service Chandigarh', 'status': 'Completed'},
+    {'maintenance_id': 13, 'vehicle_id': 13, 'maintenance_date': '2024-10-08', 'maintenance_type': 'Regular Service', 'description': 'Royal Enfield complete engine service', 'service_provider': 'Royal Enfield Shimla', 'status': 'Completed'},
+    {'maintenance_id': 14, 'vehicle_id': 14, 'maintenance_date': '2024-11-12', 'maintenance_type': 'Inspection', 'description': 'Pre-delivery inspection and minor adjustments', 'service_provider': 'Tata Motors Pune', 'status': 'Completed'},
+    {'maintenance_id': 15, 'vehicle_id': 15, 'maintenance_date': '2024-10-18', 'maintenance_type': 'Repair', 'description': 'Diesel engine repair and clutch adjustment', 'service_provider': 'Force Motors Kochi', 'status': 'Completed'}
+]
+
+maintenance_details_data = [
+    {'maintenance_id': 1, 'mileage_at_service': 45000.00, 'parts_replaced': 'Engine oil, Air filter, Spark plugs', 'cost': 3500.00, 'technician_name': 'Ravi Kumar'},
+    {'maintenance_id': 2, 'mileage_at_service': 38000.00, 'parts_replaced': 'Engine oil, Oil filter, Brake pads', 'cost': 4200.00, 'technician_name': 'Suresh Singh'},
+    {'maintenance_id': 3, 'mileage_at_service': 25000.00, 'parts_replaced': 'None - Software update only', 'cost': 2800.00, 'technician_name': 'Prakash Reddy'},
+    {'maintenance_id': 4, 'mileage_at_service': 42000.00, 'parts_replaced': 'Transmission fluid, Cabin filter', 'cost': 3800.00, 'technician_name': 'Kiran Patel'},
+    {'maintenance_id': 5, 'mileage_at_service': 55000.00, 'parts_replaced': 'AC compressor, Coolant', 'cost': 8500.00, 'technician_name': 'Venkat Rao'},
+    {'maintenance_id': 6, 'mileage_at_service': 35000.00, 'parts_replaced': 'Diesel filter, Engine oil, Air filter', 'cost': 4000.00, 'technician_name': 'Anil Nair'},
+    {'maintenance_id': 7, 'mileage_at_service': 32000.00, 'parts_replaced': 'All 4 tires - MRF ZLX 175/65 R14', 'cost': 12000.00, 'technician_name': 'Dipak Das'},
+    {'maintenance_id': 8, 'mileage_at_service': 40000.00, 'parts_replaced': 'Engine oil, Oil filter, Fuel filter', 'cost': 3600.00, 'technician_name': 'Tamil Selvan'},
+    {'maintenance_id': 9, 'mileage_at_service': 28000.00, 'parts_replaced': 'Engine oil, Shock absorbers', 'cost': 4500.00, 'technician_name': 'Rahul Joshi'},
+    {'maintenance_id': 10, 'mileage_at_service': 48000.00, 'parts_replaced': 'None - Cleaning service only', 'cost': 1200.00, 'technician_name': 'Mohan Sharma'},
+    {'maintenance_id': 11, 'mileage_at_service': 35000.00, 'parts_replaced': 'Engine oil, Battery terminals cleaned', 'cost': 2800.00, 'technician_name': 'Ashok Verma'},
+    {'maintenance_id': 12, 'mileage_at_service': 15000.00, 'parts_replaced': 'Chain lubricant, Spark plug', 'cost': 800.00, 'technician_name': 'Gurpreet Singh'},
+    {'maintenance_id': 13, 'mileage_at_service': 18000.00, 'parts_replaced': 'Engine oil, Oil filter, Chain', 'cost': 1500.00, 'technician_name': 'Himanshu Thakur'},
+    {'maintenance_id': 14, 'mileage_at_service': 8000.00, 'parts_replaced': 'None - Inspection only', 'cost': 1800.00, 'technician_name': 'Sachin Patil'},
+    {'maintenance_id': 15, 'mileage_at_service': 85000.00, 'parts_replaced': 'Clutch plate, Pressure plate, Engine gaskets', 'cost': 15000.00, 'technician_name': 'Biju Thomas'}
+]
+
+maintenance_costs_data = [
+    {'maintenance_id': 1, 'cost': 3500.00, 'next_service_date': '2025-04-15'},
+    {'maintenance_id': 2, 'cost': 4200.00, 'next_service_date': '2025-05-01'},
+    {'maintenance_id': 3, 'cost': 2800.00, 'next_service_date': '2025-03-20'},
+    {'maintenance_id': 4, 'cost': 3800.00, 'next_service_date': '2025-04-30'},
+    {'maintenance_id': 5, 'cost': 8500.00, 'next_service_date': '2025-02-05'},
+    {'maintenance_id': 6, 'cost': 4000.00, 'next_service_date': '2025-04-12'},
+    {'maintenance_id': 7, 'cost': 12000.00, 'next_service_date': '2025-03-15'},
+    {'maintenance_id': 8, 'cost': 3600.00, 'next_service_date': '2025-04-25'},
+    {'maintenance_id': 9, 'cost': 4500.00, 'next_service_date': '2025-05-10'},
+    {'maintenance_id': 10, 'cost': 1200.00, 'next_service_date': None},
+    {'maintenance_id': 11, 'cost': 2800.00, 'next_service_date': '2025-03-30'},
+    {'maintenance_id': 12, 'cost': 800.00, 'next_service_date': '2025-02-01'},
+    {'maintenance_id': 13, 'cost': 1500.00, 'next_service_date': '2025-01-08'},
+    {'maintenance_id': 14, 'cost': 1800.00, 'next_service_date': '2025-02-12'},
+    {'maintenance_id': 15, 'cost': 15000.00, 'next_service_date': '2025-01-18'}
 ]
 
 # Feedback Reviews Data (10 reviews)
