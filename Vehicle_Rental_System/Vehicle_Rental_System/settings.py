@@ -64,6 +64,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'rental.context_processors.customer_context', # Add this line
             ],
         },
     },
@@ -78,9 +79,13 @@ WSGI_APPLICATION = 'Vehicle_Rental_System.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'cp',  # Use the database name from the setup guide
+        'NAME': 'DBMS_CP',  # Corrected DB name from your setup guide
         'USER': 'root',    # Replace with your MySQL username
+<<<<<<< Updated upstream
         'PASSWORD': '241533591',  # IMPORTANT: Replace with your actual MySQL password
+=======
+        'PASSWORD': 'vedantiasatkar1523@',  # IMPORTANT: Replace with your actual MySQL password
+>>>>>>> Stashed changes
         'HOST': 'localhost',          # Or your MySQL server address
         'PORT': '3306',               # Default MySQL port
     }
@@ -130,6 +135,10 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+
+# Email settings for sending welcome emails (used by signals)
+DEFAULT_FROM_EMAIL = 'noreply@velorent.com'
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # For development, prints emails to console
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
