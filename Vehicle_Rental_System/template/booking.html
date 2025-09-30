@@ -1,13 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confirm Your Booking - Velo-Rent</title>
-    
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
+{% extends "base.html" %}
+{% block title %}
+<title>Confirm Your Booking - Velo-Rent</title>
+{% endblock title %}
+{% block style %}
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,7 +13,7 @@
     
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
+    
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -26,26 +24,10 @@
             filter: invert(0.5);
         }
     </style>
-</head>
-<body class="text-gray-800">
-
-    <!-- Header Section -->
-    <header class="bg-white shadow-md sticky top-0 z-50">
-        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <a href="{% url 'home' %}" class="text-2xl font-bold text-blue-600">Velo-Rent</a>
-            <div class="hidden md:flex items-center space-x-6">
-                <a href="{% url 'home' %}" class="text-gray-600 hover:text-blue-600">Home</a>
-                <a href="{% url 'vehicle_list' %}" class="text-gray-600 hover:text-blue-600">Vehicles</a>
-            </div>
-            <div class="flex items-center space-x-4">
-                <a href="{% url 'my_profile' %}" class="text-gray-700 hidden sm:block hover:text-blue-600">Welcome, {{ customer.first_name }}</a>
-                <a href="{% url 'logout' %}" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">Logout</a>
-            </div>
-        </nav>
-    </header>
-
-    <main class="container mx-auto px-6 py-12">
-        <h1 class="text-3xl font-bold mb-8 text-center">Confirm Your Booking</h1>
+{% endblock style %}
+{% block content %}
+<main class="container mx-auto px-6 py-12">
+    <h1 class="text-3xl font-bold mb-8 text-center">Confirm Your Booking</h1>
         
         <div class="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12">
             <!-- Vehicle Details -->
@@ -109,6 +91,5 @@
             </div>
         </div>
     </main>
-
-</body>
-</html>
+    
+    {% endblock content %}

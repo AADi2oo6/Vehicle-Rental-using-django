@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% block title %}
+    <title>Velo-Rent - Your Journey, Your Wheels</title>
+    {% endblock title %}
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        /* Custom styles for the page */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        {% load static %}
+        .hero-section {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url("{% static 'vehicle/bg.png' %}");
+            background-size: cover;
+            background-position: center;
+        }
+        .vehicle-type-btn {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+        .vehicle-type-btn.active {
+            background-color: #1d4ed8;
+            color: white;
+            border-color: #1d4ed8;
+        }
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            filter: invert(0.6);
+            transition: filter 0.2s ease;
+        }
+        .modal-backdrop { transition: opacity 0.3s ease; }
+        .modal-content { transition: transform 0.3s ease; }
+        .tab-btn.active { border-bottom-color: #2563eb; color: #2563eb; }
+        
+        .message-toast { animation: slide-in 0.5s ease-out forwards, fade-out 0.5s ease-in 4.5s forwards; }
+        @keyframes slide-in { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fade-out { from { opacity: 1; } to { opacity: 0; display: none; } }
+        
+        .fade-in-section {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        .fade-in-section.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+    {% block style %}
+    
+    {% endblock style %}
+</head>
+<body class="text-gray-800">
+
+    <!-- Django Messages Toast Notifications -->
+    {% if messages %}
+    <div class="fixed top-5 right-5 z-[100]">
+        {% for message in messages %}
+        <div class="message-toast bg-white rounded-lg shadow-lg p-4 mb-2 flex items-center border-l-4 {% if message.tags == 'success' %}border-green-500{% elif message.tags == 'error' %}border-red-500{% else %}border-blue-500{% endif %}">
+            <div class="text-lg">
+                {% if message.tags == 'success' %}✅{% elif message.tags == 'error' %}❌{% else %}ℹ️{% endif %}
+            </div>
+            <div class="ml-3">
+                <p class="font-semibold {% if message.tags == 'success' %}text-green-800{% elif message.tags == 'error' %}text-red-800{% else %}text-blue-800{% endif %}">{{ message }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Header Section -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="{% url 'home' %}" class="text-2xl font-bold text-blue-600">Velo-Rent</a>
+            <div class="hidden md:flex items-center space-x-6">
+                {% url 'home' as home_url %}
+                <a href="{{ home_url }}" class="text-gray-600 hover:text-blue-600 transition-colors {% if request.path == home_url %}text-blue-600 font-semibold{% endif %}">Home</a>
+                
+                {% url 'vehicle_list' as vehicle_list_url %}
+                <a href="{{ vehicle_list_url }}" class="text-gray-600 hover:text-blue-600 transition-colors {% if request.path|slice:":9" == vehicle_list_url|slice:":9" %}text-blue-600 font-semibold{% endif %}">Vehicles</a>
+                
+                {% url 'about_us' as about_us_url %}
+                <a href="{{ about_us_url }}" class="text-gray-600 hover:text-blue-600 transition-colors {% if request.path == about_us_url %}text-blue-600 font-semibold{% endif %}">About Us</a>
+                
+                {# Example for a future contact page #}
+                {% url 'home' as contact_url %} 
+                {# Replace 'home' with your actual contact URL name when created #}
+                <a href="#" class="text-gray-600 hover:text-blue-600 transition-colors {% if request.path == contact_url %}text-blue-600 font-semibold{% endif %}">Contact</a>
+            </div>
+            <div class="flex items-center space-x-4">
+                {% if customer %}
+                    <a href="{% url 'my_profile' %}" class="text-gray-700 hidden sm:block hover:text-blue-600">Welcome, {{ customer.first_name }}</a>
+                    <a href="{% url 'logout' %}" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">Logout</a>
+                {% else %}
+                    <button id="loginBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Login</button>
+                    <button id="registerBtn" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">Register</button>
+                {% endif %}
+                <div class="relative ml-2">
+                    <button class="flex items-center space-x-2">
+                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <div class="absolute bottom-0 right-0">
+                            <span class="flex h-3 w-3">
+                                {% if customer %}{% if customer.is_verified %}<span class="relative inline-flex rounded-full h-3 w-3 bg-green-500" title="Verified"></span>{% else %}<span class="relative inline-flex rounded-full h-3 w-3 bg-yellow-400" title="Not Verified"></span>{% endif %}{% else %}<span class="relative inline-flex rounded-full h-3 w-3 bg-red-500" title="Logged Out"></span>{% endif %}
+                            </span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </nav>
+    </header>
+    {% block content %}
+    {% endblock %}
+    <footer class="bg-gray-800 text-white"><div class="container mx-auto px-6 py-10"><div class="grid grid-cols-1 md:grid-cols-4 gap-8"><div><h3 class="text-lg font-bold mb-4">Velo-Rent</h3><p class="text-gray-400">Your trusted partner for vehicle rentals. High-quality service and a wide selection of cars.</p></div><div><h3 class="text-lg font-semibold mb-4">Quick Links</h3><ul><li class="mb-2"><a href="#" class="hover:text-blue-400">Home</a></li><li class="mb-2"><a href="#" class="hover:text-blue-400">Vehicles</a></li><li class="mb-2"><a href="#" class="hover:text-blue-400">About Us</a></li><li class="mb-2"><a href="#" class="hover:text-blue-400">Contact</a></li></ul></div><div><h3 class="text-lg font-semibold mb-4">Support</h3><ul><li class="mb-2"><a href="#" class="hover:text-blue-400">FAQ</a></li><li class="mb-2"><a href="#" class="hover:text-blue-400">Terms of Service</a></li><li class="mb-2"><a href="#" class="hover:text-blue-400">Privacy Policy</a></li></ul></div><div><h3 class="text-lg font-semibold mb-4">Follow Us</h3><div class="flex space-x-4"><a href="#" class="text-gray-400 hover:text-white"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd" /></svg></a><a href="#" class="text-gray-400 hover:text-white"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.024.06 1.378.06 3.808s-.012 2.784-.06 3.808c-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.024.048-1.378.06-3.808.06s-2.784-.012-3.808-.06c-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.048-1.024-.06-1.378-.06-3.808s.012-2.784.06-3.808c.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 016.08 2.525c.636-.247 1.363-.416 2.427-.465C9.53 2.013 9.884 2 12.315 2zM12 7a5 5 0 100 10 5 5 0 000-10zm0 8a3 3 0 110-6 3 3 0 010 6zm5.75-9.25a1.25 1.25 0 100-2.5 1.25 1.25 0 000 2.5z" clip-rule="evenodd" /></svg></a><a href="#" class="text-gray-400 hover:text-white"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.71v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" /></svg></a></div></div></div><div class="bg-gray-900 py-4"><div class="container mx-auto px-6 text-center text-gray-500">&copy; 2024 Velo-Rent. All Rights Reserved.</div></div></div></footer>
+    
+    {% if not customer %}<div id="authModal" class="fixed inset-0 z-[60] hidden items-center justify-center"><div id="modalBackdrop" class="absolute inset-0 bg-black/60 modal-backdrop opacity-0"></div><div class="relative bg-white rounded-xl shadow-2xl w-full max-w-md m-4 modal-content transform scale-95"><button id="closeModalBtn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button><div class="p-8"><div class="flex border-b mb-6"><button id="loginTab" class="tab-btn active text-lg font-semibold py-2 px-6 border-b-2 border-transparent transition">Login</button><button id="registerTab" class="tab-btn text-lg font-semibold py-2 px-6 border-b-2 border-transparent text-gray-500 transition">Register</button></div><div id="loginForm"><form action="{% url 'login' %}" method="POST" class="space-y-6">{% csrf_token %}<div><label for="login-email" class="block text-sm font-medium text-gray-700">Email address</label><input type="email" name="email" id="login-email" required class="mt-1 block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"></div><div><label for="login-password" class="block text-sm font-medium text-gray-700">Password</label><input type="password" name="password" id="login-password" required class="mt-1 block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"></div><div class="flex items-center justify-between"><a href="#" class="text-sm text-blue-600 hover:underline">Forgot your password?</a></div><div><button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Sign in</button></div></form></div><div id="registerForm" class="hidden"><form action="{% url 'register' %}" method="POST" class="space-y-6">{% csrf_token %}<div><label for="reg-name" class="block text-sm font-medium text-gray-700">Full Name</label><input type="text" name="name" id="reg-name" required class="mt-1 block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"></div><div><label for="reg-email" class="block text-sm font-medium text-gray-700">Email address</label><input type="email" name="email" id="reg-email" required class="mt-1 block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"></div><div><label for="reg-password" class="block text-sm font-medium text-gray-700">Password</label><input type="password" name="password" id="reg-password" required class="mt-1 block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"></div><div><button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Create Account</button></div></form></div></div></div></div>{% endif %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- Authentication Modal Logic ---
+            const authModal = document.getElementById('authModal');
+            if (authModal) {
+                const modalBackdrop = document.getElementById('modalBackdrop');
+                const modalContent = authModal.querySelector('.modal-content');
+                const loginBtn = document.getElementById('loginBtn');
+                const registerBtn = document.getElementById('registerBtn');
+                const closeModalBtn = document.getElementById('closeModalBtn');
+                const loginTab = document.getElementById('loginTab');
+                const registerTab = document.getElementById('registerTab');
+                const loginForm = document.getElementById('loginForm');
+                const registerForm = document.getElementById('registerForm');
+                const openModal = () => { authModal.classList.remove('hidden'); authModal.classList.add('flex'); setTimeout(() => { modalBackdrop.classList.remove('opacity-0'); modalContent.classList.remove('scale-95'); modalContent.classList.add('scale-100'); }, 10); };
+                const closeModal = () => { modalBackdrop.classList.add('opacity-0'); modalContent.classList.add('scale-95'); modalContent.classList.remove('scale-100'); setTimeout(() => { authModal.classList.add('hidden'); authModal.classList.remove('flex'); }, 300); };
+                const showLoginForm = () => { loginTab.classList.add('active'); loginTab.classList.remove('text-gray-500'); registerTab.classList.remove('active'); registerTab.classList.add('text-gray-500'); loginForm.classList.remove('hidden'); registerForm.classList.add('hidden'); };
+                const showRegisterForm = () => { registerTab.classList.add('active'); registerTab.classList.remove('text-gray-500'); loginTab.classList.remove('active'); loginTab.classList.add('text-gray-500'); registerForm.classList.remove('hidden'); loginForm.classList.add('hidden'); };
+                if (loginBtn) { loginBtn.addEventListener('click', () => { showLoginForm(); openModal(); }); }
+                if (registerBtn) { registerBtn.addEventListener('click', () => { showRegisterForm(); openModal(); }); }
+                closeModalBtn.addEventListener('click', closeModal);
+                modalBackdrop.addEventListener('click', closeModal);
+                loginTab.addEventListener('click', showLoginForm);
+                registerTab.addEventListener('click', showRegisterForm);
+            }
+
+            // --- Vehicle Search Form Logic ---
+            const vehicleTypeSelector = document.getElementById('vehicle-type-selector');
+            const vehicleTypeInput = document.getElementById('vehicle_type_input');
+            if (vehicleTypeSelector) {
+                const buttons = vehicleTypeSelector.querySelectorAll('.vehicle-type-btn');
+                buttons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        buttons.forEach(btn => btn.classList.remove('active'));
+                        this.classList.add('active');
+                        vehicleTypeInput.value = this.dataset.type;
+                    });
+                });
+            }
+
+            // --- DateTime Input Default Value and Validation ---
+            const pickupInput = document.getElementById('pickup-datetime');
+            const returnInput = document.getElementById('return-datetime');
+            
+            const formatDateTimeLocal = (date) => {
+                const pad = (n) => n.toString().padStart(2, '0');
+                return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+            };
+
+            const now = new Date();
+            pickupInput.min = formatDateTimeLocal(now);
+
+            // Set default times only if the fields are empty (i.e., not a search result page)
+            if (!pickupInput.value) {
+                const defaultPickupTime = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
+                pickupInput.value = formatDateTimeLocal(defaultPickupTime);
+            }
+            
+            if (!returnInput.value) {
+                const initialPickupDate = new Date(pickupInput.value);
+                const defaultReturnTime = new Date(initialPickupDate.getTime() + 4 * 60 * 60 * 1000); // 4 hours after pickup
+                returnInput.value = formatDateTimeLocal(defaultReturnTime);
+            }
+            
+            returnInput.min = pickupInput.value;
+
+            pickupInput.addEventListener('change', () => {
+                const pickupDate = new Date(pickupInput.value);
+                returnInput.min = formatDateTimeLocal(pickupDate);
+                if (new Date(returnInput.value) <= pickupDate) {
+                    const newReturnDate = new Date(pickupDate.getTime() + 4 * 60 * 60 * 1000); // 4 hours rental
+                    returnInput.value = formatDateTimeLocal(newReturnDate);
+                }
+            });
+            
+            // --- Scroll Animation Logic ---
+            const sections = document.querySelectorAll('.fade-in-section');
+            const observer = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                    }
+                });
+            }, {
+                threshold: 0.1
+            });
+            sections.forEach(section => { observer.observe(section); });
+        });
+    </script>
+</body>
+</html>
