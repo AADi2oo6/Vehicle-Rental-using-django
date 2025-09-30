@@ -8,7 +8,7 @@ DB_CONFIG = {
     'host': 'localhost',
     'database': 'cp',
     'user': 'root',
-    'password': '202510'
+    'password': '10adit06'
 }
 
 # Customer Data (20 customers from various Indian cities)
@@ -346,24 +346,6 @@ payments_data = [
 ]
 
 # Maintenance Records Data (15 records)
-''' This was the previous data which I normalised into 3 different tables so that the operations that I perform on this dataset would be relevant
-maintenance_records_data = [
-    {'vehicle_id': 1, 'maintenance_date': '2024-10-15', 'maintenance_type': 'Regular Service', 'description': 'Engine oil change, air filter replacement, brake inspection', 'cost': 3500.00, 'service_provider': 'Maruti Service Center Mumbai', 'next_service_date': '2025-04-15', 'mileage_at_service': 45000.00, 'parts_replaced': 'Engine oil, Air filter, Spark plugs', 'technician_name': 'Ravi Kumar'},
-    {'vehicle_id': 2, 'maintenance_date': '2024-11-01', 'maintenance_type': 'Regular Service', 'description': 'Full service including engine, transmission, and brake system check', 'cost': 4200.00, 'service_provider': 'Hyundai Service Delhi', 'next_service_date': '2025-05-01', 'mileage_at_service': 38000.00, 'parts_replaced': 'Engine oil, Oil filter, Brake pads', 'technician_name': 'Suresh Singh'},
-    {'vehicle_id': 3, 'maintenance_date': '2024-09-20', 'maintenance_type': 'Inspection', 'description': 'Electric vehicle battery health check and software update', 'cost': 2800.00, 'service_provider': 'Tata Motors Bangalore', 'next_service_date': '2025-03-20', 'mileage_at_service': 25000.00, 'parts_replaced': 'None - Software update only', 'technician_name': 'Prakash Reddy'},
-    {'vehicle_id': 4, 'maintenance_date': '2024-10-30', 'maintenance_type': 'Regular Service', 'description': 'Routine maintenance with transmission fluid change', 'cost': 3800.00, 'service_provider': 'Honda Service Ahmedabad', 'next_service_date': '2025-04-30', 'mileage_at_service': 42000.00, 'parts_replaced': 'Transmission fluid, Cabin filter', 'technician_name': 'Kiran Patel'},
-    {'vehicle_id': 5, 'maintenance_date': '2024-11-05', 'maintenance_type': 'Repair', 'description': 'AC compressor repair and coolant top-up', 'cost': 8500.00, 'service_provider': 'Toyota Service Hyderabad', 'next_service_date': '2025-02-05', 'mileage_at_service': 55000.00, 'parts_replaced': 'AC compressor, Coolant', 'technician_name': 'Venkat Rao'},
-    {'vehicle_id': 6, 'maintenance_date': '2024-10-12', 'maintenance_type': 'Regular Service', 'description': 'Complete service with diesel filter replacement', 'cost': 4000.00, 'service_provider': 'Mahindra Service Kochi', 'next_service_date': '2025-04-12', 'mileage_at_service': 35000.00, 'parts_replaced': 'Diesel filter, Engine oil, Air filter', 'technician_name': 'Anil Nair'},
-    {'vehicle_id': 7, 'maintenance_date': '2024-09-15', 'maintenance_type': 'Tire Change', 'description': 'All four tires replaced due to wear and tear', 'cost': 12000.00, 'service_provider': 'MRF Tire Shop Kolkata', 'next_service_date': '2025-03-15', 'mileage_at_service': 32000.00, 'parts_replaced': 'All 4 tires - MRF ZLX 175/65 R14', 'technician_name': 'Dipak Das'},
-    {'vehicle_id': 8, 'maintenance_date': '2024-10-25', 'maintenance_type': 'Regular Service', 'description': 'Engine service with timing belt inspection', 'cost': 3600.00, 'service_provider': 'Hyundai Service Chennai', 'next_service_date': '2025-04-25', 'mileage_at_service': 40000.00, 'parts_replaced': 'Engine oil, Oil filter, Fuel filter', 'technician_name': 'Tamil Selvan'},
-    {'vehicle_id': 9, 'maintenance_date': '2024-11-10', 'maintenance_type': 'Regular Service', 'description': 'Complete SUV service with suspension check', 'cost': 4500.00, 'service_provider': 'Kia Service Pune', 'next_service_date': '2025-05-10', 'mileage_at_service': 28000.00, 'parts_replaced': 'Engine oil, Shock absorbers', 'technician_name': 'Rahul Joshi'},
-    {'vehicle_id': 10, 'maintenance_date': '2024-10-20', 'maintenance_type': 'Cleaning', 'description': 'Deep interior and exterior cleaning with wax coating', 'cost': 1200.00, 'service_provider': 'Auto Spa Jaipur', 'next_service_date': None, 'mileage_at_service': 48000.00, 'parts_replaced': 'None - Cleaning service only', 'technician_name': 'Mohan Sharma'},
-    {'vehicle_id': 11, 'maintenance_date': '2024-09-30', 'maintenance_type': 'Regular Service', 'description': 'Basic service with battery check', 'cost': 2800.00, 'service_provider': 'Honda Service Lucknow', 'next_service_date': '2025-03-30', 'mileage_at_service': 35000.00, 'parts_replaced': 'Engine oil, Battery terminals cleaned', 'technician_name': 'Ashok Verma'},
-    {'vehicle_id': 12, 'maintenance_date': '2024-11-01', 'maintenance_type': 'Regular Service', 'description': 'Motorcycle chain cleaning and engine tune-up', 'cost': 800.00, 'service_provider': 'Bajaj Service Chandigarh', 'next_service_date': '2025-02-01', 'mileage_at_service': 15000.00, 'parts_replaced': 'Chain lubricant, Spark plug', 'technician_name': 'Gurpreet Singh'},
-    {'vehicle_id': 13, 'maintenance_date': '2024-10-08', 'maintenance_type': 'Regular Service', 'description': 'Royal Enfield complete engine service', 'cost': 1500.00, 'service_provider': 'Royal Enfield Shimla', 'next_service_date': '2025-01-08', 'mileage_at_service': 18000.00, 'parts_replaced': 'Engine oil, Oil filter, Chain', 'technician_name': 'Himanshu Thakur'},
-    {'vehicle_id': 14, 'maintenance_date': '2024-11-12', 'maintenance_type': 'Inspection', 'description': 'Pre-delivery inspection and minor adjustments', 'cost': 1800.00, 'service_provider': 'Tata Motors Pune', 'next_service_date': '2025-02-12', 'mileage_at_service': 8000.00, 'parts_replaced': 'None - Inspection only', 'technician_name': 'Sachin Patil'},
-    {'vehicle_id': 15, 'maintenance_date': '2024-10-18', 'maintenance_type': 'Repair', 'description': 'Diesel engine repair and clutch adjustment', 'cost': 15000.00, 'service_provider': 'Force Motors Kochi', 'next_service_date': '2025-01-18', 'mileage_at_service': 85000.00, 'parts_replaced': 'Clutch plate, Pressure plate, Engine gaskets', 'technician_name': 'Biju Thomas'}
-]'''
 maintenance_records_data = [
     {'maintenance_id': 1, 'vehicle_id': 1, 'maintenance_date': '2024-10-15', 'maintenance_type': 'Regular Service', 'description': 'Engine oil change, air filter replacement, brake inspection', 'service_provider': 'Maruti Service Center Mumbai', 'status': 'Completed'},
     {'maintenance_id': 2, 'vehicle_id': 2, 'maintenance_date': '2024-11-01', 'maintenance_type': 'Regular Service', 'description': 'Full service including engine, transmission, and brake system check', 'service_provider': 'Hyundai Service Delhi', 'status': 'Completed'},
@@ -438,168 +420,142 @@ def insert_data():
         # Connect to MySQL database
         connection = mysql.connector.connect(**DB_CONFIG)
         cursor = connection.cursor()
-        
-        print("Connected to MySQL database successfully!")
-        print("Starting data insertion...")
-        
+
         # Insert Customers
-        print("\n1. Inserting Customer data...")
-        customer_insert_query = """
-        INSERT INTO rental_customer (first_name, last_name, email, phone, address, city, state, zip_code, 
-        license_number, date_of_birth, registration_date, is_active, credit_score, profile_picture) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """
-        
-        for customer in customers_data:
-            customer_values = (
-                customer['first_name'], customer['last_name'], customer['email'], customer['phone'],
-                customer['address'], customer['city'], customer['state'], customer['zip_code'],
-                customer['license_number'], customer['date_of_birth'], datetime.now(),
-                True, customer['credit_score'], 'profile_pics/default.jpg'
-            )
-            cursor.execute(customer_insert_query, customer_values)
-        
-        print(f"✓ Inserted {len(customers_data)} customers")
-        
-        # Insert Vehicles
-        print("\n2. Inserting Vehicle data...")
-        vehicle_insert_query = """
-        INSERT INTO rental_vehicle (vehicle_number, make, model, year, color, vehicle_type, fuel_type, 
-        seating_capacity, transmission, daily_rate, mileage, insurance_expiry, last_service_date, 
-        status, created_date, vehicle_picture) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """
-        
-        for vehicle in vehicles_data:
-            vehicle_values = (
-                vehicle['vehicle_number'], vehicle['make'], vehicle['model'], vehicle['year'],
-                vehicle['color'], vehicle['vehicle_type'], vehicle['fuel_type'], vehicle['seating_capacity'],
-                vehicle['transmission'], vehicle['daily_rate'], vehicle['mileage'], vehicle['insurance_expiry'],
-                vehicle['last_service_date'], 'Available', datetime.now(), 'vehicle_pics/default.jpg'
-            )
-            cursor.execute(vehicle_insert_query, vehicle_values)
-        
-        print(f"✓ Inserted {len(vehicles_data)} vehicles")
-        
-        # Insert Rental Bookings
-        print("\n3. Inserting Rental Booking data...")
-        booking_insert_query = """
-        INSERT INTO rental_rentalbooking (customer_id, vehicle_id, booking_date, pickup_date, return_date, 
-        actual_return_date, pickup_location, return_location, daily_rate, total_amount, security_deposit, 
-        booking_status, special_requests, created_by) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """
-        
-        for booking in rental_bookings_data:
-            booking_values = (
-                booking['customer_id'], booking['vehicle_id'], datetime.now(), booking['pickup_date'],
-                booking['return_date'], booking.get('actual_return_date'), booking['pickup_location'],
-                booking['return_location'], booking['daily_rate'], booking['total_amount'],
-                booking['security_deposit'], booking['booking_status'], None, 'System'
-            )
-            cursor.execute(booking_insert_query, booking_values)
-        
-        print(f"✓ Inserted {len(rental_bookings_data)} rental bookings")
-        
-        # Insert Payments
-        print("\n4. Inserting Payment data...")
-        payment_insert_query = """
-        INSERT INTO rental_payment (booking_id, customer_id, payment_date, amount, payment_method, 
-        payment_type, transaction_id, payment_status, reference_number, notes, processed_by) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """
-        
-        for payment in payments_data:
-            payment_values = (
-                payment['booking_id'], payment['customer_id'], datetime.now(), payment['amount'],
-                payment['payment_method'], payment['payment_type'], payment.get('transaction_id'),
-                'Completed', payment['reference_number'], payment.get('notes'), 'System'
-            )
-            cursor.execute(payment_insert_query, payment_values)
-        
-        print(f"✓ Inserted {len(payments_data)} payments")
-        
-        # Insert Maintenance Records
-        print("\n5. Inserting Maintenance Record data...")
-        maintenance_insert_query = """
-        INSERT INTO rental_maintenancerecord (vehicle_id, maintenance_date, maintenance_type, description, 
-        cost, service_provider, next_service_date, mileage_at_service, parts_replaced, technician_name, 
-        status, created_date) 
+        print("Inserting customer data...")
+        c_query = """
+        INSERT INTO rental_customer (first_name, last_name, email, phone, address, city, state, zip_code, license_number, date_of_birth, credit_score, is_verified)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        
-        for maintenance in maintenance_records_data:
-            maintenance_values = (
-                maintenance['vehicle_id'], maintenance['maintenance_date'], maintenance['maintenance_type'],
-                maintenance['description'], maintenance['cost'], maintenance['service_provider'],
-                maintenance.get('next_service_date'), maintenance['mileage_at_service'],
-                maintenance['parts_replaced'], maintenance['technician_name'], 'Completed', datetime.now()
+        for customer in customers_data:
+            c_values = (
+                customer['first_name'], customer['last_name'], customer['email'], customer['phone'],
+                customer['address'], customer['city'], customer['state'], customer['zip_code'],
+                customer.get('license_number'), customer['date_of_birth'], customer.get('credit_score'),
+                bool(customer.get('license_number'))
             )
-            cursor.execute(maintenance_insert_query, maintenance_values)
-        
-        print(f"✓ Inserted {len(maintenance_records_data)} maintenance records")
-        
-        # Insert Feedback Reviews
-        print("\n6. Inserting Feedback Review data...")
-        review_insert_query = """
-        INSERT INTO rental_feedbackreview (customer_id, vehicle_id, booking_id, rating, review_text, 
-        service_rating, vehicle_condition_rating, review_date, is_public, response_from_admin, response_date) 
+            cursor.execute(c_query, c_values)
+        connection.commit()
+        print(f"{cursor.rowcount} customers inserted.")
+
+        # Insert Vehicles
+        print("Inserting vehicle data...")
+        v_query = """
+        INSERT INTO rental_vehicle (vehicle_number, make, model, year, color, vehicle_type, fuel_type, seating_capacity, transmission, hourly_rate, mileage, insurance_expiry, last_service_date, status)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        for vehicle in vehicles_data:
+            v_values = (
+                vehicle['vehicle_number'], vehicle['make'], vehicle['model'], vehicle['year'],
+                vehicle['color'], vehicle['vehicle_type'], vehicle['fuel_type'], vehicle['seating_capacity'],
+                vehicle['transmission'], vehicle['daily_rate'], vehicle['mileage'],
+                vehicle['insurance_expiry'], vehicle['last_service_date'], 'Available'
+            )
+            cursor.execute(v_query, v_values)
+        connection.commit()
+        print(f"{cursor.rowcount} vehicles inserted.")
+
+        # Insert Rental Bookings
+        print("Inserting rental booking data...")
+        rb_query = """
+        INSERT INTO rental_rentalbooking (customer_id, vehicle_id, pickup_datetime, return_datetime, actual_return_datetime, pickup_location, return_location, hourly_rate, total_amount, security_deposit, booking_status)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        
-        for review in feedback_reviews_data:
-            review_values = (
-                review['customer_id'], review['vehicle_id'], review['booking_id'], review['rating'],
-                review['review_text'], review['service_rating'], review['vehicle_condition_rating'],
-                datetime.now(), True, review.get('response_from_admin'), review.get('response_date')
+        for booking in rental_bookings_data:
+            pickup_datetime = f"{booking['pickup_date']} 00:00:00"
+            return_datetime = f"{booking['return_date']} 00:00:00"
+            actual_return_datetime = f"{booking['actual_return_date']} 00:00:00" if 'actual_return_date' in booking else None
+
+            rb_values = (
+                booking['customer_id'], booking['vehicle_id'], pickup_datetime, return_datetime,
+                actual_return_datetime, booking['pickup_location'], booking['return_location'],
+                booking['daily_rate'], booking['total_amount'], booking['security_deposit'],
+                booking['booking_status']
             )
-            cursor.execute(review_insert_query, review_values)
-        
-        print(f"✓ Inserted {len(feedback_reviews_data)} feedback reviews")
-        
-        # Commit all changes
+            cursor.execute(rb_query, rb_values)
         connection.commit()
-        print("\n🎉 All data inserted successfully!")
-        
-        # Display summary
-        print("\n" + "="*50)
-        print("DATA INSERTION SUMMARY")
-        print("="*50)
-        print(f"Customers: {len(customers_data)} records")
-        print(f"Vehicles: {len(vehicles_data)} records")
-        print(f"Rental Bookings: {len(rental_bookings_data)} records")
-        print(f"Payments: {len(payments_data)} records")
-        print(f"Maintenance Records: {len(maintenance_records_data)} records")
-        print(f"Feedback Reviews: {len(feedback_reviews_data)} records")
-        print("="*50)
-        print("✅ Database populated with realistic Indian car rental data!")
-        
-    except mysql.connector.Error as error:
-        print(f"❌ Error while connecting to MySQL: {error}")
-        if connection:
+        print(f"{cursor.rowcount} rental bookings inserted.")
+
+        # Insert Payments
+        print("Inserting payment data...")
+        p_query = """
+        INSERT INTO rental_payment (booking_id, customer_id, amount, payment_method, payment_type, transaction_id, reference_number, payment_status)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        for payment in payments_data:
+            p_values = (
+                payment['booking_id'], payment['customer_id'], payment['amount'],
+                payment['payment_method'], payment['payment_type'], payment.get('transaction_id'),
+                payment.get('reference_number'), 'Completed'
+            )
+            cursor.execute(p_query, p_values)
+        connection.commit()
+        print(f"{cursor.rowcount} payments inserted.")
+
+        # Merge and Insert Maintenance Records
+        print("Inserting maintenance record data...")
+        merged_maintenance_data = []
+        for i in range(len(maintenance_records_data)):
+            record = maintenance_records_data[i]
+            details = maintenance_details_data[i]
+            costs = maintenance_costs_data[i]
+            if record['maintenance_id'] == details['maintenance_id'] == costs['maintenance_id']:
+                merged_maintenance_data.append({
+                    'vehicle_id': record['vehicle_id'],
+                    'maintenance_date': record['maintenance_date'],
+                    'maintenance_type': record['maintenance_type'],
+                    'description': record['description'],
+                    'service_provider': record['service_provider'],
+                    'status': record['status'],
+                    'mileage_at_service': details['mileage_at_service'],
+                    'parts_replaced': details['parts_replaced'],
+                    'cost': details['cost'],
+                    'technician_name': details['technician_name'],
+                    'next_service_date': costs['next_service_date']
+                })
+
+        mr_query = """
+        INSERT INTO rental_maintenancerecord (vehicle_id, maintenance_date, maintenance_type, description, cost, service_provider, next_service_date, mileage_at_service, parts_replaced, technician_name, status)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        for record in merged_maintenance_data:
+            mr_values = (
+                record['vehicle_id'], record['maintenance_date'], record['maintenance_type'],
+                record['description'], record['cost'], record['service_provider'],
+                record.get('next_service_date'), record.get('mileage_at_service'),
+                record.get('parts_replaced'), record.get('technician_name'), record['status']
+            )
+            cursor.execute(mr_query, mr_values)
+        connection.commit()
+        print(f"{cursor.rowcount} maintenance records inserted.")
+
+        # Insert Feedback Reviews
+        print("Inserting feedback review data...")
+        fr_query = """
+        INSERT INTO rental_feedbackreview (customer_id, vehicle_id, booking_id, rating, review_text, service_rating, vehicle_condition_rating)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """
+        for review in feedback_reviews_data:
+            fr_values = (
+                review['customer_id'], review['vehicle_id'], review['booking_id'],
+                review['rating'], review.get('review_text'), review.get('service_rating'),
+                review.get('vehicle_condition_rating')
+            )
+            cursor.execute(fr_query, fr_values)
+        connection.commit()
+        print(f"{cursor.rowcount} feedback reviews inserted.")
+
+        print("Data insertion completed successfully!")
+
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+        if 'connection' in locals() and connection.is_connected():
             connection.rollback()
-    
     finally:
-        if connection and connection.is_connected():
+        if 'connection' in locals() and connection.is_connected():
             cursor.close()
             connection.close()
-            print("\n🔐 MySQL connection closed.")
+            print("MySQL connection is closed.")
 
 if __name__ == "__main__":
-    print("🚗 Car Rental System - Data Insertion Script")
-    print("=" * 50)
-    
-    # Install required package if not already installed
-    try:
-        import mysql.connector
-    except ImportError:
-        print("❌ mysql-connector-python not found. Please install it:")
-        print("pip install mysql-connector-python")
-        exit()
-    
-    # Confirm before proceeding
-    response = input("⚠️  This will insert data into your 'cp' database. Continue? (y/n): ")
-    if response.lower() in ['y', 'yes']:
-        insert_data()
-    else:
-        print("❌ Operation cancelled.")
+    insert_data()

@@ -6,7 +6,7 @@ class Customer(models.Model):
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     email = models.EmailField(unique=True)
-    password = models.CharField(max_length=128, default=make_password('12345678'))
+    password = models.CharField(max_length=128, default=make_password('123456'))
     phone = models.CharField(max_length=15)
     address = models.TextField(blank=True, null=True)
     city = models.CharField(max_length=50, blank=True, null=True)
