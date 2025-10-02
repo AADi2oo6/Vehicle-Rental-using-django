@@ -31,56 +31,27 @@
 <body class="text-gray-800">
 
     <!-- Header Section -->
-    <header class="bg-white shadow-md sticky top-0 z-50">
-        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <a href="{% url 'home' %}" class="text-2xl font-bold text-blue-700">Velo-Rent</a>
-            <div class="hidden md:flex items-center space-x-6">
-                <a href="{% url 'home' %}" class="text-gray-600 hover:text-blue-700">Home</a>
-                <a href="{% url 'vehicle_list' %}" class="text-gray-600 hover:text-blue-700">Vehicles</a>
-                <a href="{% url 'about_us' %}" class="text-gray-600 hover:text-blue-700">About Us</a>
-                <a href="#" class="text-gray-600 hover:text-blue-700">Contact</a>
-            </div>
-            <div class="flex items-center space-x-4">
-                <a href="{% url 'my_profile' %}" class="text-blue-700 font-semibold hidden sm:block">Welcome, {{ customer.first_name }}</a>
-                <a href="{% url 'logout' %}" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">Logout</a>
-            </div>
-        </nav>
-    </header>
+    {% include "_header.html" %}
 
     <main class="container mx-auto px-6 py-12">
         <div class="flex flex-col lg:flex-row gap-8">
             <!-- Profile Sidebar -->
-            <aside class="lg:w-1/4">
-                <div class="bg-white p-4 rounded-lg shadow-md">
-                    <div class="flex flex-col items-center text-center border-b pb-4 mb-4">
-                        <img class="h-24 w-24 rounded-full object-cover mb-3" src="{{ customer.profile_picture.url }}" alt="Profile Picture">
-                        <h2 class="text-xl font-bold">{{ customer.first_name }} {{ customer.last_name }}</h2>
-                        <p class="text-sm text-gray-500">{{ customer.email }}</p>
-                    </div>
-                    <nav class="flex flex-col space-y-1">
-                        <a href="{% url 'my_profile' %}" class="profile-nav-link active flex items-center gap-3 px-4 py-2.5 rounded-md font-medium text-gray-700 hover:bg-gray-100">
-                            <i class="fa-solid fa-user w-5 text-center"></i> My Profile
-                        </a>
-                        <a href="{% url 'my_bookings' %}" class="profile-nav-link flex items-center gap-3 px-4 py-2.5 rounded-md font-medium text-gray-700 hover:bg-gray-100">
-                            <i class="fa-solid fa-car w-5 text-center"></i> My Bookings
-                        </a>
-                        <a href="#" class="profile-nav-link flex items-center gap-3 px-4 py-2.5 rounded-md font-medium text-gray-700 hover:bg-gray-100">
-                            <i class="fa-solid fa-shield-halved w-5 text-center"></i> Security
-                        </a>
-                        <a href="{% url 'logout' %}" class="profile-nav-link flex items-center gap-3 px-4 py-2.5 rounded-md font-medium text-red-600 hover:bg-red-50">
-                            <i class="fa-solid fa-right-from-bracket w-5 text-center"></i> Logout
-                        </a>
-                    </nav>
-                </div>
-            </aside>
+            {% include "_profile_sidebar.html" %}
 
             <!-- Main Content -->
             <div class="lg:w-3/4">
+                {% if not customer.is_verified %}
+                <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-r-lg" role="alert">
+                    <p class="font-bold">Account Not Verified!</p>
+                    <p>Your account is not yet verified. Please contact an administrator to complete the verification process and unlock all features.</p>
+                </div>
+                {% endif %}
+
                 <!-- Personal Information -->
                 <div class="bg-white p-8 rounded-lg shadow-md mb-8">
                     <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-2xl font-bold">Personal Information</h3>
-                        <button class="text-sm font-medium text-blue-700 hover:underline">Edit Profile</button>
+                        <h3 class="text-2xl font-bold">Personal Information</h3>    
+                        <a href="{% url 'edit_profile' %}" class="text-sm font-medium text-blue-700 hover:underline">Edit Profile</a>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-600">
                         <div><span class="font-semibold text-gray-900">Full Name:</span> {{ customer.first_name }} {{ customer.last_name }}</div>
