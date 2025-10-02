@@ -27,5 +27,6 @@
             "database": "DBMS_CP",
             "username": "root"
         }
-    ]
+    ],
+    "git.ignoreLimitWarning": true
 }

@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from .utils import dictfetchall
 from django.db import connection, transaction
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -9,16 +10,11 @@ from django.contrib.auth import authenticate, login, logout, update_session_auth
 from django.core.cache import cache
 from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.auth.forms import PasswordChangeForm
-<<<<<<< Updated upstream
-from django.contrib.auth import update_session_auth_hash
-from django.utils.dateparse import parse_datetime # Keep this for existing uses
-import csv # Added for CSV export in bookings_management_view
-=======
 from django.http import HttpResponse
 from django.utils.dateparse import parse_datetime
->>>>>>> Stashed changes
 from django.db import transaction
 from datetime import date, timedelta, datetime
+import csv
 from .models import Vehicle, Customer, FeedbackReview, RentalBooking, Payment, MaintenanceRecord, CustomerActivityLog
 from django.http import JsonResponse
 from django.db.models import Sum
@@ -322,44 +318,12 @@ def admin_dashboard_view(request): # Renamed to avoid conflict with existing get
     Retrieves key metrics (revenue, counts). Attempts Stored Procedure call
     but falls back to reliable ORM calculation.
     """
-
-<<<<<<< Updated upstream
     # --- Calculate All-Time Total Revenue using the ORM ---
     total_revenue = Payment.objects.filter(
         payment_status='Completed'
     ).aggregate(total=Sum('amount'))['total'] or 0
 
     # --- Remaining Django ORM Queries ---
-    pending_payments_count = Payment.objects.filter(payment_status='Pending').count()
-=======
-    current_month = date.today().month
-    current_year = date.today().year
-    total_revenue = 0
-
-    try:
-        with connection.cursor() as cursor:
-            # Stored Procedure call
-            cursor.callproc('GET_MONTHLY_REVENUE', [current_year, current_month, 0])
-            # Fetch the output parameter
-            cursor.execute("SELECT @_GET_MONTHLY_REVENUE_2")
-            result = cursor.fetchone()
-            if result and result[0] is not None:
-                total_revenue = result[0]
-            else:
-                # Fallback to ORM if procedure fails or returns NULL
-                total_revenue = Payment.objects.filter(
-                    payment_date__year=current_year,
-                    payment_date__month=current_month
-                ).aggregate(Sum('amount'))['amount__sum'] or 0
-    except Exception:
-        # Fallback to ORM on any exception
-        total_revenue = Payment.objects.filter(
-            payment_date__year=current_year,
-            payment_date__month=current_month
-        ).aggregate(Sum('amount'))['amount__sum'] or 0
-
-    # Other stats using ORM
->>>>>>> Stashed changes
     active_rentals_count = RentalBooking.objects.filter(booking_status='Active').count()
     pending_payments_count = Payment.objects.filter(payment_status='Pending').count()
     maintenance_vehicles_count = Vehicle.objects.filter(status='Maintenance').count()
@@ -375,12 +339,12 @@ def admin_dashboard_view(request): # Renamed to avoid conflict with existing get
         'recent_payments': recent_payments,
     }
     return render(request, "admin_dashboard_bootstrap.html", context)
+
 # Add this new view for AJAX requests
 @login_required
 def get_dashboard_data_ajax(request): # Renamed to avoid conflict with existing get_dashboard_data
     if not request.user.is_superuser:
         return JsonResponse({'error': 'You do not have permission to view this data.'}, status=403)
-
 
     data = {
         'total_revenue': 12345.67,
@@ -397,14 +361,19 @@ def admin_maintenance_view(request):
     maintenance_records = MaintenanceRecord.objects.select_related('vehicle').order_by('-maintenance_date')
     upcoming_maintenance = MaintenanceRecord.objects.filter(
         status='Scheduled',
-        maintenance_date__gte=date.today()
+        maintenance_date__gt=date.today()
     ).order_by('maintenance_date')
+    cost_per_vehicle = MaintenanceRecord.objects.values('vehicle__make', 'vehicle__model').annotate(
+        total_cost=Sum('cost')
+    ).order_by('-total_cost')
 
     context = {
         'maintenance_records': maintenance_records,
         'upcoming_maintenance': upcoming_maintenance,
+        'cost_per_vehicle': cost_per_vehicle,
     }
     return render(request, "admin/maintenance.html", context)
+
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def admin_queries_view(request):
@@ -503,7 +472,7 @@ def payment_delete_view(request, payment_id):
         payment.delete()
         messages.success(request, "Payment record deleted successfully.")
     return redirect('admin_payments')
-    pass
+
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def payment_analytics_view(request):
@@ -598,28 +567,6 @@ def return_vehicle_view(request, booking_id):
         actual_return_datetime = parse_datetime(actual_return_datetime_str)
 
         try:
-<<<<<<< Updated upstream
-            with transaction.atomic():
-                final_amount = 0.00
-                
-                # --- 1. Call Procedure (Lab Assignment 6) ---
-                with connection.cursor() as cursor:
-                    cursor.execute("SET @final_bill = 0;") 
-                    
-                    # Call procedure using cursor.execute to ensure it's logged
-                    cursor.execute("CALL CALCULATE_FINAL_BILL(%s, %s, %s, @final_bill);", [
-                        booking.id, 
-                        actual_return_dt_str, 
-                        final_payment_method
-                    ])
-
-                    # Retrieve the final amount
-                    cursor.execute("SELECT @final_bill;")
-                    result = cursor.fetchone()
-                    
-                    if result and result[0] is not None:
-                        final_amount = result[0]
-=======
             with connection.cursor() as cursor:
                 # Call the stored procedure
                 cursor.callproc('CALCULATE_FINAL_BILL', [booking.id, actual_return_datetime, 0.0])
@@ -627,7 +574,6 @@ def return_vehicle_view(request, booking_id):
                 cursor.execute("SELECT @_CALCULATE_FINAL_BILL_2")
                 result = cursor.fetchone()
                 final_charge = result[0] if result else 0.0
->>>>>>> Stashed changes
 
             with transaction.atomic():
                 # Update booking status and actual return time
@@ -750,11 +696,13 @@ def bookings_management_view(request):
         sort_by = f"-{sort_by.lstrip('-')}"
     else:
         sort_by = sort_by.lstrip('-')
+    
+    valid_sort_fields = ['booking_date', 'pickup_datetime', 'return_datetime', 'total_amount', 'booking_status']
+    if sort_by.strip('-') in valid_sort_fields:
+        bookings = bookings.order_by(sort_by)
 
-<<<<<<< Updated upstream
     # CSV Export
     if 'export' in request.GET and request.GET['export'] == 'csv':
-        from django.http import HttpResponse
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="bookings.csv"'
         writer = csv.writer(response)
@@ -772,11 +720,6 @@ def bookings_management_view(request):
                 booking.booking_status
             ])
         return response
-=======
-    valid_sort_fields = ['booking_date', 'pickup_datetime', 'return_datetime', 'total_amount', 'booking_status']
-    if sort_by.strip('-') in valid_sort_fields:
-        bookings = bookings.order_by(sort_by)
->>>>>>> Stashed changes
 
     # --- Bulk Actions ---
     if request.method == 'POST' and request.POST.get('bulk_action'):
@@ -811,7 +754,6 @@ def bookings_management_view(request):
     return render(request, "admin/rental_bookings.html", context)
 
 @login_required
-<<<<<<< Updated upstream
 def booking_detail_view(request, booking_id):
     """
     Displays detailed information about a single booking for the admin.
@@ -941,7 +883,8 @@ def activate_booking_view(request, booking_id):
     else:
         messages.warning(request, f"Booking #{booking.id} cannot be activated (Status: {booking.booking_status}).")
     return redirect('bookings_management')
-=======
+
+@login_required
 @user_passes_test(lambda u: u.is_superuser)
 def admin_customers_view(request):
     """
@@ -1035,4 +978,3 @@ def unverify_customer_view(request, customer_id):
         messages.info(request, f"Customer {customer.email} is already unverified.")
     
     return redirect('admin_customers')
->>>>>>> Stashed changes

@@ -11,9 +11,14 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file at the project root
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -64,7 +69,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'rental.context_processors.customer_context', # Add this line
+                'rental.context_processors.customer_context',
             ],
         },
     },
@@ -79,15 +84,30 @@ WSGI_APPLICATION = 'Vehicle_Rental_System.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'DBMS_CP',  # Corrected DB name from your setup guide
-        'USER': 'root',    # Replace with your MySQL username
-<<<<<<< Updated upstream
-        'PASSWORD': '241533591',  # IMPORTANT: Replace with your actual MySQL password
-=======
-        'PASSWORD': 'vedantiasatkar1523@',  # IMPORTANT: Replace with your actual MySQL password
->>>>>>> Stashed changes
-        'HOST': 'localhost',          # Or your MySQL server address
-        'PORT': '3306',               # Default MySQL port
+        'NAME': 'DBMS_CP',
+        'USER': 'root',
+        'HOST': 'localhost',
+        'PORT': '3306',
+
+        # --- DATABASE PASSWORD BEST PRACTICE FOR DEVELOPERS ---
+        # For better security, we load the database password from an environment variable
+        # instead of writing it directly in the code. This prevents committing secrets
+        # to version control.
+        #
+        # To set up your local environment:
+        #
+        # 1. Install python-dotenv:
+        #    pip install python-dotenv
+        #
+        # 2. Create a file named `.env` in the project's root directory (next to manage.py).
+        #
+        # 3. Add the following line to your .env file, replacing the placeholder with
+        #    your actual MySQL password:
+        #    DB_PASSWORD=your_secret_password_here
+        #
+        # 4. Make sure the .env file is listed in your .gitignore file so it is NEVER committed.
+        # --------------------------------------------------------------------------
+        'PASSWORD': os.getenv('DB_PASSWORD', 'YOUR_LOCAL_PASSWORD'),
     }
 }
 
