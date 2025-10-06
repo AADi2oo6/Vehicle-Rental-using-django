@@ -127,7 +127,7 @@
                     <input type="hidden" name="vehicle_type" id="vehicle_type_input" value="{{ values.vehicle_type|default:'Car' }}">
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                         <div class="text-left md:col-span-1">
-                            <label for="location" class="block text-sm font-medium text-gray-600 mb-1">Pickup Location</label>
+                            <label for="location" class="block text-sm font-medium text-gray-600 mb-1">Pickup Location(City)</label>
                             <input type="text" name="location" id="location" placeholder="e.g., Pune, Mumbai" value="{{ values.location|default:'' }}" required class="w-full pl-4 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div class="text-left md:col-span-1">
@@ -169,9 +169,17 @@
                                 <p class="text-xl font-bold text-blue-600">₹{{ vehicle.hourly_rate|floatformat:0 }}<span class="text-sm font-normal text-gray-500">/hr</span></p>
                             </div>
                             {% if customer %}
-                                <a href="{% url 'booking' vehicle.id %}" class="w-full block text-center bg-blue-600 text-white font-bold py-2.5 px-6 rounded-lg hover:bg-blue-700 transition">Book Now</a>
+                                <!-- UPDATED: This link now passes search data as URL parameters -->
+                                <a href="{% url 'booking' vehicle.id %}?pickup_datetime={{ values.pickup_datetime }}&return_datetime={{ values.return_datetime }}&location={{ values.location|urlencode }}" 
+                                class="w-full block text-center bg-blue-600 text-white font-bold py-2.5 px-6 rounded-lg hover:bg-blue-700 transition">
+                                Book Now
+                                </a>
                             {% else %}
-                                <a href="#" onclick="document.getElementById('loginBtn').click(); return false;" class="w-full block text-center bg-blue-600 text-white font-bold py-2.5 px-6 rounded-lg hover:bg-blue-700 transition" title="Login to book">Book Now</a>
+                                <a href="#" onclick="document.getElementById('loginBtn').click(); return false;" 
+                                class="w-full block text-center bg-blue-600 text-white font-bold py-2.5 px-6 rounded-lg hover:bg-blue-700 transition" 
+                                title="Login to book">
+                                Book Now
+                                </a>
                             {% endif %}
                         </div>
                     </div>

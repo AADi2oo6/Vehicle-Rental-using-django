@@ -211,6 +211,11 @@ def booking_view(request, vehicle_id):
         return_str = request.POST.get('return_datetime')
         pickup_location = request.POST.get('pickup_location')
         return_location = request.POST.get('return_location')
+        
+        if vehicle.location.lower() not in pickup_location.lower():
+            messages.error(request, f"Sorry, this vehicle is not available for pickup in your selected area. It is based in {vehicle.location}.")
+            # We redirect back to the same page so the user can correct their input
+            return redirect('booking', vehicle_id=vehicle.id)
 
         if not all([pickup_str, return_str, pickup_location, return_location]):
             messages.error(request, "All fields are required.")
