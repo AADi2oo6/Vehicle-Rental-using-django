@@ -1,10 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About Us - Velo-Rent</title>
-    
+{% extends "base.html" %}
+{% block title %}
+    <title>About Us - Velo-Rent</title>{% endblock title %}
+{% block style %}
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -29,31 +26,11 @@
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
     </style>
-</head>
+    {% endblock style %}
+
 <body class="text-gray-800">
 
-    <!-- Header Section -->
-    <header class="bg-white shadow-md sticky top-0 z-50">
-        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <a href="{% url 'home' %}" class="text-2xl font-bold text-blue-700">Velo-Rent</a>
-            <div class="hidden md:flex items-center space-x-6">
-                <a href="{% url 'home' %}" class="text-gray-600 hover:text-blue-700">Home</a>
-                <a href="{% url 'vehicle_list' %}" class="text-gray-600 hover:text-blue-700">Vehicles</a>
-                <a href="{% url 'about_us' %}" class="text-blue-700 font-semibold">About Us</a>
-                <a href="#" class="text-gray-600 hover:text-blue-700">Contact</a>
-            </div>
-            <div class="flex items-center space-x-4">
-                {% if customer %}
-                    <a href="{% url 'my_profile' %}" class="text-gray-700 hidden sm:block hover:text-blue-700">Welcome, {{ customer.first_name }}</a>
-                    <a href="{% url 'logout' %}" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">Logout</a>
-                {% else %}
-                    <button onclick="window.location.href='{% url 'home' %}'" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Login</button>
-                    <button onclick="window.location.href='{% url 'home' %}'" class="px-4 py-2 text-sm font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800 transition-colors">Register</button>
-                {% endif %}
-            </div>
-        </nav>
-    </header>
-
+    {% block content %}
     <main>
         <!-- Hero Section -->
         <section class="hero-about text-white">
@@ -135,8 +112,4 @@
             </div>
         </section>
     </main>
-
-    <!-- Footer (You can reuse the footer from index.html) -->
-
-</body>
-</html>
+{% endblock content %}
