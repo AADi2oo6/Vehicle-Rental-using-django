@@ -13,7 +13,5 @@ urlpatterns = [
     path("about/", views.about_us_view, name="about_us"),
     path("profile/", views.my_profile_view, name="my_profile"),
     path("profile/bookings/", views.my_bookings_view, name="my_bookings"),
-    
-    
-
+    path("api/all-reviews/", views.all_reviews_api, name="all_reviews_api"),
 ]

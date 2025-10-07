@@ -351,3 +351,17 @@ def my_bookings_view(request):
     }
     return render(request, "my_bookings.html", context)
 
+from django.http import JsonResponse
+from .models import DetailedReview # Make sure to import the new model
+
+def all_reviews_api(request):
+    """
+    An API endpoint that returns all detailed reviews from our database VIEW.
+    The data is returned in JSON format.
+    """
+    # We query the read-only model just like a regular one.
+    # The .values() method converts the queryset into a list of dictionaries.
+    reviews = DetailedReview.objects.all().order_by('-review_date').values()
+    
+    # Convert the queryset to a list and return as a JSON response
+    return JsonResponse(list(reviews), safe=False)

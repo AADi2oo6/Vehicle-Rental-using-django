@@ -156,3 +156,23 @@ class ActivityLog(models.Model):
     def __str__(self):
         customer_email = self.customer.email if self.customer else 'System'
         return f"{customer_email} - {self.action_type} at {self.timestamp.strftime('%Y-%m-%d %H:%M')}"
+    
+class DetailedReview(models.Model):
+    """
+    This is a read-only model that maps to the 'vw_detailed_reviews' database view.
+    Django will not manage this model's database table (i.e., it won't create or delete it).
+    """
+    review_id = models.IntegerField(primary_key=True)
+    rating = models.IntegerField()
+    review_text = models.TextField(blank=True, null=True)
+    review_date = models.DateTimeField()
+    first_name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
+    profile_picture = models.CharField(max_length=100, blank=True, null=True)
+    vehicle_make = models.CharField(max_length=50)
+    vehicle_model = models.CharField(max_length=50)
+
+    class Meta:
+        managed = False  # This is the key: tells Django not to touch this in the database
+        db_table = 'vw_detailed_reviews' # Links this model to our database view
+
