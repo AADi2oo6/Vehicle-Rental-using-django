@@ -123,6 +123,9 @@
             </form>
         </div>
     </div>
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     <table class="table table-striped table-bordered">
         <thead class="thead-dark">
@@ -131,6 +134,7 @@
                 <th>Vehicle ID</th>
                 <th>Maintenance Date</th>
                 <th>Type</th>
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
                 <th>Description</th>
                 <th>Cost</th>
@@ -159,6 +163,69 @@
                 <td>{{ record.status }}</td>
             </tr>
             {% endfor %}
+=======
+                <th>Description</th>                
+                <th>
+                    <a href="?sort=cost&order={% if sort_by == 'cost' and order == 'asc' %}desc{% else %}asc{% endif %}">
+                        Cost
+                        {% if sort_by == 'cost' and order == 'asc' %}<i class="fas fa-sort-up"></i>
+                        {% elif sort_by == 'cost' and order == 'desc' %}<i class="fas fa-sort-down"></i>
+                        {% endif %}
+                    </a>
+                </th>
+                <th>Service Provider</th>
+                <th>Technician</th>
+                <th>Parts Replaced</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if maintenance_records %}
+                {% for record in maintenance_records %}
+                <tr>
+                    <td>{{ record.id }}</td>
+                    <td>{{ record.vehicle.vehicle_number }}</td>
+                    <td>{{ record.maintenance_date|date:"Y-m-d" }}</td>
+                    <td>{{ record.maintenance_type }}</td>
+                    <td>{{ record.description|truncatechars:40 }}</td>
+                    <td>₹{{ record.cost|floatformat:2 }}</td>
+                    <td>{{ record.service_provider|default:"N/A" }}</td>
+                    <td>{{ record.technician_name|default:"N/A" }}</td>
+                    <td>{{ record.parts_replaced|truncatechars:40|default:"N/A" }}</td>
+                    <td><span class="badge badge-info">{{ record.status }}</span></td>
+                    <td>
+                        <div class="dropdown">
+                            <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton-{{ record.id }}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Update Status
+                            </button>
+                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton-{{ record.id }}">
+                                {% for status_val, status_name in record.MAINTENANCE_STATUS_CHOICES %}
+                                    {% if status_val != record.status %}
+                                    <form action="{% url 'update_maintenance_status' record.id %}" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="status" value="{{ status_val }}">
+                                        <button type="submit" class="dropdown-item">{{ status_name }}</button>
+                                    </form>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="11" class="text-center">
+                        {% if request.GET.vehicle_id %}
+                            No maintenance records found for Vehicle ID {{ request.GET.vehicle_id }}.
+                        {% else %}
+                            No maintenance records found.
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endif %}
+>>>>>>> Stashed changes
         </tbody>
     </table>
     {% endif %}

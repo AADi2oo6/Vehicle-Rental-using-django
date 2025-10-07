@@ -85,6 +85,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         'NAME': 'DBMS_CP',
         'USER': 'root',
         'HOST': 'localhost',
@@ -110,6 +111,8 @@ DATABASES = {
         # --------------------------------------------------------------------------
         'PASSWORD': os.getenv('DB_PASSWORD', 'YOUR_LOCAL_PASSWORD'),
 =======
+=======
+>>>>>>> Stashed changes
         'NAME': 'cp',  # Pointing to the database with the data
         'USER': 'root',    # Replace with your MySQL username
         'PASSWORD': '10adit06', 
