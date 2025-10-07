@@ -348,6 +348,7 @@ DB_CONFIG = {
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 # Maintenance Records Data (15 records)
 maintenance_records_data = [
     {'maintenance_id': 1, 'vehicle_id': 1, 'maintenance_date': '2024-10-15', 'maintenance_type': 'Regular Service', 'description': 'Engine oil change, air filter replacement, brake inspection', 'service_provider': 'Maruti Service Center Mumbai', 'status': 'Completed'},
@@ -369,6 +370,8 @@ maintenance_records_data = [
 =======
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
 # # Maintenance Records Data (15 records)
 # maintenance_records_data = [
 #     {'vehicle_id': 1, 'maintenance_date': '2024-10-15', 'maintenance_type': 'Regular Service', 'description': 'Engine oil change, air filter replacement, brake inspection', 'cost': 3500.00, 'service_provider': 'Maruti Service Center Mumbai', 'next_service_date': '2025-04-15', 'mileage_at_service': 45000.00, 'parts_replaced': 'Engine oil, Air filter, Spark plugs', 'technician_name': 'Ravi Kumar'},
@@ -387,6 +390,7 @@ maintenance_records_data = [
 #     {'vehicle_id': 14, 'maintenance_date': '2024-11-12', 'maintenance_type': 'Inspection', 'description': 'Pre-delivery inspection and minor adjustments', 'cost': 1800.00, 'service_provider': 'Tata Motors Pune', 'next_service_date': '2025-02-12', 'mileage_at_service': 8000.00, 'parts_replaced': 'None - Inspection only', 'technician_name': 'Sachin Patil'},
 #     {'vehicle_id': 15, 'maintenance_date': '2024-10-18', 'maintenance_type': 'Repair', 'description': 'Diesel engine repair and clutch adjustment', 'cost': 15000.00, 'service_provider': 'Force Motors Kochi', 'next_service_date': '2025-01-18', 'mileage_at_service': 85000.00, 'parts_replaced': 'Clutch plate, Pressure plate, Engine gaskets', 'technician_name': 'Biju Thomas'}
 # ]
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 >>>>>>> Stashed changes
 
@@ -444,6 +448,8 @@ maintenance_costs_data = [
 #     {'vehicle_id': 14, 'maintenance_date': '2024-11-12', 'maintenance_type': 'Inspection', 'description': 'Pre-delivery inspection and minor adjustments', 'cost': 1800.00, 'service_provider': 'Tata Motors Pune', 'next_service_date': '2025-02-12', 'mileage_at_service': 8000.00, 'parts_replaced': 'None - Inspection only', 'technician_name': 'Sachin Patil'},
 #     {'vehicle_id': 15, 'maintenance_date': '2024-10-18', 'maintenance_type': 'Repair', 'description': 'Diesel engine repair and clutch adjustment', 'cost': 15000.00, 'service_provider': 'Force Motors Kochi', 'next_service_date': '2025-01-18', 'mileage_at_service': 85000.00, 'parts_replaced': 'Clutch plate, Pressure plate, Engine gaskets', 'technician_name': 'Biju Thomas'}
 # ]
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes

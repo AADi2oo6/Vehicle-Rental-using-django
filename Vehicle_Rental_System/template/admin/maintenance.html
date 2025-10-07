@@ -125,6 +125,9 @@
     </div>
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -137,6 +140,7 @@
                 <th>Vehicle ID</th>
                 <th>Maintenance Date</th>
                 <th>Type</th>
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
@@ -204,6 +208,25 @@
         </thead>
         <tbody>
 >>>>>>> Stashed changes
+=======
+                <th>Description</th>                
+                <th>
+                    <a href="?sort=cost&order={% if sort_by == 'cost' and order == 'asc' %}desc{% else %}asc{% endif %}">
+                        Cost
+                        {% if sort_by == 'cost' and order == 'asc' %}<i class="fas fa-sort-up"></i>
+                        {% elif sort_by == 'cost' and order == 'desc' %}<i class="fas fa-sort-down"></i>
+                        {% endif %}
+                    </a>
+                </th>
+                <th>Service Provider</th>
+                <th>Technician</th>
+                <th>Parts Replaced</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+>>>>>>> Stashed changes
             {% if maintenance_records %}
                 {% for record in maintenance_records %}
                 <tr>
@@ -248,6 +271,7 @@
                     </td>
                 </tr>
             {% endif %}
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 >>>>>>> Stashed changes
         </tbody>
@@ -385,6 +409,8 @@
                     </td>
                 </tr>
             {% endif %}
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes

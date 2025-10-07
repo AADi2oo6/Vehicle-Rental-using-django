@@ -87,6 +87,7 @@ DATABASES = {
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         'NAME': 'DBMS_CP',
         'USER': 'root',
         'HOST': 'localhost',
@@ -112,6 +113,8 @@ DATABASES = {
         # --------------------------------------------------------------------------
         'PASSWORD': os.getenv('DB_PASSWORD', 'YOUR_LOCAL_PASSWORD'),
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======
