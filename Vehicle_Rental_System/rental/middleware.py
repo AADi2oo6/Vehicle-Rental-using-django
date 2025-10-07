@@ -11,6 +11,10 @@ class QueryCaptureMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        # If the request has the _viewing_queries flag, skip the middleware logic
+        if getattr(request, '_viewing_queries', False):
+            return self.get_response(request)
+
         response = self.get_response(request)
         
         is_html = 'text/html' in response.get('Content-Type', '')
@@ -30,4 +34,3 @@ class QueryCaptureMiddleware:
             cache.set('all_sql_queries', all_queries[-50:], timeout=600)
             
         return response
-

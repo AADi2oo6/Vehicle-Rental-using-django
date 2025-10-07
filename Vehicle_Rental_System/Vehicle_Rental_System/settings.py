@@ -84,6 +84,7 @@ WSGI_APPLICATION = 'Vehicle_Rental_System.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
+<<<<<<< Updated upstream
         'NAME': 'DBMS_CP',
         'USER': 'root',
         'HOST': 'localhost',
@@ -108,9 +109,24 @@ DATABASES = {
         # 4. Make sure the .env file is listed in your .gitignore file so it is NEVER committed.
         # --------------------------------------------------------------------------
         'PASSWORD': os.getenv('DB_PASSWORD', 'YOUR_LOCAL_PASSWORD'),
+=======
+        'NAME': 'cp',  # Pointing to the database with the data
+        'USER': 'root',    # Replace with your MySQL username
+        'PASSWORD': '10adit06', 
+        'HOST': 'localhost',          # Or your MySQL server address
+        'PORT': '3306',               # Default MySQL port
+>>>>>>> Stashed changes
     }
 }
 
+# Add the custom authentication backend
+AUTHENTICATION_BACKENDS = [
+    'rental.backends.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend', # Keep the default backend
+]
+
+# URL for login page
+LOGIN_URL = 'login'
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators

@@ -86,7 +86,30 @@ CREATE TABLE PAYMENTS (
 );
 
 
+<<<<<<< Updated upstream
 -- 5. FEEDBACK_REVIEWS Table
+=======
+-- 5. MAINTENANCE_RECORDS Table
+
+CREATE TABLE rental_maintenancerecord (
+    maintenance_id INT PRIMARY KEY AUTO_INCREMENT,
+    vehicle_id INT NOT NULL,
+    maintenance_date DATE NOT NULL,
+    maintenance_type ENUM('Regular Service', 'Repair', 'Inspection', 'Cleaning', 'Tire Change') NOT NULL,
+    description TEXT NOT NULL,
+    cost DECIMAL(10,2) NOT NULL CHECK (cost >= 0),
+    service_provider VARCHAR(100),
+    next_service_date DATE,
+    mileage_at_service DECIMAL(8,2),
+    parts_replaced TEXT,
+    technician_name VARCHAR(50),
+    status ENUM('Scheduled', 'In Progress', 'Completed', 'Cancelled') DEFAULT 'Completed',
+    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (vehicle_id) REFERENCES VEHICLES(vehicle_id) ON DELETE CASCADE
+);
+
+-- 6. FEEDBACK_REVIEWS Table
+>>>>>>> Stashed changes
 CREATE TABLE FEEDBACK_REVIEWS (
     review_id INT PRIMARY KEY AUTO_INCREMENT,
     booking_id INT NOT NULL,

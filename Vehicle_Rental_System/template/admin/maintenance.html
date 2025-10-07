@@ -1,6 +1,35 @@
 {% extends "admin/bases.html" %}
 
 {% block content %}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Maintenance Dashboard</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <button type="button" class="btn btn-sm btn-outline-primary" data-toggle="collapse" data-target="#addMaintenanceForm" aria-expanded="false" aria-controls="addMaintenanceForm">
+                <span class="fas fa-plus"></span>
+                Add New Record
+            </button>
+        </div>
+    </div>
+
+    <div class="collapse" id="addMaintenanceForm">
+        <div class="card card-body mb-4">
+            <h3>Add New Maintenance Record</h3>
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="form-row">
+                    {% for field in form %}
+                    <div class="form-group col-md-6">
+                        {{ field.label_tag }}
+                        {{ field }}
+                        {% if field.errors %}<div class="invalid-feedback d-block">{{ field.errors }}</div>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <button type="submit" class="btn btn-success">Save Record</button>
+            </form>
+        </div>
+    </div>
+
     <h2>Maintenance Dashboard</h2>
 
     <div class="row">
@@ -35,14 +64,18 @@
         </div>
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header">Maintenance Cost Per Vehicle</div>
+                <div class="card-header">Maintenance Cost Analytics</div>
                 <div class="card-body">
                     <canvas id="costPerVehicleChart"></canvas>
+                </div>
+                <div class="card-footer text-center py-1">
+                    <h5 class="mb-0">Total Fleet Maintenance Cost: ₹{{ total_maintenance_cost|floatformat:2 }}</h5>
                 </div>
             </div>
         </div>
     </div>
 
+<<<<<<< Updated upstream
     <h3 class="mt-4">View Vehicle Maintenance History</h3>
     <form method="post">
         {% csrf_token %}
@@ -55,6 +88,42 @@
 
     {% if maintenance_history %}
     <h3 class="mt-4">Maintenance History for Vehicle ID: {{ request.POST.vehicle_id }}</h3>
+=======
+    <h3 class="mt-4">All Maintenance Records</h3>
+
+    <!-- Sorting Controls -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Sort Records</h5>
+            <form method="get" id="sortForm" class="form-inline">
+                <div class="form-group mr-3 mb-2">
+                    <label for="sort_by" class="mr-2">Sort By:</label>
+                    <select name="sort" id="sort_by" class="form-control">
+                        <option value="maintenance_date" {% if sort_by == 'maintenance_date' %}selected{% endif %}>Date</option>
+                        <option value="cost" {% if sort_by == 'cost' %}selected{% endif %}>Cost</option>
+                        <option value="status" {% if sort_by == 'status' %}selected{% endif %}>Status</option>
+                        <option value="vehicle_id" {% if sort_by == 'vehicle_id' %}selected{% endif %}>Vehicle ID</option>
+                        <option value="id" {% if sort_by == 'id' %}selected{% endif %}>Record ID</option>
+                    </select>
+                </div>
+                <div class="form-group mr-3 mb-2">
+                    <label for="order" class="mr-2">Order:</label>
+                    <select name="order" id="order" class="form-control">
+                        <option value="desc" {% if order == 'desc' %}selected{% endif %}>Descending</option>
+                        <option value="asc" {% if order == 'asc' %}selected{% endif %}>Ascending</option>
+                    </select>
+                </div>
+                
+                <!-- This hidden input ensures that any active vehicle filter is not lost when sorting -->
+                {% if filter_vehicle_id %}
+                    <input type="hidden" name="vehicle_id" value="{{ filter_vehicle_id }}">
+                {% endif %}
+                
+                <button type="submit" class="btn btn-primary mb-2">Sort</button>
+            </form>
+        </div>
+    </div>
+>>>>>>> Stashed changes
     <table class="table table-striped table-bordered">
         <thead class="thead-dark">
             <tr>
@@ -62,6 +131,7 @@
                 <th>Vehicle ID</th>
                 <th>Maintenance Date</th>
                 <th>Type</th>
+<<<<<<< Updated upstream
                 <th>Description</th>
                 <th>Cost</th>
                 <th>Service Provider</th>
@@ -162,17 +232,80 @@
                 <td>{{ cost.next_service_date }}</td>
             </tr>
             {% endfor %}
+=======
+                <th>Description</th>                
+                <th>
+                    <a href="?sort=cost&order={% if sort_by == 'cost' and order == 'asc' %}desc{% else %}asc{% endif %}">
+                        Cost
+                        {% if sort_by == 'cost' and order == 'asc' %}<i class="fas fa-sort-up"></i>
+                        {% elif sort_by == 'cost' and order == 'desc' %}<i class="fas fa-sort-down"></i>
+                        {% endif %}
+                    </a>
+                </th>
+                <th>Service Provider</th>
+                <th>Technician</th>
+                <th>Parts Replaced</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if maintenance_records %}
+                {% for record in maintenance_records %}
+                <tr>
+                    <td>{{ record.id }}</td>
+                    <td>{{ record.vehicle.vehicle_number }}</td>
+                    <td>{{ record.maintenance_date|date:"Y-m-d" }}</td>
+                    <td>{{ record.maintenance_type }}</td>
+                    <td>{{ record.description|truncatechars:40 }}</td>
+                    <td>₹{{ record.cost|floatformat:2 }}</td>
+                    <td>{{ record.service_provider|default:"N/A" }}</td>
+                    <td>{{ record.technician_name|default:"N/A" }}</td>
+                    <td>{{ record.parts_replaced|truncatechars:40|default:"N/A" }}</td>
+                    <td><span class="badge badge-info">{{ record.status }}</span></td>
+                    <td>
+                        <div class="dropdown">
+                            <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton-{{ record.id }}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Update Status
+                            </button>
+                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton-{{ record.id }}">
+                                {% for status_val, status_name in record.MAINTENANCE_STATUS_CHOICES %}
+                                    {% if status_val != record.status %}
+                                    <form action="{% url 'update_maintenance_status' record.id %}" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="status" value="{{ status_val }}">
+                                        <button type="submit" class="dropdown-item">{{ status_name }}</button>
+                                    </form>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="11" class="text-center">
+                        {% if request.GET.vehicle_id %}
+                            No maintenance records found for Vehicle ID {{ request.GET.vehicle_id }}.
+                        {% else %}
+                            No maintenance records found.
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endif %}
+>>>>>>> Stashed changes
         </tbody>
     </table>
     
     <script>
         const costPerVehicleData = {
-            labels: [{% for data in cost_per_vehicle %}"{{ data.vehicle__make }} {{ data.vehicle__model }}",{% endfor %}],
+            labels: [{% for data in cost_per_vehicle %}"{{ data.vehicle__make }} {{ data.vehicle__model }}"{% if not forloop.last %},{% endif %}{% endfor %}],
             datasets: [{
                 label: 'Total Maintenance Cost',
                 backgroundColor: 'rgba(255, 99, 132, 0.5)',
                 borderColor: 'rgb(255, 99, 132)',
-                data: [{% for data in cost_per_vehicle %}{{ data.total_cost }},{% endfor %}],
+                data: [{% for data in cost_per_vehicle %}{{ data.total_cost|default:0 }}{% if not forloop.last %},{% endif %}{% endfor %}],
             }]
         };
 
@@ -185,5 +318,13 @@
         };
         
         new Chart(document.getElementById('costPerVehicleChart'), costConfig);
+
+        // Automatically submit the form when a dropdown value changes for a seamless experience
+        document.getElementById('sort_by').addEventListener('change', function() {
+            document.getElementById('sortForm').submit();
+        });
+        document.getElementById('order').addEventListener('change', function() {
+            document.getElementById('sortForm').submit();
+        });
     </script>
 {% endblock %}
