@@ -24,7 +24,7 @@
             box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         }
     </style>
-    {% endblock style %}
+{% endblock style %}
 {% block content %}
 
     <main class="container mx-auto px-6 py-12">
@@ -32,8 +32,28 @@
             <!-- Filters Sidebar -->
             <aside class="lg:w-1/4">
                 <div class="bg-white p-6 rounded-lg shadow-md sticky top-24">
-                    <h3 class="text-xl font-bold mb-6 border-b pb-3">Filter & Sort</h3>
                     <form method="GET" action="{% url 'vehicle_list' %}">
+                        <!-- NEW: Availability Filter Section -->
+                        <div class="mb-6 border-b pb-6">
+                            <h3 class="text-xl font-bold mb-4">Find Availability</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="location" class="block text-sm font-medium text-gray-700 mb-1">Pickup Location</label>
+                                    <input type="text" name="location" id="location" placeholder="e.g., Pune" value="{{ values.location|default:'' }}" class="filter-control w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="pickup_datetime" class="block text-sm font-medium text-gray-700 mb-1">Pickup Time</label>
+                                    <input type="datetime-local" name="pickup_datetime" id="pickup_datetime" value="{{ values.pickup_datetime|default:'' }}" class="filter-control w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="return_datetime" class="block text-sm font-medium text-gray-700 mb-1">Return Time</label>
+                                    <input type="datetime-local" name="return_datetime" id="return_datetime" value="{{ values.return_datetime|default:'' }}" class="filter-control w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Existing Filters -->
+                        <h3 class="text-xl font-bold mb-4">Filter & Sort</h3>
                         <div class="mb-5">
                             <label for="type" class="block text-sm font-medium text-gray-700 mb-2">Vehicle Type</label>
                             <select name="type" id="type" class="filter-control w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 hover:border-blue-400">

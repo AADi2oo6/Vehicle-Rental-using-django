@@ -165,6 +165,9 @@ def logout_view(request):
     return redirect('home')
 
 def vehicle_list_view(request):
+    """
+    Handles the display of all vehicles with multi-layered filtering and sorting.
+    """
     customer = None
     customer_id = request.session.get('customer_id')
     if customer_id:
@@ -172,29 +175,65 @@ def vehicle_list_view(request):
             customer = Customer.objects.get(id=customer_id)
         except Customer.DoesNotExist:
             del request.session['customer_id']
-    vehicle_list = Vehicle.objects.filter(status='Available').order_by('make', 'model')
+
+    # Start with a base queryset of vehicles that are not retired
+    vehicle_list = Vehicle.objects.filter(status='Available')
+
+    # --- Availability Search (First Layer of Filtering) ---
+    location = request.GET.get('location')
+    pickup_str = request.GET.get('pickup_datetime')
+    return_str = request.GET.get('return_datetime')
+
+    # This block only runs if the user has provided all three availability fields
+    if location and pickup_str and return_str:
+        pickup_datetime = parse_datetime(pickup_str)
+        return_datetime = parse_datetime(return_str)
+
+        if pickup_datetime and return_datetime and return_datetime > pickup_datetime:
+            # 1. Filter by location
+            vehicle_list = vehicle_list.filter(location__icontains=location)
+            
+            # 2. Find IDs of vehicles with conflicting bookings in the specified time frame
+            conflicting_vehicle_ids = RentalBooking.objects.filter(
+                vehicle_id__in=vehicle_list.values('id'), # Check only against vehicles already filtered by location
+                pickup_datetime__lt=return_datetime,
+                return_datetime__gt=pickup_datetime
+            ).values_list('vehicle_id', flat=True)
+            
+            # 3. Exclude the conflicting vehicles to get the final list of available vehicle IDs
+            vehicle_list = vehicle_list.exclude(id__in=conflicting_vehicle_ids)
+    
+    # --- Standard Filters (Second Layer of Filtering) ---
     selected_type = request.GET.get('type')
     selected_fuel = request.GET.get('fuel')
     sort_by = request.GET.get('sort', 'make')
+
     if selected_type:
         vehicle_list = vehicle_list.filter(vehicle_type=selected_type)
+    
     if selected_fuel:
         vehicle_list = vehicle_list.filter(fuel_type=selected_fuel)
+
+    # --- Sorting ---
     if sort_by == 'price_asc':
         vehicle_list = vehicle_list.order_by('hourly_rate')
     elif sort_by == 'price_desc':
         vehicle_list = vehicle_list.order_by('-hourly_rate')
-    else:
+    else: # Default sort
         vehicle_list = vehicle_list.order_by('make', 'model')
+
+    # --- Pagination ---
     paginator = Paginator(vehicle_list, 9)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+
     context = {
         'customer': customer,
         'vehicles': page_obj,
-        'values': request.GET,
+        'values': request.GET, # To pre-fill the form
     }
     return render(request, "vehicles.html", context)
+
 
 @login_required
 def booking_view(request, vehicle_id):
