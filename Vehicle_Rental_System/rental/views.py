@@ -18,6 +18,7 @@ from django.urls import reverse
 from django.contrib.auth.forms import PasswordChangeForm
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 from django.http import HttpResponse
 from django.utils.dateparse import parse_datetime
 from django.db import transaction
@@ -34,6 +35,12 @@ from django.utils.dateparse import parse_datetime
 import csv
 from django.http import HttpResponse, JsonResponse
 from datetime import date, timedelta, datetime
+=======
+from django.utils.dateparse import parse_datetime
+import csv
+from django.http import HttpResponse, JsonResponse
+from datetime import date, timedelta, datetime
+>>>>>>> Stashed changes
 =======
 from django.utils.dateparse import parse_datetime
 import csv
@@ -58,6 +65,9 @@ from .forms import (
     MaintenanceRecordForm
 )
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -360,6 +370,10 @@ def admin_dashboard_view(request): # Renamed to avoid conflict with existing get
     """
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 =======
 
 >>>>>>> Stashed changes
@@ -374,7 +388,10 @@ def admin_dashboard_view(request): # Renamed to avoid conflict with existing get
     # --- Remaining Django ORM Queries ---
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
     pending_payments_count = Payment.objects.filter(payment_status='Pending').count()
@@ -527,11 +544,26 @@ def admin_maintenance_view(request):
         if result and result[0] is not None:
             total_maintenance_cost = result[0]
 
+    cost_per_vehicle = MaintenanceRecord.objects.values('vehicle__make', 'vehicle__model').annotate(
+        total_cost=Sum('cost')
+    ).order_by('-total_cost')
+
+    # --- Raw SQL Query for Total Maintenance Cost ---
+    # As requested, execute a raw SQL query to get the aggregate sum of all costs.
+    total_maintenance_cost = 0
+    with connection.cursor() as cursor:
+        # This query calculates the sum of costs directly from the maintenance records table.
+        cursor.execute("SELECT SUM(cost) FROM rental_maintenancerecord")
+        result = cursor.fetchone()
+        if result and result[0] is not None:
+            total_maintenance_cost = result[0]
+
     context = {
         'form': form,
         'maintenance_records': maintenance_records,
         'upcoming_maintenance': upcoming_maintenance,
         'cost_per_vehicle': cost_per_vehicle,
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
     }
@@ -545,6 +577,15 @@ def admin_maintenance_view(request):
     }
     return render(request, "admin/maintenance.html", context)
 
+=======
+        'total_maintenance_cost': total_maintenance_cost,
+        'sort_by': sort_by.lstrip('-'),
+        'order': order,
+        'filter_vehicle_id': filter_vehicle_id,
+    }
+    return render(request, "admin/maintenance.html", context)
+
+>>>>>>> Stashed changes
 =======
         'total_maintenance_cost': total_maintenance_cost,
         'sort_by': sort_by.lstrip('-'),
@@ -590,6 +631,9 @@ def update_maintenance_status_view(request, maintenance_id):
 
     return redirect('admin_maintenance')
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -792,6 +836,7 @@ def return_vehicle_view(request, booking_id):
         try:
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
             with connection.cursor() as cursor:
                 # Call the stored procedure
                 cursor.callproc('CALCULATE_FINAL_BILL', [booking.id, actual_return_datetime, 0.0])
@@ -800,6 +845,8 @@ def return_vehicle_view(request, booking_id):
                 result = cursor.fetchone()
                 final_charge = result[0] if result else 0.0
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
             with transaction.atomic():
@@ -815,6 +862,9 @@ def return_vehicle_view(request, booking_id):
                     result = cursor.fetchone()
                     final_charge = result[0] if result and result[0] is not None else 0.0
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -966,7 +1016,10 @@ def bookings_management_view(request):
         return response
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
     valid_sort_fields = ['booking_date', 'pickup_datetime', 'return_datetime', 'total_amount', 'booking_status']
@@ -1139,8 +1192,11 @@ def activate_booking_view(request, booking_id):
     return redirect('bookings_management')
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
 @login_required
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======
