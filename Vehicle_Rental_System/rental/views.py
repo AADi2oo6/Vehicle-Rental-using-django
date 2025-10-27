@@ -20,6 +20,7 @@ from django.contrib.auth.forms import PasswordChangeForm
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 from django.http import HttpResponse
 from django.utils.dateparse import parse_datetime
 from django.db import transaction
@@ -36,6 +37,12 @@ from django.utils.dateparse import parse_datetime
 import csv
 from django.http import HttpResponse, JsonResponse
 from datetime import date, timedelta, datetime
+=======
+from django.utils.dateparse import parse_datetime
+import csv
+from django.http import HttpResponse, JsonResponse
+from datetime import date, timedelta, datetime
+>>>>>>> Stashed changes
 =======
 from django.utils.dateparse import parse_datetime
 import csv
@@ -74,6 +81,9 @@ from .forms import (
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -382,6 +392,10 @@ def admin_dashboard_view(request): # Renamed to avoid conflict with existing get
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 =======
 
 >>>>>>> Stashed changes
@@ -404,7 +418,10 @@ def admin_dashboard_view(request): # Renamed to avoid conflict with existing get
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======
@@ -478,17 +495,24 @@ def admin_maintenance_view(request):
     Allows filtering maintenance history for a specific vehicle.
     Handles adding new maintenance records.
     """
+<<<<<<< Updated upstream
     # Handle form submission for adding a new record
     if request.method == 'POST':
         form = MaintenanceRecordForm(request.POST)
         if form.is_valid():
             # The form's clean method now handles vehicle validation and assignment.
             # We can just save the form directly.
+=======
+    if request.method == 'POST':
+        form = MaintenanceRecordForm(request.POST)
+        if form.is_valid():
+>>>>>>> Stashed changes
             maintenance_record = form.save()
             messages.success(
                 request,
                 f"New maintenance record for Vehicle ID {maintenance_record.vehicle.id} added successfully."
             )
+<<<<<<< Updated upstream
             # Redirect to the maintenance page, filtered by the vehicle that was just added.
             return redirect(f"{reverse('admin_maintenance')}?vehicle_id={maintenance_record.vehicle.id}")
         else:
@@ -498,12 +522,22 @@ def admin_maintenance_view(request):
     else:
         # This is a GET request, so create a blank form
         # Pre-fill vehicle if vehicle_id is in GET params
+=======
+            return redirect(f"{reverse('admin_maintenance')}?vehicle_id={maintenance_record.vehicle.id}")
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+>>>>>>> Stashed changes
         initial_data = {}
         if 'vehicle_id' in request.GET:
             initial_data['vehicle'] = request.GET.get('vehicle_id')
         form = MaintenanceRecordForm(initial=initial_data)
 
+<<<<<<< Updated upstream
     # --- ORM Query for fetching, filtering, and sorting maintenance records ---
+=======
+
+>>>>>>> Stashed changes
     sort_by = request.GET.get('sort', 'maintenance_date')
     order = request.GET.get('order', 'desc')
     filter_vehicle_id = request.GET.get('vehicle_id')
@@ -589,11 +623,26 @@ def admin_maintenance_view(request):
         if result and result[0] is not None:
             total_maintenance_cost = result[0]
 
+    cost_per_vehicle = MaintenanceRecord.objects.values('vehicle__make', 'vehicle__model').annotate(
+        total_cost=Sum('cost')
+    ).order_by('-total_cost')
+
+    # --- Raw SQL Query for Total Maintenance Cost ---
+    # As requested, execute a raw SQL query to get the aggregate sum of all costs.
+    total_maintenance_cost = 0
+    with connection.cursor() as cursor:
+        # This query calculates the sum of costs directly from the maintenance records table.
+        cursor.execute("SELECT SUM(cost) FROM rental_maintenancerecord")
+        result = cursor.fetchone()
+        if result and result[0] is not None:
+            total_maintenance_cost = result[0]
+
     context = {
         'form': form,
         'maintenance_records': maintenance_records,
         'upcoming_maintenance': upcoming_maintenance,
         'cost_per_vehicle': cost_per_vehicle,
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
@@ -609,6 +658,15 @@ def admin_maintenance_view(request):
     }
     return render(request, "admin/maintenance.html", context)
 
+=======
+        'total_maintenance_cost': total_maintenance_cost,
+        'sort_by': sort_by.lstrip('-'),
+        'order': order,
+        'filter_vehicle_id': filter_vehicle_id,
+    }
+    return render(request, "admin/maintenance.html", context)
+
+>>>>>>> Stashed changes
 =======
         'total_maintenance_cost': total_maintenance_cost,
         'sort_by': sort_by.lstrip('-'),
@@ -674,6 +732,9 @@ def update_maintenance_status_view(request, maintenance_id):
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -882,6 +943,7 @@ def return_vehicle_view(request, booking_id):
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
             with connection.cursor() as cursor:
                 # Call the stored procedure
                 cursor.callproc('CALCULATE_FINAL_BILL', [booking.id, actual_return_datetime, 0.0])
@@ -890,6 +952,8 @@ def return_vehicle_view(request, booking_id):
                 result = cursor.fetchone()
                 final_charge = result[0] if result else 0.0
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======
@@ -911,6 +975,9 @@ def return_vehicle_view(request, booking_id):
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -1068,7 +1135,10 @@ def bookings_management_view(request):
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======
@@ -1247,8 +1317,11 @@ def activate_booking_view(request, booking_id):
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
 @login_required
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======
