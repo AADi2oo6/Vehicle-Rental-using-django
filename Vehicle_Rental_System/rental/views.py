@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from .utils import dictfetchall
 from django.db import connection, transaction
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -420,12 +421,12 @@ def admin_dashboard_view(request): # Renamed to avoid conflict with existing get
         'recent_payments': recent_payments,
     }
     return render(request, "admin_dashboard_bootstrap.html", context)
+
 # Add this new view for AJAX requests
 @login_required
 def get_dashboard_data_ajax(request): # Renamed to avoid conflict with existing get_dashboard_data
     if not request.user.is_superuser:
         return JsonResponse({'error': 'You do not have permission to view this data.'}, status=403)
-
 
     data = {
         'total_revenue': 12345.67,
@@ -539,7 +540,7 @@ def payment_delete_view(request, payment_id):
         payment.delete()
         messages.success(request, "Payment record deleted successfully.")
     return redirect('admin_payments')
-    pass
+
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def payment_analytics_view(request):
@@ -782,6 +783,10 @@ def bookings_management_view(request):
         sort_by = f"-{sort_by.lstrip('-')}"
     else:
         sort_by = sort_by.lstrip('-')
+    
+    valid_sort_fields = ['booking_date', 'pickup_datetime', 'return_datetime', 'total_amount', 'booking_status']
+    if sort_by.strip('-') in valid_sort_fields:
+        bookings = bookings.order_by(sort_by)
 
     valid_sort_fields = ['booking_date', 'pickup_datetime', 'return_datetime', 'total_amount', 'booking_status']
     if sort_by.strip('-') in valid_sort_fields:

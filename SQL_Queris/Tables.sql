@@ -86,26 +86,7 @@ CREATE TABLE PAYMENTS (
 );
 
 
--- 5. MAINTENANCE_RECORDS Table
-
-CREATE TABLE MAINTENANCE_RECORDS (
-    maintenance_id INT PRIMARY KEY AUTO_INCREMENT,
-    vehicle_id INT NOT NULL,
-    maintenance_date DATE NOT NULL,
-    maintenance_type ENUM('Regular Service', 'Repair', 'Inspection', 'Cleaning', 'Tire Change') NOT NULL,
-    description TEXT NOT NULL,
-    cost DECIMAL(10,2) NOT NULL CHECK (cost >= 0),
-    service_provider VARCHAR(100),
-    next_service_date DATE,
-    mileage_at_service DECIMAL(8,2),
-    parts_replaced TEXT,
-    technician_name VARCHAR(50),
-    status ENUM('Scheduled', 'In Progress', 'Completed', 'Cancelled') DEFAULT 'Completed',
-    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (vehicle_id) REFERENCES VEHICLES(vehicle_id) ON DELETE CASCADE
-);
-
--- 6. FEEDBACK_REVIEWS Table
+-- 5. FEEDBACK_REVIEWS Table
 CREATE TABLE FEEDBACK_REVIEWS (
     review_id INT PRIMARY KEY AUTO_INCREMENT,
     booking_id INT NOT NULL,
@@ -122,4 +103,34 @@ CREATE TABLE FEEDBACK_REVIEWS (
     FOREIGN KEY (booking_id) REFERENCES RENTAL_BOOKINGS(booking_id) ON DELETE CASCADE,
     FOREIGN KEY (customer_id) REFERENCES CUSTOMERS(customer_id) ON DELETE CASCADE,
     FOREIGN KEY (vehicle_id) REFERENCES VEHICLES(vehicle_id) ON DELETE CASCADE
+);
+-- 6. Core maintenance record table
+CREATE TABLE MAINTENANCE_RECORDS (
+    maintenance_id INT PRIMARY KEY AUTO_INCREMENT,
+    vehicle_id INT NOT NULL,
+    maintenance_date DATE NOT NULL,
+    maintenance_type ENUM('Regular Service', 'Repair', 'Inspection', 'Cleaning', 'Tire Change') NOT NULL,
+    description TEXT NOT NULL,
+    service_provider VARCHAR(100),
+    status ENUM('Scheduled', 'In Progress', 'Completed', 'Cancelled') DEFAULT 'Completed',
+    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (vehicle_id) REFERENCES VEHICLES(vehicle_id) ON DELETE CASCADE
+);
+
+-- 7. Crew-specific details (staff input)
+CREATE TABLE MAINTENANCE_DETAILS (
+    maintenance_id INT PRIMARY KEY,
+    mileage_at_service DECIMAL(8,2),
+    parts_replaced TEXT,
+    cost DECIMAL(10,2) NOT NULL CHECK (cost >= 0),
+    technician_name VARCHAR(50),
+    FOREIGN KEY (maintenance_id) REFERENCES MAINTENANCE_RECORDS(maintenance_id) ON DELETE CASCADE
+);
+
+-- 8. Admin accounting table
+CREATE TABLE MAINTENANCE_COSTS (
+    maintenance_id INT PRIMARY KEY,
+    cost DECIMAL(10,2) NOT NULL CHECK (cost >= 0),
+    next_service_date DATE,
+    FOREIGN KEY (maintenance_id) REFERENCES MAINTENANCE_RECORDS(maintenance_id) ON DELETE CASCADE
 );
