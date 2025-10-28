@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Profile - Velo-Rent</title>
-    
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,7 +15,7 @@
 
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -26,11 +26,13 @@
             color: #1d4ed8;
             border-right: 3px solid #1d4ed8;
         }
+        /* Style for form inputs */
         .form-input {
-            @apply w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm transition duration-150 ease-in-out focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+            @apply w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500;
         }
         .form-label {
-            @apply block text-sm font-medium text-gray-700 mb-1;        }
+            @apply block text-sm font-medium text-gray-700 mb-1;
+        }
     </style>
 </head>
 <body class="text-gray-800">
@@ -46,115 +48,67 @@
             <!-- Main Content -->
             <div class="lg:w-3/4">
                 <div class="bg-white p-8 rounded-lg shadow-md">
-                    <h3 class="text-2xl font-bold mb-2">Edit Profile</h3>
-                    <p class="text-gray-500 mb-8">Update your photo and personal details here.</p>
-                    
-                    <form method="post" enctype="multipart/form-data">
-                        {% csrf_token %}
+                    <h3 class="text-2xl font-bold mb-6">Edit Profile</h3>
 
-                        <!-- Profile Picture Form -->
-                        <div class="flex items-center gap-6 mb-8 pb-8 border-b">
-                            <img id="imagePreview" class="h-24 w-24 rounded-full object-cover" src="{{ customer.profile_picture.url }}" alt="Current Profile Picture">
-                            <div>
-                                <label for="{{ picture_form.profile_picture.id_for_label }}" class="cursor-pointer bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
-                                    <span>Change Photo</span>
-                                </label>
-                                <input id="{{ picture_form.profile_picture.id_for_label }}" name="{{ picture_form.profile_picture.name }}" type="file" class="sr-only" accept="image/*">
-                                {% if picture_form.profile_picture.help_text %}
-                                <p class="text-xs text-gray-500 mt-2">{{ picture_form.profile_picture.help_text }}</p>
-                                {% endif %}
-                                {% if picture_form.profile_picture.errors %}
-                                    <p class="text-red-500 text-xs mt-1">{{ picture_form.profile_picture.errors.0 }}</p>
-                                {% endif %}
+                    <!-- Unified Profile Form -->
+                    <form method="post" enctype="multipart/form-data" class="mb-8 pb-8 border-b">
+                        {% csrf_token %}
+                        
+                        <!-- Profile Picture Section -->
+                        <div class="flex items-center gap-6 mb-8">
+                            <img src="{{ customer.profile_picture.url }}" alt="Profile Picture" class="w-24 h-24 rounded-full object-cover" onerror="this.onerror=null;this.src='/static/img/default_profile.png';">
+                            <div class="flex-grow">
+                                <label for="{{ profile_form.profile_picture.id_for_label }}" class="form-label">{{ profile_form.profile_picture.label }}</label>
+                                {{ profile_form.profile_picture }}
+                                <p class="text-xs text-gray-500 mt-1">{{ profile_form.profile_picture.help_text }}</p>
+                                {% for error in profile_form.profile_picture.errors %}
+                                    <p class="text-red-500 text-xs italic mt-1">{{ error }}</p>
+                                {% endfor %}
                             </div>
                         </div>
-                        
-                        <!-- Personal Details Form -->
-                        <h4 class="text-lg font-semibold text-gray-800 mb-6">Personal Information</h4>
+
+                        <!-- Personal Information Section -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- Manually render fields for better styling control -->
-                            <div>
-                                <label for="{{ profile_form.first_name.id_for_label }}" class="form-label">{{ profile_form.first_name.label }}</label>
-                                <input type="text" name="{{ profile_form.first_name.name }}" value="{{ profile_form.first_name.value|default:'' }}" id="{{ profile_form.first_name.id_for_label }}" class="form-input">
-                                {% if profile_form.first_name.errors %}<p class="text-red-500 text-xs mt-1">{{ profile_form.first_name.errors.0 }}</p>{% endif %}
-                            </div>
-                            <div>
-                                <label for="{{ profile_form.last_name.id_for_label }}" class="form-label">{{ profile_form.last_name.label }}</label>
-                                <input type="text" name="{{ profile_form.last_name.name }}" value="{{ profile_form.last_name.value|default:'' }}" id="{{ profile_form.last_name.id_for_label }}" class="form-input">
-                                {% if profile_form.last_name.errors %}<p class="text-red-500 text-xs mt-1">{{ profile_form.last_name.errors.0 }}</p>{% endif %}
-                            </div>
-                            <div>
-                                <label for="{{ profile_form.phone.id_for_label }}" class="form-label">{{ profile_form.phone.label }}</label>
-                                <input type="tel" name="{{ profile_form.phone.name }}" value="{{ profile_form.phone.value|default:'' }}" id="{{ profile_form.phone.id_for_label }}" class="form-input">
-                                {% if profile_form.phone.errors %}<p class="text-red-500 text-xs mt-1">{{ profile_form.phone.errors.0 }}</p>{% endif %}
-                            </div>
-                            <div>
-                                <label for="{{ profile_form.date_of_birth.id_for_label }}" class="form-label">{{ profile_form.date_of_birth.label }}</label>
-                                <input type="date" name="{{ profile_form.date_of_birth.name }}" value="{{ profile_form.date_of_birth.value|date:'Y-m-d' }}" id="{{ profile_form.date_of_birth.id_for_label }}" class="form-input">
-                                {% if profile_form.date_of_birth.errors %}<p class="text-red-500 text-xs mt-1">{{ profile_form.date_of_birth.errors.0 }}</p>{% endif %}
-                            </div>
-                            <div class="md:col-span-2">
-                                <label for="{{ profile_form.address.id_for_label }}" class="form-label">{{ profile_form.address.label }}</label>
-                                <input type="text" name="{{ profile_form.address.name }}" value="{{ profile_form.address.value|default:'' }}" id="{{ profile_form.address.id_for_label }}" class="form-input">
-                                {% if profile_form.address.errors %}<p class="text-red-500 text-xs mt-1">{{ profile_form.address.errors.0 }}</p>{% endif %}
-                            </div>
-                            <div>
-                                <label for="{{ profile_form.city.id_for_label }}" class="form-label">{{ profile_form.city.label }}</label>
-                                <input type="text" name="{{ profile_form.city.name }}" value="{{ profile_form.city.value|default:'' }}" id="{{ profile_form.city.id_for_label }}" class="form-input">
-                                {% if profile_form.city.errors %}<p class="text-red-500 text-xs mt-1">{{ profile_form.city.errors.0 }}</p>{% endif %}
-                            </div>
-                            <div>
-                                <label for="{{ profile_form.state.id_for_label }}" class="form-label">{{ profile_form.state.label }}</label>
-                                <input type="text" name="{{ profile_form.state.name }}" value="{{ profile_form.state.value|default:'' }}" id="{{ profile_form.state.id_for_label }}" class="form-input">
-                                {% if profile_form.state.errors %}<p class="text-red-500 text-xs mt-1">{{ profile_form.state.errors.0 }}</p>{% endif %}
-                            </div>
-                            <div>
-                                <label for="{{ profile_form.zip_code.id_for_label }}" class="form-label">{{ profile_form.zip_code.label }}</label>
-                                <input type="text" name="{{ profile_form.zip_code.name }}" value="{{ profile_form.zip_code.value|default:'' }}" id="{{ profile_form.zip_code.id_for_label }}" class="form-input">
-                                {% if profile_form.zip_code.errors %}<p class="text-red-500 text-xs mt-1">{{ profile_form.zip_code.errors.0 }}</p>{% endif %}
-                            </div>
-                            <div class="md:col-span-2">
-                                <label for="{{ profile_form.license_number.id_for_label }}" class="form-label">{{ profile_form.license_number.label }}</label>
-                                <input type="text" name="{{ profile_form.license_number.name }}" value="{{ profile_form.license_number.value|default:'' }}" id="{{ profile_form.license_number.id_for_label }}" class="form-input" placeholder="e.g., MH1420231234567">
-                                <p class="text-xs text-gray-500 mt-1">Enter your 15-character alphanumeric driving licence number.</p>
-                                {% if profile_form.license_number.errors %}<p class="text-red-500 text-xs mt-1">{{ profile_form.license_number.errors.0 }}</p>{% endif %}
-                            </div>
-                            <div class="md:col-span-2 flex items-center gap-3 mt-2">
-                                <input type="checkbox" name="{{ profile_form.is_subscribed_to_newsletter.name }}" id="{{ profile_form.is_subscribed_to_newsletter.id_for_label }}" {% if profile_form.is_subscribed_to_newsletter.value %}checked{% endif %} class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                                <label for="{{ profile_form.is_subscribed_to_newsletter.id_for_label }}" class="form-label mb-0">{{ profile_form.is_subscribed_to_newsletter.label }}</label>
-                                {% if profile_form.is_subscribed_to_newsletter.errors %}<p class="text-red-500 text-xs mt-1">{{ profile_form.is_subscribed_to_newsletter.errors.0 }}</p>{% endif %}
-                            </div>
-                            <div class="md:col-span-2 mt-4">
-                                <label class="form-label">Your Referral Code (Read-only)</label>
-                                <div class="form-input bg-gray-100 cursor-not-allowed">{{ customer.referral_code }}</div>
-                                <p class="text-xs text-gray-500 mt-1">Share this code with friends to earn rewards!</p>
-                            </div>
+                            {% for field in profile_form %}
+                                {% if field.name != 'profile_picture' %}
+                                    {% comment %} Special handling for the checkbox field {% endcomment %}
+                                    {% if field.name == 'is_subscribed_to_newsletter' %}
+                                        <div class="md:col-span-2 flex items-center gap-3 pt-2">
+                                            {{ field }}
+                                            <label for="{{ field.id_for_label }}" class="form-label mb-0">{{ field.label }}</label>
+                                        </div>
+                                    {% else %}
+                                        {% comment %} Logic to make specific fields span the full width {% endcomment %}
+                                        {% with "address,license_number,referral_code" as full_width_fields %}
+                                        <div class="{% if field.name in full_width_fields %}md:col-span-2{% else %}md:col-span-1{% endif %}">
+                                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                            {{ field }}
+                                            {% for error in field.errors %}
+                                                <p class="text-red-500 text-xs italic mt-1">{{ error }}</p>
+                                            {% endfor %}
+                                        </div>
+                                        {% endwith %}
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
                         </div>
-                        
-                        <div class="mt-8 pt-6 border-t flex justify-end gap-4">
-                            <a href="{% url 'my_profile' %}" class="px-6 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</a>
-                            <button type="submit" class="px-6 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Save Changes</button>
+
+                        <div class="mt-8 flex justify-end">
+                            <a href="{% url 'my_profile' %}" class="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 mr-4">Cancel</a>
+                            <button type="submit" class="px-6 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800">Save Profile</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
     </main>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const imageInput = document.getElementById('{{ picture_form.profile_picture.id_for_label }}');
-            const imagePreview = document.getElementById('imagePreview');
-    
-            imageInput.addEventListener('change', function(event) {
-                if (event.target.files && event.target.files[0]) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        imagePreview.src = e.target.result;
-                    }
-                    reader.readAsDataURL(event.target.files[0]);
-                }
-            });
-        });
-    </script>
+
 </body>
 </html>
+
+<script>
+    // Add the 'form-input' class to all relevant form fields for styling
+    document.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], input[type="date"], textarea').forEach(el => {
+        el.classList.add('form-input');
+    });
+</script>

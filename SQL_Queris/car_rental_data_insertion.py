@@ -8,7 +8,7 @@ DB_CONFIG = {
     'host': 'localhost',
     'database': 'cp',
     'user': 'root',
-    'password': '10adit06'
+    'password': 'vedantiasatkar1523@'
 }
 
 # Customer Data (20 customers from various Indian cities)
@@ -439,38 +439,42 @@ def insert_data():
         print(f"{cursor.rowcount} customers inserted.")
 
         # Insert Vehicles
-        print("Inserting vehicle data...")
-        v_query = """
-        INSERT INTO rental_vehicle (vehicle_number, make, model, year, color, vehicle_type, fuel_type, seating_capacity, transmission, hourly_rate, mileage, insurance_expiry, last_service_date, status)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        print("\n2. Inserting Vehicle data...")
+        vehicle_insert_query = """
+        INSERT INTO rental_vehicle (vehicle_number, make, model, year, color, vehicle_type, fuel_type, 
+        seating_capacity, transmission, hourly_rate, mileage, insurance_expiry, last_service_date, 
+        status, created_date, vehicle_picture) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         for vehicle in vehicles_data:
-            v_values = (
+            hourly_rate = vehicle['daily_rate'] / 24  # Calculate hourly rate from daily rate
+            vehicle_values = (
                 vehicle['vehicle_number'], vehicle['make'], vehicle['model'], vehicle['year'],
                 vehicle['color'], vehicle['vehicle_type'], vehicle['fuel_type'], vehicle['seating_capacity'],
-                vehicle['transmission'], vehicle['daily_rate'], vehicle['mileage'],
-                vehicle['insurance_expiry'], vehicle['last_service_date'], 'Available'
+                vehicle['transmission'], hourly_rate, vehicle['mileage'], vehicle['insurance_expiry'],
+                vehicle['last_service_date'], 'Available', datetime.now(), 'vehicle_pics/default.jpg'
             )
             cursor.execute(v_query, v_values)
         connection.commit()
         print(f"{cursor.rowcount} vehicles inserted.")
 
         # Insert Rental Bookings
-        print("Inserting rental booking data...")
-        rb_query = """
-        INSERT INTO rental_rentalbooking (customer_id, vehicle_id, pickup_datetime, return_datetime, actual_return_datetime, pickup_location, return_location, hourly_rate, total_amount, security_deposit, booking_status)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        print("\n3. Inserting Rental Booking data...")
+        booking_insert_query = """
+        INSERT INTO rental_rentalbooking (customer_id, vehicle_id, booking_date, pickup_datetime, return_datetime, 
+        actual_return_datetime, pickup_location, return_location, hourly_rate, total_amount, security_deposit, 
+        booking_status, special_requests, created_by) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         for booking in rental_bookings_data:
-            pickup_datetime = f"{booking['pickup_date']} 00:00:00"
-            return_datetime = f"{booking['return_date']} 00:00:00"
-            actual_return_datetime = f"{booking['actual_return_date']} 00:00:00" if 'actual_return_date' in booking else None
-
-            rb_values = (
-                booking['customer_id'], booking['vehicle_id'], pickup_datetime, return_datetime,
-                actual_return_datetime, booking['pickup_location'], booking['return_location'],
-                booking['daily_rate'], booking['total_amount'], booking['security_deposit'],
-                booking['booking_status']
+            hourly_rate = booking['daily_rate'] / 24 # Calculate hourly rate
+            pickup_datetime = f"{booking['pickup_date']} 10:00:00" # Add a default time
+            return_datetime = f"{booking['return_date']} 10:00:00" # Add a default time
+            booking_values = (
+                booking['customer_id'], booking['vehicle_id'], datetime.now(), pickup_datetime,
+                return_datetime, booking.get('actual_return_date'), booking['pickup_location'],
+                booking['return_location'], hourly_rate, booking['total_amount'],
+                booking['security_deposit'], booking['booking_status'], None, 'System'
             )
             cursor.execute(rb_query, rb_values)
         connection.commit()
