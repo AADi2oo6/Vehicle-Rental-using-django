@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Customer, Vehicle, RentalBooking, Payment, MaintenanceRecord, FeedbackReview
+from .models import Customer, Vehicle, RentalBooking, Payment, FeedbackReview
 
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
@@ -25,12 +25,6 @@ class PaymentAdmin(admin.ModelAdmin):
     list_display = ('id', 'booking', 'customer', 'amount', 'payment_method', 'payment_status', 'payment_date')
     search_fields = ('booking__id', 'customer__first_name', 'transaction_id')
     list_filter = ('payment_method', 'payment_status', 'payment_type')
-
-@admin.register(MaintenanceRecord)
-class MaintenanceRecordAdmin(admin.ModelAdmin):
-    list_display = ('id', 'vehicle', 'maintenance_date', 'maintenance_type', 'cost', 'status')
-    search_fields = ('vehicle__vehicle_number',)
-    list_filter = ('maintenance_type', 'status')
 
 @admin.register(FeedbackReview)
 class FeedbackReviewAdmin(admin.ModelAdmin):

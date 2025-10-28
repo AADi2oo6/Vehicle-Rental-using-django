@@ -37,6 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'widget_tweaks',  # Add this line
+
+    # Your apps
     'rental.apps.RentalConfig',
 ]
 
@@ -79,13 +82,9 @@ WSGI_APPLICATION = 'Vehicle_Rental_System.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'DBMS_CP',  # Corrected DB name from your setup guide
+        'NAME': 'cp',  # Corrected DB name from your setup guide
         'USER': 'root',    # Replace with your MySQL username
-<<<<<<< Updated upstream
-        'PASSWORD': '241533591',  # IMPORTANT: Replace with your actual MySQL password
-=======
         'PASSWORD': 'vedantiasatkar1523@',  # IMPORTANT: Replace with your actual MySQL password
->>>>>>> Stashed changes
         'HOST': 'localhost',          # Or your MySQL server address
         'PORT': '3306',               # Default MySQL port
     }
@@ -142,3 +141,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # For developme
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# --- Authentication URLs ---
+# Tell Django where to redirect users when they need to log in.
+LOGIN_URL = 'login'

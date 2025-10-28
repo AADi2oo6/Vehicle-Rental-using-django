@@ -8,7 +8,7 @@ DB_CONFIG = {
     'host': 'localhost',
     'database': 'cp',
     'user': 'root',
-    'password': '202510'
+    'password': 'vedantiasatkar1523@'
 }
 
 # Customer Data (20 customers from various Indian cities)
@@ -411,16 +411,17 @@ def insert_data():
         print("\n2. Inserting Vehicle data...")
         vehicle_insert_query = """
         INSERT INTO rental_vehicle (vehicle_number, make, model, year, color, vehicle_type, fuel_type, 
-        seating_capacity, transmission, daily_rate, mileage, insurance_expiry, last_service_date, 
+        seating_capacity, transmission, hourly_rate, mileage, insurance_expiry, last_service_date, 
         status, created_date, vehicle_picture) 
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         
         for vehicle in vehicles_data:
+            hourly_rate = vehicle['daily_rate'] / 24  # Calculate hourly rate from daily rate
             vehicle_values = (
                 vehicle['vehicle_number'], vehicle['make'], vehicle['model'], vehicle['year'],
                 vehicle['color'], vehicle['vehicle_type'], vehicle['fuel_type'], vehicle['seating_capacity'],
-                vehicle['transmission'], vehicle['daily_rate'], vehicle['mileage'], vehicle['insurance_expiry'],
+                vehicle['transmission'], hourly_rate, vehicle['mileage'], vehicle['insurance_expiry'],
                 vehicle['last_service_date'], 'Available', datetime.now(), 'vehicle_pics/default.jpg'
             )
             cursor.execute(vehicle_insert_query, vehicle_values)
@@ -430,17 +431,20 @@ def insert_data():
         # Insert Rental Bookings
         print("\n3. Inserting Rental Booking data...")
         booking_insert_query = """
-        INSERT INTO rental_rentalbooking (customer_id, vehicle_id, booking_date, pickup_date, return_date, 
-        actual_return_date, pickup_location, return_location, daily_rate, total_amount, security_deposit, 
+        INSERT INTO rental_rentalbooking (customer_id, vehicle_id, booking_date, pickup_datetime, return_datetime, 
+        actual_return_datetime, pickup_location, return_location, hourly_rate, total_amount, security_deposit, 
         booking_status, special_requests, created_by) 
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         
         for booking in rental_bookings_data:
+            hourly_rate = booking['daily_rate'] / 24 # Calculate hourly rate
+            pickup_datetime = f"{booking['pickup_date']} 10:00:00" # Add a default time
+            return_datetime = f"{booking['return_date']} 10:00:00" # Add a default time
             booking_values = (
-                booking['customer_id'], booking['vehicle_id'], datetime.now(), booking['pickup_date'],
-                booking['return_date'], booking.get('actual_return_date'), booking['pickup_location'],
-                booking['return_location'], booking['daily_rate'], booking['total_amount'],
+                booking['customer_id'], booking['vehicle_id'], datetime.now(), pickup_datetime,
+                return_datetime, booking.get('actual_return_date'), booking['pickup_location'],
+                booking['return_location'], hourly_rate, booking['total_amount'],
                 booking['security_deposit'], booking['booking_status'], None, 'System'
             )
             cursor.execute(booking_insert_query, booking_values)
