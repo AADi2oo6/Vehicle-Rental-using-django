@@ -4,7 +4,7 @@ from django.db import connection, transaction
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.db.models import Q, Sum, F, Count
+from django.db.models import Q, Sum, F
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.core.cache import cache
@@ -12,14 +12,13 @@ from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.auth.forms import PasswordChangeForm
 from django.http import HttpResponse
 from django.utils.dateparse import parse_datetime
-from django.http import Http404
-from django.utils import timezone 
-from django.db import transaction, IntegrityError
+from django.db import transaction
 from datetime import date, timedelta, datetime
-from .models import Vehicle, Customer, FeedbackReview, RentalBooking, Payment, CustomerActivityLog, CustomerDetailsView
+import csv
+from .models import Vehicle, Customer, FeedbackReview, RentalBooking, Payment, MaintenanceRecord, CustomerActivityLog
 from django.http import JsonResponse
 from django.db.models import Sum
-from .forms import PaymentForm, CustomerProfileForm, UserUpdateForm
+from .forms import PaymentForm, CustomerProfileForm, CustomerPictureForm
 from .models import Payment
 from .forms import AdminBookingForm # Import the new form
 
@@ -36,6 +35,7 @@ def get_dashboard_data(request):
         'total_revenue': 12345.67,
         'active_rentals': 8,
         'pending_payments': 3,
+        'maintenance_vehicles': 2,
     }
     return JsonResponse(data)
 # User-facing Views
@@ -91,14 +91,12 @@ def register_view(request):
             messages.error(request, 'A user with this email already exists.')
             return redirect('home')
 
-        # Improved name validation: ensure at least a first and last name are provided.
-        name_parts = full_name.split()
-        if len(name_parts) < 2:
-            messages.error(request, 'Please provide both your first and last name.')
-            return redirect('home')
+        try:
+            first_name, last_name = full_name.split(' ', 1)
+        except ValueError:
+            first_name, last_name = full_name, ""
 
         try:
-            first_name, last_name = name_parts[0], " ".join(name_parts[1:])
             with transaction.atomic():
                 # Create Django User
                 user = User.objects.create_user(
@@ -245,47 +243,10 @@ def my_profile_view(request):
     """
     Displays the logged-in user's profile information and booking history.
     """
-    # --- MODIFIED: Fetching customer data using a raw SQL query ---
-    # This replaces: customer = get_object_or_404(Customer, user=request.user)
-    # We use `Customer.objects.raw()` to execute a raw query but still get a model instance back.
-    customer_query = "SELECT * FROM rental_customer WHERE user_id = %s"
-    customers = list(Customer.objects.raw(customer_query, [request.user.id]))
+    customer = get_object_or_404(Customer, user=request.user)
 
-    if not customers:
-        raise Http404("Customer profile not found for the logged-in user.")
-    customer = customers[0]
-
-    # --- MODIFIED: Fetching bookings using a raw SQL query with a JOIN ---
-    # This replaces: RentalBooking.objects.filter(customer=customer).select_related('vehicle').order_by('-booking_date')
-    # This raw query performs an INNER JOIN to get vehicle details in a single database trip.
-    bookings_query = """
-        SELECT
-            rb.id, rb.booking_date, rb.pickup_datetime, rb.return_datetime, rb.booking_status,
-            v.make, v.model
-        FROM
-            rental_rentalbooking rb
-        INNER JOIN
-            rental_vehicle v ON rb.vehicle_id = v.id
-        WHERE
-            rb.customer_id = %s
-        ORDER BY
-            rb.booking_date DESC
-    """
-    
-    # We execute this and build a list of objects that the template can use.
-    # The template expects `booking.vehicle.make`, so we create a simple nested structure.
-    bookings = []
-    with connection.cursor() as cursor:
-        cursor.execute(bookings_query, [customer.id])
-        for row in cursor.fetchall():
-            bookings.append({
-                'id': row[0],
-                'booking_date': row[1],
-                'pickup_datetime': row[2],
-                'return_datetime': row[3],
-                'booking_status': row[4],
-                'vehicle': {'make': row[5], 'model': row[6]}
-            })
+    # Fetch the user's bookings
+    bookings = RentalBooking.objects.filter(customer=customer).select_related('vehicle').order_by('-booking_date')
 
     context = {
         'customer': customer,
@@ -298,76 +259,31 @@ def edit_profile_view(request):
     """
     Allows a logged-in user to edit their profile information.
     """
-    # We still need the ORM to get the initial object for the form.
-    # The raw SQL part is in the POST handling.
-    customer = get_object_or_404(Customer, user=request.user) 
+    customer = get_object_or_404(Customer, user=request.user)
 
     if request.method == 'POST':
-        # Instantiate both forms with POST data and files
-        user_form = UserUpdateForm(request.POST, instance=request.user)
-        profile_form = CustomerProfileForm(request.POST, request.FILES, instance=customer)
+        # Instantiate both forms with POST data
+        profile_form = CustomerProfileForm(request.POST, instance=customer)
+        picture_form = CustomerPictureForm(request.POST, request.FILES, instance=customer)
 
-        if user_form.is_valid() and profile_form.is_valid():
-            # --- MODIFIED: Using raw SQL for the UPDATE operation ---
-            # This replaces the simple .save() calls with explicit transaction
-            # control and raw UPDATE queries.
-            try:
-                with transaction.atomic(): # Guarantees atomicity
-                    # 1. Update the auth_user table
-                    user_data = user_form.cleaned_data
-                    with connection.cursor() as cursor:
-                        cursor.execute(
-                            """
-                            UPDATE auth_user 
-                            SET first_name = %s, last_name = %s, email = %s 
-                            WHERE id = %s
-                            """,
-                            [user_data['first_name'], user_data['last_name'], user_data['email'], request.user.id]
-                        )
-
-                    # 2. Update the rental_customer table
-                    profile_data = profile_form.cleaned_data
-                    with connection.cursor() as cursor:
-                        # Note: Handling profile_picture requires saving the file first,
-                        # which the form does automatically. We just get the path.
-                        profile_form.save(commit=False) # Process file upload without saving to DB
-                        
-                        cursor.execute(
-                            """
-                            UPDATE rental_customer 
-                            SET phone = %s, date_of_birth = %s, address = %s, city = %s, 
-                                state = %s, zip_code = %s, license_number = %s, 
-                                is_subscribed_to_newsletter = %s, profile_picture = %s
-                            WHERE id = %s
-                            """,
-                            [
-                                profile_data['phone'], profile_data['date_of_birth'],
-                                profile_data['address'], profile_data['city'], profile_data['state'],
-                                profile_data['zip_code'], profile_data['license_number'],
-                                profile_data['is_subscribed_to_newsletter'],
-                                customer.profile_picture.name, # Use the path from the saved form instance
-                                customer.id
-                            ]
-                        )
-                
-                messages.success(request, "Your profile has been updated successfully using raw SQL!")
-                return redirect('my_profile')
-            except IntegrityError as e:
-                # This will catch database-level errors, like from your triggers
-                messages.error(request, f"A database error occurred: {e}")
-            except Exception as e:
-                messages.error(request, f"An unexpected error occurred: {e}")
+        # Check which form was submitted based on a hidden input or button name if needed,
+        # but here we can just check both.
+        if profile_form.is_valid() and picture_form.is_valid():
+            profile_form.save()
+            picture_form.save()
+            messages.success(request, "Your profile has been updated successfully!")
+            return redirect('my_profile')
         else:
             messages.error(request, "There was an error updating your profile. Please correct the errors below.")
     else:
         # For GET request, instantiate forms with current customer data
-        user_form = UserUpdateForm(instance=request.user)
         profile_form = CustomerProfileForm(instance=customer)
+        picture_form = CustomerPictureForm(instance=customer)
 
     context = {
         'customer': customer,
-        'user_form': user_form,
         'profile_form': profile_form,
+        'picture_form': picture_form,
     }
     return render(request, "edit_profile.html", context)
 
@@ -410,6 +326,7 @@ def admin_dashboard_view(request): # Renamed to avoid conflict with existing get
     # --- Remaining Django ORM Queries ---
     active_rentals_count = RentalBooking.objects.filter(booking_status='Active').count()
     pending_payments_count = Payment.objects.filter(payment_status='Pending').count()
+    maintenance_vehicles_count = Vehicle.objects.filter(status='Maintenance').count()
     recent_bookings = RentalBooking.objects.select_related('customer', 'vehicle').order_by('-booking_date')[:5]
     recent_payments = Payment.objects.select_related('customer').order_by('-payment_date')[:5]
 
@@ -417,6 +334,7 @@ def admin_dashboard_view(request): # Renamed to avoid conflict with existing get
         'total_revenue': total_revenue,
         'active_rentals_count': active_rentals_count,
         'pending_payments_count': pending_payments_count,
+        'maintenance_vehicles_count': maintenance_vehicles_count,
         'recent_bookings': recent_bookings,
         'recent_payments': recent_payments,
     }
@@ -432,15 +350,29 @@ def get_dashboard_data_ajax(request): # Renamed to avoid conflict with existing 
         'total_revenue': 12345.67,
         'active_rentals': 8,
         'pending_payments': 3,
+        'maintenance_vehicles': 2,
     }
     return JsonResponse(data)
 
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
-def admin_vehicles_view(request):
-    vehicles = Vehicle.objects.all()
-    return render(request, 'admin/vehicles.html', {'vehicles': vehicles})
+def admin_maintenance_view(request):
+    maintenance_records = MaintenanceRecord.objects.select_related('vehicle').order_by('-maintenance_date')
+    upcoming_maintenance = MaintenanceRecord.objects.filter(
+        status='Scheduled',
+        maintenance_date__gt=date.today()
+    ).order_by('maintenance_date')
+    cost_per_vehicle = MaintenanceRecord.objects.values('vehicle__make', 'vehicle__model').annotate(
+        total_cost=Sum('cost')
+    ).order_by('-total_cost')
+
+    context = {
+        'maintenance_records': maintenance_records,
+        'upcoming_maintenance': upcoming_maintenance,
+        'cost_per_vehicle': cost_per_vehicle,
+    }
+    return render(request, "admin/maintenance.html", context)
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
@@ -622,65 +554,49 @@ def return_vehicle_view(request, booking_id):
     Handles the calculation of the final bill using the Stored Procedure,
     updates the database, and redirects the admin.
     """
-    booking = get_object_or_404(RentalBooking.objects.select_related('vehicle'), id=booking_id)
-    from decimal import Decimal
+    booking = get_object_or_404(RentalBooking, id=booking_id)
 
     if request.method == 'POST':
         actual_return_datetime_str = request.POST.get('actual_return_datetime')
         final_payment_method = request.POST.get('final_payment_method')
 
-        if not all([actual_return_datetime_str, final_payment_method]):
+        if not actual_return_datetime_str:
             messages.error(request, "Actual return date and time are required.")
             return redirect('return_vehicle', booking_id=booking_id)
 
         actual_return_datetime = parse_datetime(actual_return_datetime_str)
-        # Make the naive datetime from the form aware of the current timezone
-        if timezone.is_naive(actual_return_datetime):
-            actual_return_datetime = timezone.make_aware(actual_return_datetime, timezone.get_current_timezone())
-
-
-        # Ensure actual return is after pickup
-        if actual_return_datetime <= booking.pickup_datetime:
-            messages.error(request, "Actual return time must be after the pickup time.")
-            return redirect('return_vehicle', booking_id=booking_id)
 
         try:
-            with transaction.atomic():
-                final_charge = 0.0
-                # --- ORM-based Late Fee Calculation ---
-                # Check if the vehicle was returned late
-                if actual_return_datetime > booking.return_datetime:
-                    late_duration = actual_return_datetime - booking.return_datetime
-                    # Calculate late hours, rounding up to the next full hour
-                    late_hours = (late_duration.total_seconds() + 3599) // 3600
-                    
-                    # Define a late fee rate (e.g., 150% of the hourly rate)
-                    late_fee_rate = booking.hourly_rate * Decimal('1.5')
-                    final_charge = Decimal(late_hours) * late_fee_rate
+            with connection.cursor() as cursor:
+                # Call the stored procedure
+                cursor.callproc('CALCULATE_FINAL_BILL', [booking.id, actual_return_datetime, 0.0])
+                # Fetch the output parameter
+                cursor.execute("SELECT @_CALCULATE_FINAL_BILL_2")
+                result = cursor.fetchone()
+                final_charge = result[0] if result else 0.0
 
+            with transaction.atomic():
                 # Update booking status and actual return time
                 booking.booking_status = 'Completed'
                 booking.actual_return_datetime = actual_return_datetime
-                booking.save(update_fields=['booking_status', 'actual_return_datetime'])
+                booking.save()
 
                 # Update vehicle status to 'Available'
                 booking.vehicle.status = 'Available'
-                booking.vehicle.save(update_fields=['status'])
+                booking.vehicle.save()
 
                 # Create a new payment record for the final charge if it's positive
                 if final_charge > 0:
                     Payment.objects.create(
                         booking=booking,
                         customer=booking.customer,
-                        amount=round(final_charge, 2),
+                        amount=final_charge,
                         payment_method=final_payment_method,
-                        payment_type='Fine',
+                        payment_type='Fine', # Or 'Final Settlement'
                         payment_status='Completed'
                     )
-                    messages.success(request, f"Booking #{booking.id} completed. A late fee of ₹{final_charge:.2f} was processed.")
-                else:
-                    messages.success(request, f"Booking #{booking.id} completed successfully with no late fees.")
 
+            messages.success(request, f"Booking #{booking.id} completed. Final charge/fee of ₹{final_charge:.2f} processed.")
             return redirect('bookings_management')
 
         except Exception as e:
@@ -748,9 +664,6 @@ def bookings_management_view(request):
     - Includes multi-table data from Customer and Vehicle.
     """
     # Start with a base queryset, prefetching related data for efficiency
-    # DBMS VIEW & JOIN Concept: .select_related('customer', 'vehicle') performs an INNER JOIN
-    # on the customer and vehicle tables to fetch related data in a single query,
-    # acting like a pre-defined VIEW for booking details.
     bookings = RentalBooking.objects.select_related('customer', 'vehicle').order_by('-booking_date')
 
     # --- Filtering ---
@@ -788,9 +701,25 @@ def bookings_management_view(request):
     if sort_by.strip('-') in valid_sort_fields:
         bookings = bookings.order_by(sort_by)
 
-    valid_sort_fields = ['booking_date', 'pickup_datetime', 'return_datetime', 'total_amount', 'booking_status']
-    if sort_by.strip('-') in valid_sort_fields:
-        bookings = bookings.order_by(sort_by)
+    # CSV Export
+    if 'export' in request.GET and request.GET['export'] == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="bookings.csv"'
+        writer = csv.writer(response)
+        writer.writerow(['ID', 'Customer Name', 'Customer ID', 'Vehicle', 'Vehicle Number', 'Pickup Date', 'Return Date', 'Total Amount', 'Status'])
+        for booking in bookings: # Use the filtered queryset
+            writer.writerow([
+                booking.id,
+                f"{booking.customer.first_name} {booking.customer.last_name}",
+                booking.customer.id,
+                f"{booking.vehicle.make} {booking.vehicle.model}",
+                booking.vehicle.vehicle_number,
+                booking.pickup_datetime.strftime('%Y-%m-%d %H:%M'),
+                booking.return_datetime.strftime('%Y-%m-%d %H:%M'),
+                booking.total_amount,
+                booking.booking_status
+            ])
+        return response
 
     # --- Bulk Actions ---
     if request.method == 'POST' and request.POST.get('bulk_action'):
@@ -833,8 +762,6 @@ def booking_detail_view(request, booking_id):
         messages.error(request, "You do not have permission to view this page.")
         return redirect('home')
 
-    # DBMS JOIN Concept: .select_related() performs an INNER JOIN to fetch customer
-    # and vehicle data along with the booking in one database query.
     booking = get_object_or_404(
         RentalBooking.objects.select_related('customer', 'vehicle'),
         id=booking_id
@@ -956,17 +883,16 @@ def activate_booking_view(request, booking_id):
     else:
         messages.warning(request, f"Booking #{booking.id} cannot be activated (Status: {booking.booking_status}).")
     return redirect('bookings_management')
+
+@login_required
 @user_passes_test(lambda u: u.is_superuser)
 def admin_customers_view(request):
     """
     Displays a filterable, sortable, and paginated list of all customers
     for the admin panel.
     """
-    # --- Simplified Query using the Database View ---
-    # We now query the unmanaged CustomerDetailsView model.
-    # The complex JOIN and COUNT logic is handled by the V_CustomerDetails
-    # view in the database, making the Python code much cleaner.
-    customer_list = CustomerDetailsView.objects.all()
+    # Base queryset
+    customer_list = Customer.objects.all()
 
     # Universal Search
     search_query = request.GET.get('q', '').strip()
@@ -981,18 +907,17 @@ def admin_customers_view(request):
 
     # Filtering by status
     verification_status = request.GET.get('verification_status')
-    membership_tier = request.GET.get('membership_tier')
-
     if verification_status == 'verified':
         customer_list = customer_list.filter(is_verified=True)
     elif verification_status == 'unverified':
         customer_list = customer_list.filter(is_verified=False)
+    membership_tier = request.GET.get('membership_tier')
     if membership_tier:
         customer_list = customer_list.filter(membership_tier=membership_tier)
 
     # Sorting logic
     sort_by = request.GET.get('sort', '-registration_date')
-    valid_sort_fields = ['first_name', 'email', 'registration_date', 'total_bookings']
+    valid_sort_fields = ['first_name', 'email', 'registration_date', 'credit_score']
     if sort_by.strip('-') in valid_sort_fields:
         customer_list = customer_list.order_by(sort_by)
     else:
@@ -1005,9 +930,6 @@ def admin_customers_view(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Pass choices for the dropdown to the template
-    membership_tier_choices = Customer.MEMBERSHIP_TIER_CHOICES
-
     context = {
         'customers': page_obj,
         'total_customers': paginator.count,
@@ -1015,72 +937,44 @@ def admin_customers_view(request):
         'sort_by': sort_by,
         'verification_status': verification_status,
         'membership_tier': membership_tier,
-        'membership_tier_choices': membership_tier_choices,
     }
     return render(request, "admin/customers.html", context)
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
-def get_booking_details_ajax(request, booking_id):
+def verify_customer_view(request, customer_id):
     """
-    Returns booking details as JSON for the modal view.
+    Admin view to mark a customer as verified.
+    Performs a targeted UPDATE.
     """
-    try:
-        # DBMS JOIN Concept: .select_related() performs an INNER JOIN to fetch customer
-        # and vehicle data along with the booking in one database query.
-        booking = RentalBooking.objects.select_related('customer', 'vehicle').get(id=booking_id)
-        data = {
-            'id': booking.id,
-            'customer_name': f"{booking.customer.first_name} {booking.customer.last_name}",
-            'vehicle_name': f"{booking.vehicle.make} {booking.vehicle.model}",
-            'vehicle_number': booking.vehicle.vehicle_number,
-            'pickup_datetime': booking.pickup_datetime.strftime('%b %d, %Y, %I:%M %p'),
-            'return_datetime': booking.return_datetime.strftime('%b %d, %Y, %I:%M %p'),
-            'pickup_location': booking.pickup_location,
-            'return_location': booking.return_location,
-            'total_amount': f"₹{booking.total_amount:,.2f}",
-            'security_deposit': f"₹{booking.security_deposit:,.2f}",
-            'status': booking.booking_status,
-            'special_requests': booking.special_requests or 'None',
-        }
-        return JsonResponse(data)
-    except RentalBooking.DoesNotExist:
-        return JsonResponse({'error': 'Booking not found'}, status=404)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+    customer = get_object_or_404(Customer, id=customer_id)
 
-
-
+    if not customer.is_verified:
+        customer.is_verified = True
+        customer.save(update_fields=['is_verified']) # Only update this field
+        CustomerActivityLog.objects.create(
+            customer=customer,
+            activity_type='Account Verification',
+            description=f'Customer account verified by admin {request.user.email}'
+        )
+        messages.success(request, f"Customer {customer.email} has been verified.")
+    else:
+        messages.info(request, f"Customer {customer.email} is already verified.")
+    return redirect('admin_customers')
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
-def update_customer_verification_view(request, customer_id, action):
+def unverify_customer_view(request, customer_id):
     """
-    Admin view to mark a customer as 'verified' or 'unverified'.
-    Consolidates verification logic into a single view.
+    Admin view to mark a customer as unverified.
     """
     customer = get_object_or_404(Customer, id=customer_id)
-    
-    if action == 'verify':
-        if not customer.is_verified:
-            customer.is_verified = True
-            customer.save(update_fields=['is_verified'])
-            CustomerActivityLog.objects.create(
-                customer=customer,
-                activity_type='Account Verification',
-                description=f'Customer account verified by admin {request.user.email}'
-            )
-            messages.success(request, f"Customer {customer.email} has been verified.")
-        else:
-            messages.info(request, f"Customer {customer.email} is already verified.")
-    elif action == 'unverify':
-        if customer.is_verified:
-            customer.is_verified = False
-            customer.save(update_fields=['is_verified'])
-            messages.success(request, f"Customer {customer.email}'s verification has been revoked.")
-        else:
-            messages.info(request, f"Customer {customer.email} is already unverified.")
+
+    if customer.is_verified:
+        customer.is_verified = False
+        customer.save(update_fields=['is_verified'])
+        messages.success(request, f"Customer {customer.email}'s verification has been revoked.")
     else:
-        messages.error(request, "Invalid action specified.")
-        
+        messages.info(request, f"Customer {customer.email} is already unverified.")
+    
     return redirect('admin_customers')

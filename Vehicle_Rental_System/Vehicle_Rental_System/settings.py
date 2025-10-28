@@ -42,9 +42,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'widget_tweaks',  # Add this line
-
-    # Your apps
     'rental.apps.RentalConfig',
 ]
 
@@ -87,11 +84,30 @@ WSGI_APPLICATION = 'Vehicle_Rental_System.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'cp',  # Corrected DB name from your setup guide
-        'USER': 'root',    # Replace with your MySQL username
-        'PASSWORD': 'vedantiasatkar1523@',  # IMPORTANT: Replace with your actual MySQL password
-        'HOST': 'localhost',          # Or your MySQL server address
-        'PORT': '3306',               # Default MySQL port
+        'NAME': 'DBMS_CP',
+        'USER': 'root',
+        'HOST': 'localhost',
+        'PORT': '3306',
+
+        # --- DATABASE PASSWORD BEST PRACTICE FOR DEVELOPERS ---
+        # For better security, we load the database password from an environment variable
+        # instead of writing it directly in the code. This prevents committing secrets
+        # to version control.
+        #
+        # To set up your local environment:
+        #
+        # 1. Install python-dotenv:
+        #    pip install python-dotenv
+        #
+        # 2. Create a file named `.env` in the project's root directory (next to manage.py).
+        #
+        # 3. Add the following line to your .env file, replacing the placeholder with
+        #    your actual MySQL password:
+        #    DB_PASSWORD=your_secret_password_here
+        #
+        # 4. Make sure the .env file is listed in your .gitignore file so it is NEVER committed.
+        # --------------------------------------------------------------------------
+        'PASSWORD': os.getenv('DB_PASSWORD', 'YOUR_LOCAL_PASSWORD'),
     }
 }
 
@@ -146,7 +162,3 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # For developme
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
-
-# --- Authentication URLs ---
-# Tell Django where to redirect users when they need to log in.
-LOGIN_URL = 'login'

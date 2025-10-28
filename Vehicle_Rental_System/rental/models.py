@@ -9,7 +9,7 @@ class Customer(models.Model):
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     email = models.EmailField(unique=True)
-    phone = models.CharField(max_length=15, blank=True, null=True)
+    phone = models.CharField(max_length=15)
     address = models.TextField(blank=True, null=True)
     city = models.CharField(max_length=50, blank=True, null=True)
     state = models.CharField(max_length=50, blank=True, null=True)
@@ -29,6 +29,11 @@ class Customer(models.Model):
     referral_code = models.CharField(max_length=10, unique=True, blank=True, null=True)
 
     profile_picture = models.ImageField(upload_to='profile_pics/', default='profile_pics/default.jpg', blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        if not self.referral_code:
+            self.referral_code = str(uuid.uuid4())[:8].upper()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
@@ -163,32 +168,3 @@ class FeedbackReview(models.Model):
 
     def __str__(self):
         return f"Review {self.id}"
-
-
-class CustomerDetailsView(models.Model):
-    """
-    This is an UNMANAGED model that represents the V_CustomerDetails database view.
-    'managed = False' tells Django not to create, modify, or delete the
-    underlying database table/view for this model. We manage it manually
-    with SQL in our migration files.
-    """
-    id = models.IntegerField(primary_key=True)
-    first_name = models.CharField(max_length=50)
-    last_name = models.CharField(max_length=50)
-    email = models.EmailField()
-    phone = models.CharField(max_length=15, blank=True, null=True)
-    city = models.CharField(max_length=50, blank=True, null=True)
-    state = models.CharField(max_length=50, blank=True, null=True)
-    registration_date = models.DateTimeField()
-    is_verified = models.BooleanField()
-    membership_tier = models.CharField(max_length=10)
-    profile_picture = models.CharField(max_length=100, blank=True, null=True)
-    license_number = models.CharField(max_length=20, blank=True, null=True)
-    total_bookings = models.IntegerField()
-
-    class Meta:
-        managed = False
-        db_table = 'V_CustomerDetails' # The name of our database view
-
-    def __str__(self):
-        return f"{self.first_name} {self.last_name}"

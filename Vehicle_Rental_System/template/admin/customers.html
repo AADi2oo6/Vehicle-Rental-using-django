@@ -15,32 +15,33 @@
     <!-- Search and Filter Form -->
     <div class="card mb-4">
         <div class="card-body">
-            <h5 class="card-title">Filters</h5>
-            <form method="get">
-                <div class="form-row align-items-end">
-                    <div class="col-md-4">
-                        <label for="q">Search</label>
-                        <input type="text" name="q" class="form-control" placeholder="Search by Name, email, license..." value="{{ search_query|default:'' }}">
-                    </div>
-                    <div class="col-md-2">
-                        <label for="verification_status">Verification</label>
-                        <select name="verification_status" class="custom-select">
-                            <option value="">Any Verification Status</option>
-                            <option value="verified" {% if verification_status == 'verified' %}selected{% endif %}>Verified</option>
-                            <option value="unverified" {% if verification_status == 'unverified' %}selected{% endif %}>Unverified</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label for="membership_tier">Membership</label>
-                        <select name="membership_tier" class="custom-select">
-                            <option value="">Any Membership Tier</option>
-                            {% for tier_val, tier_name in membership_tier_choices %}
-                            <option value="{{ tier_val }}" {% if membership_tier == tier_val %}selected{% endif %}>{{ tier_name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-auto"><button type="submit" class="btn btn-primary">Filter</button></div>
-                    <div class="col-auto"><a href="{% url 'admin_customers' %}" class="btn btn-secondary">Reset</a></div>
+            <form method="get" class="form-row align-items-end">
+                <div class="form-group col-md-4">
+                    <label for="q">Search</label>
+                    <input type="text" name="q" id="q" class="form-control" placeholder="Name, email, license..." value="{{ search_query|default:'' }}">
+                </div>
+                <div class="form-group col-md-2">
+                    <label for="verification_status">Verification Status</label>
+                    <select name="verification_status" id="verification_status" class="form-control">
+                        <option value="">All</option>
+                        <option value="verified" {% if verification_status == 'verified' %}selected{% endif %}>Verified</option>
+                        <option value="unverified" {% if verification_status == 'unverified' %}selected{% endif %}>Unverified</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-2">
+                    <label for="membership_tier">Membership Tier</label>
+                    <select name="membership_tier" id="membership_tier" class="form-control">
+                        <option value="">All Tiers</option>
+                        {% for tier_val, tier_name in customers.paginator.object_list.model.MEMBERSHIP_TIER_CHOICES|default_if_none:'' %}
+                        <option value="{{ tier_val }}" {% if membership_tier == tier_val %}selected{% endif %}>{{ tier_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group col-md-2">
+                    <button type="submit" class="btn btn-primary btn-block">Filter</button>
+                </div>
+                <div class="form-group col-md-2">
+                    <a href="{% url 'admin_customers' %}" class="btn btn-secondary btn-block">Reset</a>
                 </div>
             </form>
         </div>
@@ -52,28 +53,20 @@
             <thead class="thead-dark">
                 <tr>
                     <th>
-                        ID
-                    </th>
-                    <th>
-                        <a href="?sort={% if sort_by == 'first_name' %}-first_name{% else %}first_name{% endif %}&{{ request.GET.urlencode|cut:'sort='|cut:'page=' }}" class="text-white">
-                            Name {% if sort_by == 'first_name' %}<i class="fas fa-sort-up"></i>{% elif sort_by == '-first_name' %}<i class="fas fa-sort-down"></i>{% endif %}
+                        <a href="?sort=first_name{% if sort_by == 'first_name' %}&order=desc{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="text-white">
+                            Name {% if sort_by == 'first_name' %}▲{% elif sort_by == '-first_name' %}▼{% endif %}
                         </a>
                     </th>
                     <th>
-                        <a href="?sort={% if sort_by == 'email' %}-email{% else %}email{% endif %}&{{ request.GET.urlencode|cut:'sort='|cut:'page=' }}" class="text-white">
-                            Email & Phone {% if sort_by == 'email' %}<i class="fas fa-sort-up"></i>{% elif sort_by == '-email' %}<i class="fas fa-sort-down"></i>{% endif %}
+                        <a href="?sort=email{% if sort_by == 'email' %}&order=desc{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="text-white">
+                            Email & Phone {% if sort_by == 'email' %}▲{% elif sort_by == '-email' %}▼{% endif %}
                         </a>
                     </th>
                     <th>Location</th>
                     <th>Membership Tier</th>
                     <th>
-                        <a href="?sort={% if sort_by == 'total_bookings' %}-total_bookings{% else %}total_bookings{% endif %}&{{ request.GET.urlencode|cut:'sort='|cut:'page=' }}" class="text-white">
-                            Total Bookings {% if sort_by == '-total_bookings' %}<i class="fas fa-sort-down"></i>{% elif sort_by == 'total_bookings' %}<i class="fas fa-sort-up"></i>{% endif %}
-                        </a>
-                    </th>
-                    <th>
-                        <a href="?sort={% if sort_by == 'registration_date' %}-registration_date{% else %}registration_date{% endif %}&{{ request.GET.urlencode|cut:'sort='|cut:'page=' }}" class="text-white">
-                            Registered On {% if sort_by == 'registration_date' %}<i class="fas fa-sort-up"></i>{% elif sort_by == '-registration_date' %}<i class="fas fa-sort-down"></i>{% endif %}
+                        <a href="?sort=-registration_date{% if sort_by == '-registration_date' %}&order=asc{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="text-white">
+                            Registered On {% if sort_by == 'registration_date' %}▲{% elif sort_by == '-registration_date' %}▼{% endif %}
                         </a>
                     </th>
                     <th>Status</th>
@@ -83,9 +76,8 @@
             <tbody>
                 {% for customer in customers %}
                 <tr>
-                    <td>{{ customer.id }}</td>
                     <td> {# Add a default image fallback for profile pictures #}
-                        <img src="{{ customer.profile_picture.url }}" alt="pic" class="rounded-circle mr-2" width="30" height="30" onerror="this.onerror=null;this.src='/static/img/default_profile.png';">
+                        <img src="{% if customer.profile_picture %}{{ customer.profile_picture.url }}{% else %}/static/default_profile_pic.png{% endif %}" alt="pic" class="rounded-circle mr-2" width="30" height="30">
                         {{ customer.first_name }} {{ customer.last_name }}
                     </td>
                     <td>
@@ -94,41 +86,26 @@
                     </td>
                     <td>{{ customer.city|default:'N/A' }}, {{ customer.state|default:'N/A' }}</td>
                     <td>
-                        <span class="badge 
-                            {% if customer.membership_tier == 'Gold' %}badge-warning text-dark
-                            {% elif customer.membership_tier == 'Silver' %}badge-secondary
-                            {% elif customer.membership_tier == 'Platinum' %}badge-light text-dark
-                            {% else %}badge-primary{% endif %}">
-                            {{ customer.membership_tier }}
-                        </span>
+                        {% if customer.membership_tier == 'Gold' %}
+                            <span class="badge" style="background-color: #ffc107; color: #212529;">{{ customer.membership_tier }}</span>
+                        {% elif customer.membership_tier == 'Silver' %}
+                            <span class="badge" style="background-color: #c0c0c0; color: #212529;">{{ customer.membership_tier }}</span>
+                        {% elif customer.membership_tier == 'Platinum' %}
+                            <span class="badge" style="background-color: #e5e4e2; color: #212529;">{{ customer.membership_tier }}</span>
+                        {% else %}
+                            <span class="badge" style="background-color: #cd7f32; color: white;">{{ customer.membership_tier }}</span>
+                        {% endif %}
                     </td>
-                    <td class="text-center">{{ customer.total_bookings }}</td>
                     <td>{{ customer.registration_date|date:"M d, Y" }}</td>
                     <td>
-                        {% if customer.is_verified %}
+                        {% if customer.is_verified and customer.is_active %}
                             <span class="badge badge-success">Verified</span>
                         {% else %}
-                            <span class="badge badge-danger">Unverified</span>
+                            <span class="badge badge-secondary">Unverified</span>
                         {% endif %}
                     </td>
                     <td>
-                        <button type="button" class="btn btn-sm btn-info view-customer-btn" 
-                                data-toggle="modal" 
-                                data-target="#customerDetailModal"
-                                data-name="{{ customer.first_name }} {{ customer.last_name }}"
-                                data-email="{{ customer.email }}"
-                                data-phone="{{ customer.phone }}"
-                                data-location="{{ customer.city|default:'N/A' }}, {{ customer.state|default:'N/A' }}"
-                                data-address="{{ customer.address|default:'N/A' }}"
-                                data-dob="{{ customer.date_of_birth|date:"M d, Y" }}"
-                                data-license="{{ customer.license_number|default:'N/A' }}"
-                                data-registered="{{ customer.registration_date|date:"M d, Y" }}"
-                                data-tier="{{ customer.membership_tier }}"
-                                data-bookings="{{ customer.total_bookings }}"
-                                data-status="{% if customer.is_verified %}Verified{% else %}Unverified{% endif %}"
-                                data-img-src="{{ customer.profile_picture.url }}">
-                            View
-                        </button>
+                        <a href="#" class="btn btn-sm btn-info">View</a>
                         {% if not customer.is_verified %}
                             <a href="{% url 'verify_customer' customer.id %}" class="btn btn-sm btn-warning">Verify</a>
                         {% else %}
@@ -138,7 +115,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="9" class="text-center py-4">No customers found matching your criteria.</td>
+                    <td colspan="7" class="text-center py-4">No customers found matching your criteria.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -150,8 +127,8 @@
     <nav aria-label="Page navigation">
         <ul class="pagination justify-content-center">
             {% if customers.has_previous %}
-                <li class="page-item"><a class="page-link" href="?page=1&{{ request.GET.urlencode|cut:'page' }}">&laquo; First</a></li>
-                <li class="page-item"><a class="page-link" href="?page={{ customers.previous_page_number }}&{{ request.GET.urlencode|cut:'page' }}">Previous</a></li>
+                <li class="page-item"><a class="page-link" href="?page=1&{{ request.GET.urlencode|cut:'page=' }}">&laquo; First</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ customers.previous_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">Previous</a></li>
             {% else %}
                 <li class="page-item disabled"><span class="page-link">&laquo; First</span></li>
                 <li class="page-item disabled"><span class="page-link">Previous</span></li>
@@ -160,8 +137,8 @@
             <li class="page-item active" aria-current="page"><span class="page-link">Page {{ customers.number }} of {{ customers.paginator.num_pages }}</span></li>
 
             {% if customers.has_next %}
-                <li class="page-item"><a class="page-link" href="?page={{ customers.next_page_number }}&{{ request.GET.urlencode|cut:'page' }}">Next</a></li>
-                <li class="page-item"><a class="page-link" href="?page={{ customers.paginator.num_pages }}&{{ request.GET.urlencode|cut:'page' }}">Last &raquo;</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ customers.next_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">Next</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ customers.paginator.num_pages }}&{{ request.GET.urlencode|cut:'page=' }}">Last &raquo;</a></li>
             {% else %}
                 <li class="page-item disabled"><span class="page-link">Next</span></li>
                 <li class="page-item disabled"><span class="page-link">Last &raquo;</span></li>
@@ -170,96 +147,4 @@
     </nav>
     {% endif %}
 </div>
-
-<!-- Customer Detail Modal -->
-<div class="modal fade" id="customerDetailModal" tabindex="-1" aria-labelledby="customerDetailModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header bg-dark text-white">
-        <h5 class="modal-title" id="customerDetailModalLabel">Customer Details</h5>
-        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div class="row">
-            <div class="col-md-4 text-center">
-                <img id="modal-customer-img" src="" class="rounded-circle img-fluid mb-3" alt="Profile Picture" style="width: 150px; height: 150px; object-fit: cover;">
-                <h4 id="modal-customer-name" class="font-weight-bold"></h4>
-                <p id="modal-customer-email" class="text-muted"></p>
-                <p id="modal-customer-phone"></p>
-            </div>
-            <div class="col-md-8">
-                <h6><strong>Personal Information</strong></h6>
-                <table class="table table-sm table-borderless">
-                    <tr><th style="width: 150px;">Location:</th><td id="modal-customer-location"></td></tr>
-                    <tr><th>Address:</th><td id="modal-customer-address"></td></tr>
-                    <tr><th>Date of Birth:</th><td id="modal-customer-dob"></td></tr>
-                    <tr><th>License No:</th><td id="modal-customer-license"></td></tr>
-                </table>
-                <hr>
-                <h6><strong>Account Information</strong></h6>
-                <table class="table table-sm table-borderless">
-                    <tr><th style="width: 150px;">Registered On:</th><td id="modal-customer-registered"></td></tr>
-                    <tr><th>Membership Tier:</th><td><span id="modal-customer-tier" class="badge"></span></td></tr>
-                    <tr><th>Total Bookings:</th><td id="modal-customer-bookings"></td></tr>
-                    <tr><th>Status:</th><td><span id="modal-customer-status" class="badge"></span></td></tr>
-                </table>
-            </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Use event delegation for dynamically loaded content if needed, but this is fine for now.
-    $('#customerDetailModal').on('show.bs.modal', function (event) {
-        var button = $(event.relatedTarget); // Button that triggered the modal
-        var modal = $(this);
-
-        // Extract info from data-* attributes
-        modal.find('#modal-customer-name').text(button.data('name'));
-        modal.find('#modal-customer-email').text(button.data('email'));
-        modal.find('#modal-customer-phone').text(button.data('phone'));
-        modal.find('#modal-customer-location').text(button.data('location'));
-        modal.find('#modal-customer-address').text(button.data('address'));
-        modal.find('#modal-customer-dob').text(button.data('dob'));
-        modal.find('#modal-customer-license').text(button.data('license'));
-        modal.find('#modal-customer-registered').text(button.data('registered'));
-        modal.find('#modal-customer-tier').text(button.data('tier'));
-        modal.find('#modal-customer-bookings').text(button.data('bookings'));
-        modal.find('#modal-customer-status').text(button.data('status'));
-        modal.find('#modal-customer-img').attr('src', button.data('img-src')).on('error', function() { $(this).attr('src', '/static/img/default_profile.png'); });
-
-        // Add styling to the tier badge in the modal
-        var tierBadge = modal.find('#modal-customer-tier');
-        var tier = button.data('tier');
-        tierBadge.removeClass('badge-warning badge-secondary badge-light badge-primary').css('color', ''); // Reset classes
-        if (tier === 'Gold') { 
-            tierBadge.addClass('badge-warning').css('color', '#212529');
-        } else if (tier === 'Silver') {
-            tierBadge.addClass('badge-secondary');
-        } else if (tier === 'Platinum') {
-            tierBadge.addClass('badge-light').css('color', '#212529');
-        } else { // Bronze or other
-            tierBadge.addClass('badge-primary');
-        }
-
-        // Add styling to the status badge in the modal
-        var statusBadge = modal.find('#modal-customer-status');
-        var status = button.data('status');
-        statusBadge.removeClass('badge-success badge-danger'); // Reset classes
-        if (status === 'Verified') {
-            statusBadge.addClass('badge-success');
-        } else {
-            statusBadge.addClass('badge-danger');
-        }
-    });
-});
-</script>
 {% endblock %}

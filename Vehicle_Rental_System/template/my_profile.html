@@ -42,11 +42,8 @@
             <div class="lg:w-3/4">
                 {% if not customer.is_verified %}
                 <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-r-lg" role="alert">
-                    <p class="font-bold">Verify Your Account</p>
-                    <p>
-                        Your account is not yet verified. To unlock all features, please 
-                        <a href="{% url 'edit_profile' %}" class="font-semibold underline hover:text-yellow-800">add your 15-character license number</a> to your profile.
-                    </p>
+                    <p class="font-bold">Account Not Verified!</p>
+                    <p>Your account is not yet verified. Please contact an administrator to complete the verification process and unlock all features.</p>
                 </div>
                 {% endif %}
 
@@ -75,7 +72,7 @@
                         <div class="p-4 border rounded-lg flex flex-col md:flex-row justify-between items-center gap-4">
                             <div>
                                 <p class="font-bold text-lg">{{ booking.vehicle.make }} {{ booking.vehicle.model }}</p>
-                                <p class="text-sm text-gray-500">Booked on: {{ booking.booking_date|date:"M d, Y" }}</p> 
+                                <p class="text-sm text-gray-500">Booked on: {{ booking.booking_date|date:"M d, Y" }}</p>
                             </div>
                             <div>
                                 <p class="text-sm text-gray-500">Pickup: {{ booking.pickup_datetime|date:"M d, Y, P" }}</p>
