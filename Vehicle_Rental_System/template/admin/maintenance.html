@@ -30,6 +30,7 @@
         </div>
     </div>
 
+
     <div class="row">
         <div class="col-md-6">
             <div class="card h-100">
@@ -63,37 +64,35 @@
         <div class="col-md-6">
             <div class="card h-100">
                 <div class="card-header">Maintenance Cost Analytics</div>
-                <div class="card-body">                    {% if cost_per_vehicle %}
-                        <div style="max-height: 200px; overflow-y: auto; position: relative;">
-                            <canvas id="costPerVehicleChart"></canvas>
-                        </div>
-                        <hr>
-                        <h5>Cost Breakdown by Vehicle</h5>
-                        <div style="max-height: 200px; overflow-y: auto;">
-                            <table class="table table-sm table-hover">
-                                <thead class="thead-light">
-                                    <tr>
-                                        <th>Vehicle ID</th>
-                                        <th>Vehicle Number</th>
-                                        <th>Total Cost</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for item in cost_per_vehicle %}
-                                    <tr>
-                                        <td>{{ item.vehicle_id }}</td>
-                                        <td>{{ item.vehicle__vehicle_number }}</td>
-                                        <td>₹{{ item.total_cost|floatformat:2 }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <p class="text-center text-muted">No maintenance cost data available to display analytics.</p>
-                    {% endif %}
+                <div class="card-body">
+                    <div style="max-height: 200px; overflow-y: auto; position: relative;">
+                        <canvas id="costPerVehicleChart"></canvas>
+                    </div>
                     <hr>
-                    <h5 class="text-center font-weight-bold">Total Fleet Maintenance Cost: ₹{{ total_maintenance_cost|floatformat:2 }}</h5>
+                    <h5>Cost Breakdown by Vehicle</h5>
+                    <div style="max-height: 200px; overflow-y: auto;">
+                        <table class="table table-sm table-hover">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Vehicle ID</th>
+                                    <th>Vehicle Number</th>
+                                    <th>Total Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in cost_per_vehicle %}
+                                <tr>
+                                    <td>{{ item.vehicle_id }}</td>
+                                    <td>{{ item.vehicle__vehicle_number }}</td>
+                                    <td>₹{{ item.total_cost|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer text-center py-1">
+                    <h5 class="mb-0">Total Fleet Maintenance Cost: ₹{{ total_maintenance_cost|floatformat:2 }}</h5>
                 </div>
             </div>
         </div>

@@ -1,7 +1,6 @@
 from django import forms
+from .models import Payment, RentalBooking, Customer, Vehicle, MaintenanceRecord
 from django.contrib.auth.models import User
-from .models import Payment, Customer, RentalBooking, Vehicle, MaintenanceRecord
-from datetime import date
 
 class PaymentForm(forms.ModelForm):
     class Meta:
@@ -70,14 +69,24 @@ class MaintenanceRecordForm(forms.ModelForm):
             'parts_replaced', 'technician_name', 'status'
         ]
         widgets = {
-            'maintenance_date': forms.DateInput(attrs={'type': 'date'}),
-            'next_service_date': forms.DateInput(attrs={'type': 'date'}),
+            'maintenance_date': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'next_service_date': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'description': forms.Textarea(attrs={'rows': 3}),
             'parts_replaced': forms.Textarea(attrs={'rows': 2}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'form-control'
+
 class CustomerPictureForm(forms.ModelForm):
     class Meta:
+        model = Customer
+        fields = ['profile_picture']
+        help_texts = {
+            'profile_picture': 'JPG, GIF or PNG. Max size of 2MB.',
+        }
         model = Customer
         fields = ['profile_picture']
         help_texts = {
