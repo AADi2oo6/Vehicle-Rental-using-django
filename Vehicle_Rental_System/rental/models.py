@@ -1,5 +1,4 @@
 from django.db import models
-from django.contrib.auth.hashers import make_password
 from django.utils import timezone # Import timezone
 from django.contrib.auth.models import User
 import uuid

@@ -17,7 +17,6 @@ def create_customer_profile(sender, instance, created, **kwargs):
                 email=instance.email,
                 first_name=instance.first_name if instance.first_name else instance.username,
                 last_name=instance.last_name,
-                password=instance.password, # Password is already hashed in User model
                 # Default values for new fields
                 membership_tier='Bronze',
                 is_subscribed_to_newsletter=True, # Default to subscribed

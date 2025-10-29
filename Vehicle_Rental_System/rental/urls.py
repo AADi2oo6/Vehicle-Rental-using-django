@@ -19,6 +19,7 @@ urlpatterns = [
     # Custom admin dashboard URLs
     path("admin_new/", views.admin_dashboard_view, name="admin_dashboard"),
     path("admin_new/maintenance/", views.admin_maintenance_view, name="admin_maintenance"),
+    path("admin_new/maintenance/update-status/<int:maintenance_id>/", views.update_maintenance_status_view, name='update_maintenance_status'),
     path("admin_new/bookings/", views.bookings_management_view, name="bookings_management"),
     path("admin_new/bookings/<int:booking_id>/", views.booking_detail_view, name="booking_detail"),
     path("admin_new/bookings/add/", views.admin_add_booking_view, name="admin_add_booking"),
@@ -33,6 +34,11 @@ urlpatterns = [
     path("admin_new/payments/add/", views.payment_form_view, name="payment_add"),
     path("admin_new/payments/edit/<int:payment_id>/", views.payment_form_view, name="payment_edit"),
     path("admin_new/payments/delete/<int:payment_id>/", views.payment_delete_view, name="payment_delete"),
+
+    # Maintenance Management URLs
+    path("admin_new/maintenance/add/", views.maintenance_form_view, name="maintenance_add"),
+    path("admin_new/maintenance/edit/<int:record_id>/", views.maintenance_form_view, name="maintenance_edit"),
+    path("admin_new/maintenance/delete/<int:record_id>/", views.maintenance_delete_view, name="maintenance_delete"),
 
     path("admin_new/api/data/", views.get_dashboard_data_ajax, name="get_dashboard_data_ajax"),
      path("admin_new/change-password/", views.change_password_view, name="change_password"),
