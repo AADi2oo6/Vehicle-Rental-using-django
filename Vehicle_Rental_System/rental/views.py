@@ -1,96 +1,39 @@
+# Standard library imports
+import csv
+from datetime import date, timedelta, datetime
+
+# Django core imports
 from django.shortcuts import render, redirect, get_object_or_404
-from .utils import dictfetchall
 from django.db import connection, transaction
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.db.models import Q, Sum, F
+from django.db.models import Q, Sum
 from django.contrib.auth.models import User
-from django.contrib.auth import (
-    authenticate, 
-    login, 
-    logout, 
-    update_session_auth_hash
-)
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.core.cache import cache
-from django.contrib.auth.hashers import make_password, check_password
 from django.urls import reverse
 from django.contrib.auth.forms import PasswordChangeForm
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-from django.http import HttpResponse
-from django.utils.dateparse import parse_datetime
-from django.db import transaction
-from datetime import date, timedelta, datetime
-import csv
-from .models import Vehicle, Customer, FeedbackReview, RentalBooking, Payment, MaintenanceRecord, CustomerActivityLog
-from django.http import JsonResponse
-from django.db.models import Sum
-from .forms import PaymentForm, CustomerProfileForm, CustomerPictureForm
-from .models import Payment
-from .forms import AdminBookingForm # Import the new form
-=======
-from django.utils.dateparse import parse_datetime
-import csv
 from django.http import HttpResponse, JsonResponse
-from datetime import date, timedelta, datetime
-=======
 from django.utils.dateparse import parse_datetime
-import csv
-from django.http import HttpResponse, JsonResponse
-from datetime import date, timedelta, datetime
->>>>>>> Stashed changes
-=======
-from django.utils.dateparse import parse_datetime
-import csv
-from django.http import HttpResponse, JsonResponse
-from datetime import date, timedelta, datetime
->>>>>>> Stashed changes
-=======
-from django.utils.dateparse import parse_datetime
-import csv
-from django.http import HttpResponse, JsonResponse
-from datetime import date, timedelta, datetime
->>>>>>> Stashed changes
-=======
-from django.utils.dateparse import parse_datetime
-import csv
-from django.http import HttpResponse, JsonResponse
-from datetime import date, timedelta, datetime
->>>>>>> Stashed changes
 
+# Local application imports
 from .models import (
-    Vehicle, 
-    Customer, 
-    FeedbackReview, 
-    RentalBooking, 
-    Payment, 
-    MaintenanceRecord, 
+    Vehicle,
+    Customer,
+    FeedbackReview,
+    RentalBooking,
+    Payment,
+    MaintenanceRecord,
     CustomerActivityLog
 )
 from .forms import (
-    PaymentForm, 
-    CustomerProfileForm, 
-    CustomerPictureForm, 
+    PaymentForm,
+    CustomerProfileForm,
+    CustomerPictureForm,
     AdminBookingForm,
     MaintenanceRecordForm
 )
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 
 @login_required
 def get_dashboard_data(request):
@@ -388,46 +331,14 @@ def admin_dashboard_view(request): # Renamed to avoid conflict with existing get
     Retrieves key metrics (revenue, counts). Attempts Stored Procedure call
     but falls back to reliable ORM calculation.
     """
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
 
->>>>>>> Stashed changes
-=======
-
->>>>>>> Stashed changes
-=======
-
->>>>>>> Stashed changes
-=======
-
->>>>>>> Stashed changes
-=======
-
->>>>>>> Stashed changes
     # --- Calculate All-Time Total Revenue using the ORM ---
     total_revenue = Payment.objects.filter(
         payment_status='Completed'
     ).aggregate(total=Sum('amount'))['total'] or 0
 
     # --- Remaining Django ORM Queries ---
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
+
     pending_payments_count = Payment.objects.filter(payment_status='Pending').count()
     current_month = date.today().month
     current_year = date.today().year
@@ -490,67 +401,38 @@ def get_dashboard_data_ajax(request): # Renamed to avoid conflict with existing 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def admin_maintenance_view(request):
-    """
-    Displays maintenance records, upcoming services, and cost analytics.
-    Allows filtering maintenance history for a specific vehicle.
-    Handles adding new maintenance records.
-    """
-<<<<<<< Updated upstream
-    # Handle form submission for adding a new record
     if request.method == 'POST':
         form = MaintenanceRecordForm(request.POST)
         if form.is_valid():
-            # The form's clean method now handles vehicle validation and assignment.
-            # We can just save the form directly.
-=======
-    if request.method == 'POST':
-        form = MaintenanceRecordForm(request.POST)
-        if form.is_valid():
->>>>>>> Stashed changes
-            maintenance_record = form.save()
-            messages.success(
-                request,
-                f"New maintenance record for Vehicle ID {maintenance_record.vehicle.id} added successfully."
-            )
-<<<<<<< Updated upstream
-            # Redirect to the maintenance page, filtered by the vehicle that was just added.
-            return redirect(f"{reverse('admin_maintenance')}?vehicle_id={maintenance_record.vehicle.id}")
+            new_record = form.save()
+            messages.success(request, f"Maintenance record for vehicle {new_record.vehicle.vehicle_number} created successfully.")
+            # Redirect to the same page, but with a filter for the vehicle that was just updated.
+            return redirect(f"{reverse('admin_maintenance')}?vehicle_id={new_record.vehicle.id}")
         else:
+            # If the form is invalid, we will fall through to the GET logic
+            # which will re-render the page with the form containing errors.
             messages.error(request, "Please correct the errors below.")
-            # If form is invalid, we will fall through and re-render the page with the form containing errors.
-            # The form passed to context will contain the errors for display.
+
     else:
-        # This is a GET request, so create a blank form
-        # Pre-fill vehicle if vehicle_id is in GET params
-=======
-            return redirect(f"{reverse('admin_maintenance')}?vehicle_id={maintenance_record.vehicle.id}")
-        else:
-            messages.error(request, "Please correct the errors below.")
-    else:
->>>>>>> Stashed changes
         initial_data = {}
         if 'vehicle_id' in request.GET:
             initial_data['vehicle'] = request.GET.get('vehicle_id')
         form = MaintenanceRecordForm(initial=initial_data)
 
-<<<<<<< Updated upstream
-    # --- ORM Query for fetching, filtering, and sorting maintenance records ---
-=======
-
->>>>>>> Stashed changes
+    # --- Filtering and Sorting ---
     sort_by = request.GET.get('sort', 'maintenance_date')
     order = request.GET.get('order', 'desc')
     filter_vehicle_id = request.GET.get('vehicle_id')
 
-    # Base queryset
-    maintenance_records = MaintenanceRecord.objects.select_related('vehicle').all()
+    # --- ORM Query ---
+    maintenance_records = MaintenanceRecord.objects.select_related('vehicle').order_by('-maintenance_date')
 
     # Filtering
     if filter_vehicle_id:
         maintenance_records = maintenance_records.filter(vehicle_id=filter_vehicle_id)
 
     # Sorting
-    valid_sort_fields = ['id', 'maintenance_date', 'cost', 'status', 'vehicle_id']
+    valid_sort_fields = ['id', 'maintenance_date', 'cost', 'status']
     if sort_by not in valid_sort_fields:
         sort_by = 'maintenance_date'
 
@@ -558,142 +440,41 @@ def admin_maintenance_view(request):
         sort_by = f'-{sort_by}'
     maintenance_records = maintenance_records.order_by(sort_by)
 
+    # Pagination
+    paginator = Paginator(maintenance_records, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     # --- Other Queries ---
     upcoming_maintenance = MaintenanceRecord.objects.filter(
         status='Scheduled',
         maintenance_date__gt=date.today()
     ).order_by('maintenance_date')
-    cost_per_vehicle = MaintenanceRecord.objects.values('vehicle__make', 'vehicle__model').annotate(
-        total_cost=Sum('cost')
-    ).order_by('-total_cost')
 
     cost_per_vehicle = MaintenanceRecord.objects.values('vehicle__make', 'vehicle__model').annotate(
         total_cost=Sum('cost')
     ).order_by('-total_cost')
 
-    # --- Raw SQL Query for Total Maintenance Cost ---
-    # As requested, execute a raw SQL query to get the aggregate sum of all costs.
-    total_maintenance_cost = 0
-    with connection.cursor() as cursor:
-        # This query calculates the sum of costs directly from the maintenance records table.
-        cursor.execute("SELECT SUM(cost) FROM rental_maintenancerecord")
-        result = cursor.fetchone()
-        if result and result[0] is not None:
-            total_maintenance_cost = result[0]
-
-    cost_per_vehicle = MaintenanceRecord.objects.values('vehicle__make', 'vehicle__model').annotate(
-        total_cost=Sum('cost')
-    ).order_by('-total_cost')
-
-    # --- Raw SQL Query for Total Maintenance Cost ---
-    # As requested, execute a raw SQL query to get the aggregate sum of all costs.
-    total_maintenance_cost = 0
-    with connection.cursor() as cursor:
-        # This query calculates the sum of costs directly from the maintenance records table.
-        cursor.execute("SELECT SUM(cost) FROM rental_maintenancerecord")
-        result = cursor.fetchone()
-        if result and result[0] is not None:
-            total_maintenance_cost = result[0]
-
-    cost_per_vehicle = MaintenanceRecord.objects.values('vehicle__make', 'vehicle__model').annotate(
-        total_cost=Sum('cost')
-    ).order_by('-total_cost')
-
-    # --- Raw SQL Query for Total Maintenance Cost ---
-    # As requested, execute a raw SQL query to get the aggregate sum of all costs.
-    total_maintenance_cost = 0
-    with connection.cursor() as cursor:
-        # This query calculates the sum of costs directly from the maintenance records table.
-        cursor.execute("SELECT SUM(cost) FROM rental_maintenancerecord")
-        result = cursor.fetchone()
-        if result and result[0] is not None:
-            total_maintenance_cost = result[0]
-
-    cost_per_vehicle = MaintenanceRecord.objects.values('vehicle__make', 'vehicle__model').annotate(
-        total_cost=Sum('cost')
-    ).order_by('-total_cost')
-
-    # --- Raw SQL Query for Total Maintenance Cost ---
-    # As requested, execute a raw SQL query to get the aggregate sum of all costs.
-    total_maintenance_cost = 0
-    with connection.cursor() as cursor:
-        # This query calculates the sum of costs directly from the maintenance records table.
-        cursor.execute("SELECT SUM(cost) FROM rental_maintenancerecord")
-        result = cursor.fetchone()
-        if result and result[0] is not None:
-            total_maintenance_cost = result[0]
-
-    cost_per_vehicle = MaintenanceRecord.objects.values('vehicle__make', 'vehicle__model').annotate(
-        total_cost=Sum('cost')
-    ).order_by('-total_cost')
-
-    # --- Raw SQL Query for Total Maintenance Cost ---
-    # As requested, execute a raw SQL query to get the aggregate sum of all costs.
-    total_maintenance_cost = 0
-    with connection.cursor() as cursor:
-        # This query calculates the sum of costs directly from the maintenance records table.
-        cursor.execute("SELECT SUM(cost) FROM rental_maintenancerecord")
-        result = cursor.fetchone()
-        if result and result[0] is not None:
-            total_maintenance_cost = result[0]
+    # --- Calculate Total Maintenance Cost ---
+    # This will be the total for the filtered vehicle if one is selected,
+    # otherwise it will be the total for the entire fleet.
+    total_maintenance_cost_query = MaintenanceRecord.objects.all()
+    if filter_vehicle_id:
+        total_maintenance_cost_query = total_maintenance_cost_query.filter(vehicle_id=filter_vehicle_id)
+    
+    total_maintenance_cost = total_maintenance_cost_query.aggregate(total=Sum('cost'))['total'] or 0.00
 
     context = {
         'form': form,
-        'maintenance_records': maintenance_records,
+        'maintenance_records': page_obj,
+        'vehicles': Vehicle.objects.all(), # For filter dropdown
         'upcoming_maintenance': upcoming_maintenance,
         'cost_per_vehicle': cost_per_vehicle,
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-    }
-    return render(request, "admin/maintenance.html", context)
-
-=======
         'total_maintenance_cost': total_maintenance_cost,
-        'sort_by': sort_by.lstrip('-'),
-        'order': order,
-        'filter_vehicle_id': filter_vehicle_id,
     }
     return render(request, "admin/maintenance.html", context)
 
-=======
-        'total_maintenance_cost': total_maintenance_cost,
-        'sort_by': sort_by.lstrip('-'),
-        'order': order,
-        'filter_vehicle_id': filter_vehicle_id,
-    }
-    return render(request, "admin/maintenance.html", context)
 
->>>>>>> Stashed changes
-=======
-        'total_maintenance_cost': total_maintenance_cost,
-        'sort_by': sort_by.lstrip('-'),
-        'order': order,
-        'filter_vehicle_id': filter_vehicle_id,
-    }
-    return render(request, "admin/maintenance.html", context)
-
->>>>>>> Stashed changes
-=======
-        'total_maintenance_cost': total_maintenance_cost,
-        'sort_by': sort_by.lstrip('-'),
-        'order': order,
-        'filter_vehicle_id': filter_vehicle_id,
-    }
-    return render(request, "admin/maintenance.html", context)
-
->>>>>>> Stashed changes
-=======
-        'total_maintenance_cost': total_maintenance_cost,
-        'sort_by': sort_by.lstrip('-'),
-        'order': order,
-        'filter_vehicle_id': filter_vehicle_id,
-    }
-    return render(request, "admin/maintenance.html", context)
-
->>>>>>> Stashed changes
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def update_maintenance_status_view(request, maintenance_id):
@@ -702,7 +483,7 @@ def update_maintenance_status_view(request, maintenance_id):
     This view is intended to be called via POST from the maintenance list.
     """
     if request.method != 'POST':
-        messages.error(request, "Invalid request method.")
+        messages.error(request, "Invalid request method for updating status.")
         return redirect('admin_maintenance')
 
     record = get_object_or_404(MaintenanceRecord, id=maintenance_id)
@@ -710,7 +491,7 @@ def update_maintenance_status_view(request, maintenance_id):
 
     # Get the valid status choices directly from the model to ensure correctness
     valid_statuses = [choice[0] for choice in MaintenanceRecord.MAINTENANCE_STATUS_CHOICES]
-
+    
     if new_status in valid_statuses:
         try:
             with transaction.atomic():
@@ -729,32 +510,18 @@ def update_maintenance_status_view(request, maintenance_id):
         messages.error(request, f"Invalid status '{new_status}'.")
 
     return redirect('admin_maintenance')
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
+
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def admin_queries_view(request):
-    queries = cache.get('all_sql_queries', [])
-    
     # Set a flag on the request to prevent the middleware from logging this page's queries
     setattr(request, '_viewing_queries', True)
 
+    queries = cache.get('all_sql_queries', [])
     context = {
         'queries': queries
     }
     return render(request, "queries.html", context)
-
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
 def admin_payments_view(request):
@@ -816,7 +583,7 @@ def admin_payments_view(request):
     }
     return render(request, "admin/payments.html", context)
 
-def payment_form_view(request, payment_id=None):
+def payment_form_view(request, payment_id=None): # This is a duplicate, but keeping one.
     if not request.user.is_superuser: # This view should also be restricted to superusers
         messages.error(request, "You do not have permission to access this page.")
         return redirect('home')
@@ -834,7 +601,6 @@ def payment_form_view(request, payment_id=None):
         form = PaymentForm(instance=payment)
 
     return render(request, 'admin/payment_form.html', {'form': form, 'payment': payment})
-
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
@@ -939,70 +705,33 @@ def return_vehicle_view(request, booking_id):
         actual_return_datetime = parse_datetime(actual_return_datetime_str)
 
         try:
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-            with connection.cursor() as cursor:
-                # Call the stored procedure
-                cursor.callproc('CALCULATE_FINAL_BILL', [booking.id, actual_return_datetime, 0.0])
-                # Fetch the output parameter
-                cursor.execute("SELECT @_CALCULATE_FINAL_BILL_2")
-                result = cursor.fetchone()
-                final_charge = result[0] if result else 0.0
-=======
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
             with transaction.atomic():
                 final_charge = 0.0
                 # --- Call Stored Procedure ---
                 with connection.cursor() as cursor:
-                    # Using cursor.callproc is fine, but we need to fetch the output parameter correctly.
-                    # The name of the output parameter depends on the MySQL version and connection settings.
-                    # A common pattern is to use session variables.
+                    # Using session variables is a reliable way to get output from stored procedures in MySQL.
                     cursor.execute("SET @final_bill = 0.0;")
                     cursor.callproc('CALCULATE_FINAL_BILL', [booking.id, actual_return_datetime, '@final_bill'])
                     cursor.execute("SELECT @final_bill;")
                     result = cursor.fetchone()
                     final_charge = result[0] if result and result[0] is not None else 0.0
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 
-            with transaction.atomic():
+
                 # Update booking status and actual return time
                 booking.booking_status = 'Completed'
                 booking.actual_return_datetime = actual_return_datetime
-                booking.save()
+                booking.save(update_fields=['booking_status', 'actual_return_datetime'])
 
                 # Update vehicle status to 'Available'
                 booking.vehicle.status = 'Available'
-                booking.vehicle.save()
+                booking.vehicle.save(update_fields=['status'])
 
                 # Create a new payment record for the final charge if it's positive
                 if final_charge > 0:
                     Payment.objects.create(
                         booking=booking,
                         customer=booking.customer,
-                        amount=final_charge,
-                        payment_method=final_payment_method,
+                        amount=final_charge,                        payment_method=final_payment_method,
                         payment_type='Fine', # Or 'Final Settlement'
                         payment_status='Completed'
                     )
@@ -1108,10 +837,6 @@ def bookings_management_view(request):
     else:
         sort_by = sort_by.lstrip('-')
     
-    valid_sort_fields = ['booking_date', 'pickup_datetime', 'return_datetime', 'total_amount', 'booking_status']
-    if sort_by.strip('-') in valid_sort_fields:
-        bookings = bookings.order_by(sort_by)
-
     # CSV Export
     if 'export' in request.GET and request.GET['export'] == 'csv':
         response = HttpResponse(content_type='text/csv')
@@ -1131,20 +856,7 @@ def bookings_management_view(request):
                 booking.booking_status
             ])
         return response
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
+    
     valid_sort_fields = ['booking_date', 'pickup_datetime', 'return_datetime', 'total_amount', 'booking_status']
     if sort_by.strip('-') in valid_sort_fields:
         bookings = bookings.order_by(sort_by)
@@ -1304,32 +1016,15 @@ def activate_booking_view(request, booking_id):
     if booking.booking_status == 'Confirmed':
         with transaction.atomic():
             booking.booking_status = 'Active'
-            booking.save()
             booking.save(update_fields=['booking_status'])
             booking.vehicle.status = 'Rented'
-            booking.vehicle.save()
             booking.vehicle.save(update_fields=['status'])
         messages.success(request, f"Booking #{booking.id} is now active.")
     else:
         messages.warning(request, f"Booking #{booking.id} cannot be activated (Status: {booking.booking_status}).")
     return redirect('bookings_management')
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 
 @login_required
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 @user_passes_test(lambda u: u.is_superuser)
 def admin_customers_view(request):
     """
@@ -1422,7 +1117,42 @@ def unverify_customer_view(request, customer_id):
     else:
         messages.info(request, f"Customer {customer.email} is already unverified.")
     
-<<<<<<< Updated upstream
+
     return redirect('admin_customers')
-=======
-    return redirect('admin_customers')
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def maintenance_form_view(request, record_id=None):
+    """
+    Handles adding and editing maintenance records.
+    """
+    instance = None
+    if record_id:
+        instance = get_object_or_404(MaintenanceRecord, id=record_id)
+
+    if request.method == 'POST':
+        form = MaintenanceRecordForm(request.POST, instance=instance)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Maintenance record {'updated' if instance else 'created'} successfully.")
+            return redirect('admin_maintenance')
+    else:
+        form = MaintenanceRecordForm(instance=instance)
+
+    context = {
+        'form': form,
+        'instance': instance
+    }
+    return render(request, 'admin/maintenance_form.html', context)
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def maintenance_delete_view(request, record_id):
+    """
+    Handles deletion of a maintenance record.
+    """
+    record = get_object_or_404(MaintenanceRecord, id=record_id)
+    if request.method == 'POST':
+        record.delete()
+        messages.success(request, "Maintenance record deleted successfully.")
+    return redirect('admin_maintenance')

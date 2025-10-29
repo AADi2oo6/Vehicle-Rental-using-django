@@ -84,47 +84,14 @@ WSGI_APPLICATION = 'Vehicle_Rental_System.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-        'NAME': 'DBMS_CP',
-        'USER': 'root',
-        'HOST': 'localhost',
-        'PORT': '3306',
 
-        # --- DATABASE PASSWORD BEST PRACTICE FOR DEVELOPERS ---
-        # For better security, we load the database password from an environment variable
-        # instead of writing it directly in the code. This prevents committing secrets
-        # to version control.
-        #
-        # To set up your local environment:
-        #
-        # 1. Install python-dotenv:
-        #    pip install python-dotenv
-        #
-        # 2. Create a file named `.env` in the project's root directory (next to manage.py).
-        #
-        # 3. Add the following line to your .env file, replacing the placeholder with
-        #    your actual MySQL password:
-        #    DB_PASSWORD=your_secret_password_here
-        #
-        # 4. Make sure the .env file is listed in your .gitignore file so it is NEVER committed.
-        # --------------------------------------------------------------------------
-        'PASSWORD': os.getenv('DB_PASSWORD', 'YOUR_LOCAL_PASSWORD'),
-=======
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-        'NAME': 'cp',  # Pointing to the database with the data
+        'NAME': 'CP',  # As requested, keeping the database name as 'CP'
         'USER': 'root',    # Replace with your MySQL username
-        'PASSWORD': '10adit06', 
+        'PASSWORD': '10adit06',  # IMPORTANT: Make sure this is your actual MySQL root password
+
         'HOST': 'localhost',          # Or your MySQL server address
         'PORT': '3306',               # Default MySQL port
->>>>>>> Stashed changes
+
     }
 }
 

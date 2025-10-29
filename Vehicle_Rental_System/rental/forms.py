@@ -1,6 +1,7 @@
 from django import forms
-from .models import Payment, RentalBooking, Customer, Vehicle, MaintenanceRecord
 from django.contrib.auth.models import User
+from .models import Payment, Customer, RentalBooking, Vehicle, MaintenanceRecord
+from datetime import date
 
 class PaymentForm(forms.ModelForm):
     class Meta:
@@ -24,34 +25,6 @@ class AdminBookingForm(forms.ModelForm):
         self.fields['customer'].queryset = Customer.objects.order_by('first_name', 'last_name')
         self.fields['vehicle'].queryset = Vehicle.objects.filter(status='Available').order_by('make', 'model')
 
-class MaintenanceRecordForm(forms.ModelForm):
-    vehicle_id = forms.IntegerField(label="Vehicle ID", widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Enter Vehicle ID'}))
-
-    class Meta:
-        model = MaintenanceRecord
-        # Use exclude to automatically include all model fields except 'vehicle', which is handled by the vehicle_id field.
-        exclude = ['vehicle']
-        widgets = {
-            'maintenance_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'next_service_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-        }
-
-    def clean(self):
-        """
-        Custom validation to find the Vehicle from vehicle_id and attach it.
-        This is the correct way to handle a raw ID field for a ForeignKey in a ModelForm.
-        """
-        cleaned_data = super().clean()
-        vehicle_id = cleaned_data.get("vehicle_id")
-
-        if vehicle_id:
-            try:
-                vehicle = Vehicle.objects.get(id=vehicle_id)
-                self.instance.vehicle = vehicle  # Attach the vehicle instance to the model instance
-            except Vehicle.DoesNotExist:
-                self.add_error('vehicle_id', f"A vehicle with ID {vehicle_id} does not exist.")
-        return cleaned_data
-
 class CustomerProfileForm(forms.ModelForm):
     class Meta:
         model = Customer
@@ -63,13 +36,48 @@ class CustomerProfileForm(forms.ModelForm):
             'date_of_birth': forms.DateInput(attrs={'type': 'date'}),
         }
 
+    def clean_license_number(self):
+        """
+        Custom validation for the license_number field.
+        """
+        license_number = self.cleaned_data.get('license_number')
+        if license_number:
+            license_number = license_number.strip()
+            if len(license_number) != 15:
+                raise forms.ValidationError("License number must be exactly 15 characters long.")
+            if Customer.objects.filter(license_number=license_number).exclude(pk=self.instance.pk).exists():
+                raise forms.ValidationError("This license number is already in use by another account.")
+        return license_number
+
+    def clean_date_of_birth(self):
+        """
+        Custom validation to ensure the customer is at least 18 years old.
+        """
+        date_of_birth = self.cleaned_data.get('date_of_birth')
+        if date_of_birth:
+            today = date.today()
+            age = today.year - date_of_birth.year - ((today.month, today.day) < (date_of_birth.month, date_of_birth.day))
+            if age < 18:
+                raise forms.ValidationError("Customer must be at least 18 years old.")
+        return date_of_birth
+
+class MaintenanceRecordForm(forms.ModelForm):
+    class Meta:
+        model = MaintenanceRecord
+        fields = [
+            'vehicle', 'maintenance_date', 'maintenance_type', 'description',
+            'cost', 'service_provider', 'next_service_date', 'mileage_at_service',
+            'parts_replaced', 'technician_name', 'status'
+        ]
+        widgets = {
+            'maintenance_date': forms.DateInput(attrs={'type': 'date'}),
+            'next_service_date': forms.DateInput(attrs={'type': 'date'}),
+            'description': forms.Textarea(attrs={'rows': 3}),
+            'parts_replaced': forms.Textarea(attrs={'rows': 2}),
+        }
+
 class CustomerPictureForm(forms.ModelForm):
     class Meta:
-        model = Customer
-        fields = ['profile_picture']
-        help_texts = {
-            'profile_picture': 'JPG, GIF or PNG. Max size of 2MB.',
-        }
         model = Customer
         fields = ['profile_picture']
         help_texts = {
