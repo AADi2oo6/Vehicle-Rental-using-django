@@ -451,7 +451,7 @@ def admin_maintenance_view(request):
         maintenance_date__gt=date.today()
     ).order_by('maintenance_date')
 
-    cost_per_vehicle = MaintenanceRecord.objects.values('vehicle__make', 'vehicle__model').annotate(
+    cost_per_vehicle = MaintenanceRecord.objects.values('vehicle_id', 'vehicle__vehicle_number').annotate(
         total_cost=Sum('cost')
     ).order_by('-total_cost')
 
