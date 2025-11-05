@@ -332,7 +332,7 @@ def confirm_booking_pay_later(request, vehicle_id):
                 hourly_rate=vehicle.hourly_rate,
                 total_amount=total_amount,
                 security_deposit=security_deposit,
-                booking_status='Confirmed' # Confirmed, but pending payment
+                booking_status='Pending'
             )
 
             # --- Query 2: INSERT into Payment (Security Deposit) ---

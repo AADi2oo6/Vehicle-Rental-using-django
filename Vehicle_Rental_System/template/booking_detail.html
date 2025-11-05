@@ -72,14 +72,20 @@
                 <h2 class="text-3xl font-bold">Booking Details</h2>
                 <p class="text-gray-500">Booking ID: #{{ booking.id }}</p>
             </div>
-            <span class="status-badge status-{{ booking.booking_status }} mt-4 md:mt-0">
-                {{ booking.booking_status }}
-            </span>
+            <span class="px-3 py-1 text-sm font-semibold rounded-full 
+                                {% if booking.booking_status == 'Completed' %}bg-green-100 text-green-800
+                                {% elif booking.booking_status == 'Active' %}bg-blue-100 text-blue-800
+                                {% elif booking.booking_status == 'Confirmed' %}bg-yellow-100 text-yellow-800
+                                {% elif booking.booking_status == 'Cancelled' %}bg-red-100 text-red-800
+                                {% elif booking.booking_status == 'Pending' %}bg-red-100 text-red-800
+                                {% endif %}">
+                                {{ booking.booking_status }}
+                            </span>
         </div>
 
         <!-- Main Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Left Column: Vehicle & Map -->
+            <!-- Left Column: Vehicle, Location, & Review -->
             <div class="lg:col-span-2 space-y-8">
                 <!-- Vehicle Info -->
                 <div>
@@ -99,7 +105,7 @@
                     </div>
                 </div>
 
-                <!-- Location & Map -->
+                <!-- Location -->
                 <div>
                     <h3 class="text-xl font-bold mb-4">Pickup & Return Locations</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -112,10 +118,37 @@
                             <p class="text-gray-600">{{ booking.return_location }}</p>
                         </div>
                     </div>
-                    <!-- Placeholder for a map -->
-                    <div class="w-full h-64 bg-gray-200 rounded-lg mt-4 flex items-center justify-center">
-                        <p class="text-gray-500">Map placeholder for locations</p>
-                    </div>
+                    <!-- Map placeholder removed -->
+                </div>
+
+                <!-- Review Summary (MOVED HERE) -->
+                <div class="p-6 bg-gray-50 rounded-lg border">
+                    <h3 class="text-xl font-bold mb-4">Your Review</h3>
+                    {% if booking_review %}
+                        <!-- Display existing review -->
+                        <div class="flex items-center mb-2">
+                            {% for i in "12345" %}
+                                <i class="fa-solid fa-star {% if forloop.counter <= booking_review.rating %}text-yellow-400{% else %}text-gray-300{% endif %}"></i>
+                            {% endfor %}
+                        </div>
+                        <p class="text-gray-600 italic mb-4">"{{ booking_review.review_text }}"</p>
+                        <div class="flex gap-2">
+                            <button id="edit-review-btn" class="w-full py-2 px-4 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                                Edit Review
+                            </button>
+                            <button id="delete-review-btn" class="w-full py-2 px-4 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">
+                                Delete
+                            </button>
+                        </div>
+                    {% else %}
+                        <!-- Show "Leave Review" button -->
+                        <p class="text-sm text-center text-gray-500">You have not left a review for this booking yet.</p>
+                        {% if booking.booking_status == 'Completed' %}
+                            <button id="add-review-btn" class="w-full mt-4 py-2 px-4 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                                Leave a Review
+                            </button>
+                        {% endif %}
+                    {% endif %}
                 </div>
             </div>
 
@@ -161,58 +194,43 @@
                             <span class="font-bold text-blue-600 text-lg">₹{{ grand_total|floatformat:2 }}</span>
                         </div>
                     </div>
-                    <!-- Payment List -->
+                    <!-- UPDATED: Payment List -->
                     <div class="mt-4">
                         <h4 class="text-md font-semibold mb-2">Payment Status</h4>
-                        {% for payment in booking_payments %}
-                            <div class="flex justify-between items-center text-sm p-2 bg-white rounded border">
-                                <div>
-                                    <p class="font-medium">{{ payment.get_payment_type_display }}</p>
-                                    <p class="text-xs text-gray-500">{{ payment.get_payment_method_display }}</p>
+                        <div class="space-y-2">
+                            {% for payment in booking_payments %}
+                                <div class="flex justify-between items-center text-sm p-2 bg-white rounded border">
+                                    <div>
+                                        <p class="font-medium">{{ payment.get_payment_type_display }}</p>
+                                        <p class="text-xs text-gray-500">{{ payment.get_payment_method_display }}</p>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        {% if payment.payment_status == 'Pending' %}
+                                            <span class="font-semibold text-red-600">{{ payment.get_payment_status_display }}</span>
+                                            <button class="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700" disabled title="Online payment coming soon">
+                                                Pay
+                                            </button>
+                                        {% else %}
+                                            <span class="font-semibold text-green-700">{{ payment.get_payment_status_display }}</span>
+                                        {% endif %}
+                                    </div>
                                 </div>
-                                <span class="font-semibold text-green-700">{{ payment.get_payment_status_display }}</span>
-                            </div>
-                        {% empty %}
-                            <p class="text-sm text-center text-gray-500 p-2 bg-white rounded border">No payment records found.</p>
-                        {% endfor %}
+                            {% empty %}
+                                <p class="text-sm text-center text-gray-500 p-2 bg-white rounded border">No payment records found.</p>
+                            {% endfor %}
+                        </div>
                     </div>
                 </div>
                 
-                <!-- Review Summary -->
-                <div class="p-6 bg-gray-50 rounded-lg border">
-                    <h3 class="text-xl font-bold mb-4">Your Review</h3>
-                    {% if booking_review %}
-                        <!-- Display existing review -->
-                        <div class="flex items-center mb-2">
-                            {% for i in "12345" %}
-                                <i class="fa-solid fa-star {% if forloop.counter <= booking_review.rating %}text-yellow-400{% else %}text-gray-300{% endif %}"></i>
-                            {% endfor %}
-                        </div>
-                        <p class="text-gray-600 italic mb-4">"{{ booking_review.review_text }}"</p>
-                        <div class="flex gap-2">
-                            <button id="edit-review-btn" class="w-full py-2 px-4 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
-                                Edit Review
-                            </button>
-                            <button id="delete-review-btn" class="w-full py-2 px-4 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">
-                                Delete
-                            </button>
-                        </div>
-                    {% else %}
-                        <!-- Show "Leave Review" button -->
-                        <p class="text-sm text-center text-gray-500">You have not left a review for this booking yet.</p>
-                        {% if booking.booking_status == 'Completed' %}
-                            <button id="add-review-btn" class="w-full mt-4 py-2 px-4 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
-                                Leave a Review
-                            </button>
-                        {% endif %}
-                    {% endif %}
-                </div>
+                <!-- Review Summary (MOVED) -->
+                
             </div>
         </div>
     </div>
 
-    <!-- Modals are placed here, inside the main block but outside the layout grid -->
-
+    <!-- Modals are placed here, inside the main content block -->
+    <!-- ... (Add/Edit Review Modal HTML remains the same) ... -->
+    <!-- ... (Delete Review Modal HTML remains the same) ... -->
     <!-- Add/Edit Review Modal -->
     <div id="review-modal" class="fixed inset-0 z-[60] hidden items-center justify-center">
         <div id="review-modal-backdrop" class="absolute inset-0 bg-black/60 modal-backdrop opacity-0"></div>
@@ -229,11 +247,11 @@
                     <div>
                         <label class="block text-center text-sm font-medium text-gray-700 mb-2">Select Your Rating</label>
                         <div class="star-rating">
-                            <input type="radio" id="star5" name="rating" value="5" {% if booking_review.rating == 5 %}checked{% endif %}><label for="star5" title="5 stars">&#9733;</label>
-                            <input type="radio" id="star4" name="rating" value="4" {% if booking_review.rating == 4 %}checked{% endif %}><label for="star4" title="4 stars">&#9733;</label>
-                            <input type="radio" id="star3" name="rating" value="3" {% if booking_review.rating == 3 %}checked{% endif %}><label for="star3" title="3 stars">&#9733;</label>
-                            <input type="radio" id="star2" name="rating" value="2" {% if booking_review.rating == 2 %}checked{% endif %}><label for="star2" title="2 stars">&#9733;</label>
-                            <input type="radio" id="star1" name="rating" value="1" {% if booking_review.rating == 1 %}checked{% endif %}><label for="star1" title="1 star">&#9733;</label>
+                            <input type="radio" id="star5" name="rating" value="5" {% if booking_review and booking_review.rating == 5 %}checked{% endif %}><label for="star5" title="5 stars">&#9733;</label>
+                            <input type="radio" id="star4" name="rating" value="4" {% if booking_review and booking_review.rating == 4 %}checked{% endif %}><label for="star4" title="4 stars">&#9733;</label>
+                            <input type="radio" id="star3" name="rating" value="3" {% if booking_review and booking_review.rating == 3 %}checked{% endif %}><label for="star3" title="3 stars">&#9733;</label>
+                            <input type="radio" id="star2" name="rating" value="2" {% if booking_review and booking_review.rating == 2 %}checked{% endif %}><label for="star2" title="2 stars">&#9733;</label>
+                            <input type="radio" id="star1" name="rating" value="1" {% if booking_review and booking_review.rating == 1 %}checked{% endif %}><label for="star1" title="1 star">&#9733;</label>
                         </div>
                     </div>
                     <div>
@@ -254,7 +272,6 @@
     <div id="delete-modal" class="fixed inset-0 z-[60] hidden items-center justify-center">
         <div id="delete-modal-backdrop" class="absolute inset-0 bg-black/60 modal-backdrop opacity-0"></div>
         <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-md m-4 modal-content transform scale-95">
-            <!-- This form action is set correctly *if* the review exists -->
             <form id="delete-form" method="POST" action="{% if booking_review %}{% url 'delete_review' booking_review.id %}{% endif %}">
                 {% csrf_token %}
                 <div class="p-6">
@@ -279,6 +296,7 @@
 {% endblock content %}
 
 {% block scripts %}
+<!-- The JavaScript block remains identical to the previous version -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // --- Review Modal ---
@@ -321,19 +339,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // This button only exists if there IS a review
-                if (editBtn) {
-                    editBtn.addEventListener('click', () => {
-                        reviewModalTitle.textContent = 'Edit Your Review';
-                        // Set the form action only when booking_review exists server-side to avoid reverse errors
-                        {% if booking_review %}
-                            reviewForm.action = "{% url 'edit_review' booking_review.id %}";
-                        {% else %}
-                            // Fallback: no action if there's no valid review id
-                            reviewForm.action = "";
-                        {% endif %}
-                        openReviewModal();
-                    });
-                }   
+        if (editBtn) {
+            editBtn.addEventListener('click', () => {
+                reviewModalTitle.textContent = 'Edit Your Review';
+                // This URL is for EDITING a review
+                // This is safe because 'booking_review' must exist for this button to exist
+                reviewForm.action = "{% if booking_review %}{% url 'edit_review' booking_review.id %}{% endif %}";
+                openReviewModal();
+            });
+        }
         
         closeBtn.addEventListener('click', closeReviewModal);
         backdrop.addEventListener('click', closeReviewModal);

@@ -95,6 +95,7 @@
                                 {% elif booking.booking_status == 'Active' %}bg-blue-100 text-blue-800
                                 {% elif booking.booking_status == 'Confirmed' %}bg-yellow-100 text-yellow-800
                                 {% elif booking.booking_status == 'Cancelled' %}bg-red-100 text-red-800
+                                {% elif booking.booking_status == 'Pending' %}bg-red-100 text-red-800
                                 {% endif %}">
                                 {{ booking.booking_status }}
                             </span>
