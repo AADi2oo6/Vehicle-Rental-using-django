@@ -309,6 +309,48 @@ def booking_view(request, vehicle_id):
     context = {'vehicle': vehicle, 'customer': customer, 'values': request.GET}
     return render(request, "booking.html", context)
 
+@login_required
+def booking_detail_view(request, booking_id):
+    """
+    Displays a detailed view of a single booking.
+    Demonstrates efficient data retrieval using select_related and prefetch_related.
+    """
+    customer = get_object_or_404(Customer, id=request.session.get('customer_id'))
+
+    # --- DBMS Concept: Query Optimization (select_related) ---
+    # We are fetching the booking and its related Vehicle in a single,
+    # efficient query (using a SQL JOIN) instead of two separate queries.
+    booking = get_object_or_404(
+        RentalBooking.objects.select_related('vehicle'),
+        id=booking_id,
+        customer=customer  # Ensures the user can only see their own bookings
+    )
+
+    # --- DBMS Concept: Query Optimization (prefetch_related) ---
+    # After fetching the booking, we often need related items (like payments or reviews).
+    # 'prefetch_related' fetches these in a separate, efficient query (e.g., SELECT ... WHERE booking_id = 123)
+    # This avoids the "N+1 query problem"
+    booking_payments = booking.payment_set.all()
+    
+    # We use a 'try/except' here because a review is optional
+    try:
+        booking_review = booking.feedbackreview_set.get()
+    except FeedbackReview.DoesNotExist:
+        booking_review = None
+
+    # Calculate grand total for display
+    grand_total = booking.total_amount + booking.security_deposit
+
+    context = {
+        'customer': customer,
+        'booking': booking,
+        'booking_payments': booking_payments,
+        'booking_review': booking_review,
+        'grand_total': grand_total,
+    }
+    return render(request, "booking_detail.html", context)
+
+
 def about_us_view(request):
     customer = None
     customer_id = request.session.get('customer_id')
@@ -410,6 +452,124 @@ def my_bookings_view(request):
 
 from django.http import JsonResponse
 from .models import DetailedReview # Make sure to import the new model
+
+@login_required
+def add_review(request, booking_id):
+    """
+    Handles the creation of a new review for a specific booking.
+    Demonstrates: CRUD (Create), ACID Transactions.
+    """
+    customer = get_object_or_404(Customer, id=request.session.get('customer_id'))
+    booking = get_object_or_404(RentalBooking, id=booking_id, customer=customer)
+
+    # Prevent re-reviewing
+    if FeedbackReview.objects.filter(booking=booking).exists():
+        messages.error(request, "You have already reviewed this booking.")
+        return redirect('booking_detail', booking_id=booking.id)
+
+    if request.method == 'POST':
+        rating = request.POST.get('rating')
+        review_text = request.POST.get('review_text')
+
+        if not rating:
+            messages.error(request, "A rating is required.")
+            return redirect('booking_detail', booking_id=booking.id)
+
+        try:
+            # --- DBMS Concept: ACID Transaction ---
+            with transaction.atomic():
+                # Step 1: Create the review (INSERT query)
+                new_review = FeedbackReview.objects.create(
+                    customer=customer,
+                    vehicle=booking.vehicle,
+                    booking=booking,
+                    rating=rating,
+                    review_text=review_text
+                )
+                
+                # Step 2: Log the action (INSERT query)
+                ActivityLog.objects.create(
+                    customer=customer,
+                    action_type='REVIEW_CREATED',
+                    details=f"Created review #{new_review.id} (Rating: {rating}) for booking #{booking.id}."
+                )
+            
+            messages.success(request, "Your review has been submitted successfully!")
+        except Exception as e:
+            messages.error(request, f"An error occurred: {e}")
+        
+    return redirect('booking_detail', booking_id=booking.id)
+
+@login_required
+def edit_review(request, review_id):
+    """
+    Handles the updating of an existing review.
+    Demonstrates: CRUD (Update), ACID Transactions.
+    """
+    customer = get_object_or_404(Customer, id=request.session.get('customer_id'))
+    review = get_object_or_404(FeedbackReview, id=review_id, customer=customer)
+
+    if request.method == 'POST':
+        rating = request.POST.get('rating')
+        review_text = request.POST.get('review_text')
+
+        if not rating:
+            messages.error(request, "A rating is required.")
+            return redirect('booking_detail', booking_id=review.booking.id)
+
+        try:
+            # --- DBMS Concept: ACID Transaction ---
+            with transaction.atomic():
+                # Step 1: Update the review (UPDATE query)
+                review.rating = rating
+                review.review_text = review_text
+                review.save() # This fires the UPDATE query
+
+                # Step 2: Log the action (INSERT query)
+                ActivityLog.objects.create(
+                    customer=customer,
+                    action_type='REVIEW_UPDATED',
+                    details=f"Updated review #{review.id} for booking #{review.booking.id}."
+                )
+            
+            messages.success(request, "Your review has been updated.")
+        except Exception as e:
+            messages.error(request, f"An error occurred: {e}")
+
+    return redirect('booking_detail', booking_id=review.booking.id)
+
+@login_required
+def delete_review(request, review_id):
+    """
+    Handles the deletion of an existing review.
+    Demonstrates: CRUD (Delete), ACID Transactions.
+    """
+    customer = get_object_or_404(Customer, id=request.session.get('customer_id'))
+    review = get_object_or_404(FeedbackReview, id=review_id, customer=customer)
+    booking_id = review.booking.id # Save the booking ID before we delete
+
+    if request.method == 'POST':
+        try:
+            # --- DBMS Concept: ACID Transaction ---
+            with transaction.atomic():
+                # Step 1: Delete the review (DELETE query)
+                review.delete()
+
+                # Step 2: Log the action (INSERT query)
+                ActivityLog.objects.create(
+                    customer=customer,
+                    action_type='REVIEW_DELETED',
+                    details=f"Deleted review #{review.id} for booking #{booking_id}."
+                )
+            
+            messages.success(request, "Your review has been deleted.")
+        except Exception as e:
+            messages.error(request, f"An error occurred: {e}")
+    
+    return redirect('booking_detail', booking_id=booking_id)
+
+
+
 
 def all_reviews_api(request):
     """

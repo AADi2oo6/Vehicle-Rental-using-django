@@ -99,7 +99,7 @@
                                 {{ booking.booking_status }}
                             </span>
                         </div>
-                        <a href="#" class="text-sm font-medium text-blue-700 hover:underline">View Details</a>
+                        <a href="{% url 'booking_detail' booking.id %}" class="text-sm font-medium text-blue-700 hover:underline">View Details</a>
                     </div>
                     {% empty %}
                     <p class="text-center text-gray-500 py-5">You have no bookings yet.</p>

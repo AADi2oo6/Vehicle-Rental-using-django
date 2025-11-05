@@ -16,4 +16,11 @@ urlpatterns = [
     path("api/all-reviews/", views.all_reviews_api, name="all_reviews_api"),
 
     path("profile/edit/", views.edit_profile_view, name="edit_profile"),
+
+    # The <int:booking_id> part captures the ID from the URL.
+    path("booking/<int:booking_id>/", views.booking_detail_view, name="booking_detail"),
+
+    path("booking/<int:booking_id>/review/add/", views.add_review, name="add_review"),
+    path("review/<int:review_id>/edit/", views.edit_review, name="edit_review"),
+    path("review/<int:review_id>/delete/", views.delete_review, name="delete_review"),
 ]
