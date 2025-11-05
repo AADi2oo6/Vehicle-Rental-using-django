@@ -5,14 +5,7 @@
 {% endblock title %}
 
 {% block style %}
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Google Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
+    <!-- ... (existing styles) ... -->
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -32,22 +25,16 @@
             max-height: 300px;
             opacity: 1;
         }
+        /* Styles for the new modal */
+        .modal-backdrop { transition: opacity 0.3s ease; }
+        .modal-content { transition: transform 0.3s ease; }
     </style>
 {% endblock style %}
 
 {% block content %}
 <main class="container mx-auto px-6 py-12">
 
-    <!-- NEW: Django Messages Block -->
-    {% if messages %}
-    <div class="max-w-5xl mx-auto mb-8">
-        {% for message in messages %}
-        <div class="p-4 rounded-lg {% if message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-green-100 text-green-800{% endif %}" role="alert">
-            <span class="font-semibold">{{ message }}</span>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
+    
 
     <h1 class="text-3xl font-bold mb-8 text-center">Confirm Your Booking</h1>
         
@@ -84,24 +71,33 @@
             <!-- Booking Form -->
             <div class="bg-white p-8 rounded-lg shadow-lg">
                 <h2 class="text-2xl font-bold mb-6">Booking Details</h2>
+                
+                <!-- This form now submits to the *same view* to show the modal -->
                 <form method="POST" action="{% url 'booking' vehicle.id %}">
                     {% csrf_token %}
                     <div class="space-y-6">
                         <div>
                             <label for="pickup_datetime" class="block text-sm font-medium text-gray-700 mb-1">Pickup Date & Time</label>
-                            <input type="datetime-local" name="pickup_datetime" id="pickup_datetime" value="{{ values.pickup_datetime }}" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                            <!-- 
+                                FIXED: This value now safely checks if form_data exists first, 
+                                then falls back to values, then to an empty string. 
+                            -->
+                            <input type="datetime-local" name="pickup_datetime" id="pickup_datetime" value="{% if form_data %}{{ form_data.pickup_datetime }}{% else %}{{ values.pickup_datetime|default:'' }}{% endif %}" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>
                             <label for="return_datetime" class="block text-sm font-medium text-gray-700 mb-1">Return Date & Time</label>
-                            <input type="datetime-local" name="return_datetime" id="return_datetime" value="{{ values.return_datetime }}" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                            <!-- FIXED: Applied same logic here -->
+                            <input type="datetime-local" name="return_datetime" id="return_datetime" value="{% if form_data %}{{ form_data.return_datetime }}{% else %}{{ values.return_datetime|default:'' }}{% endif %}" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>
                             <label for="pickup_location" class="block text-sm font-medium text-gray-700 mb-1">Pickup Location</label>
-                            <input type="text" name="pickup_location" id="pickup_location" value="{{ values.location }}" placeholder="e.g., Pune Airport" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                            <!-- FIXED: Applied same logic here, falling back to values.location -->
+                            <input type="text" name="pickup_location" id="pickup_location" value="{% if form_data %}{{ form_data.pickup_location }}{% else %}{{ values.location|default:'' }}{% endif %}" placeholder="e.g., Pune Airport" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>
                             <label for="return_location" class="block text-sm font-medium text-gray-700 mb-1">Return Location</label>
-                            <input type="text" name="return_location" id="return_location" value="{{ values.location }}" placeholder="e.g., Pune Airport" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                            <!-- FIXED: Applied same logic here, falling back to values.location -->
+                            <input type="text" name="return_location" id="return_location" value="{% if form_data %}{{ form_data.return_location }}{% else %}{{ values.location|default:'' }}{% endif %}" placeholder="e.g., Pune Airport" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                         </div>
 
                         <div class="pt-2">
@@ -122,6 +118,7 @@
                         </div>
 
                         <div class="border-t pt-4">
+                            <!-- This button now SUBMITS THE FORM to show the modal -->
                             <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition duration-300">
                                 Confirm & Book
                             </button>
@@ -131,6 +128,58 @@
             </div>
         </div>
     </main>
+
+    <!-- NEW: Payment Confirmation Modal -->
+    <!-- This is shown only if the view validates the data and sets 'show_payment_modal' to True -->
+    {% if show_payment_modal %}
+    <div id="payment-modal" class="fixed inset-0 z-[60] flex items-center justify-center">
+        <div id="payment-modal-backdrop" class="absolute inset-0 bg-black/60 modal-backdrop opacity-100"></div>
+        <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-lg m-4 modal-content transform scale-100">
+            
+            <!-- This new form posts to the 'confirm_booking_pay_later' view -->
+            <form method="POST" action="{% url 'confirm_booking_pay_later' vehicle.id %}">
+                {% csrf_token %}
+                <!-- Hidden fields to pass all the validated booking data -->
+                <input type="hidden" name="pickup_datetime" value="{{ form_data.pickup_datetime }}">
+                <input type="hidden" name="return_datetime" value="{{ form_data.return_datetime }}">
+                <input type="hidden" name="pickup_location" value="{{ form_data.pickup_location }}">
+                <input type="hidden" name="return_location" value="{{ form_data.return_location }}">
+                <input type="hidden" name="total_amount" value="{{ total_amount }}">
+                <input type="hidden" name="security_deposit_amount" value="{{ security_deposit_amount }}">
+
+                <div class="p-6 border-b">
+                    <h2 class="text-2xl font-bold">Confirm Your Payment</h2>
+                </div>
+                <div class="p-6 space-y-4">
+                    <p class="text-gray-600">Your booking is almost complete. Please select a payment option.</p>
+                    <div class="p-4 bg-gray-50 rounded-lg border">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-gray-700">Estimated Fare:</span>
+                            <span class="font-bold text-lg">₹{{ total_amount }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Security Deposit (20%):</span>
+                            <span class="font-bold text-lg">₹{{ security_deposit_amount }}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <button type="button" class="w-full py-3 px-5 text-left bg-gray-200 text-gray-500 rounded-lg cursor-not-allowed" disabled>
+                            <span class="font-bold">Pay ₹{{ security_deposit_amount }} Now</span>
+                            <span class="block text-sm">Online payment gateway (Coming Soon)</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6 bg-gray-50 rounded-b-xl flex justify-between items-center">
+                    <a href="{% url 'booking' vehicle.id %}" class="text-sm font-medium text-gray-600 hover:underline">Cancel</a>
+                    <button type="submit" class="px-6 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
+                        Book and Pay Later
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
 
     <div id="booking-data" data-hourly-rate="{{ vehicle.hourly_rate }}"></div>
     
@@ -154,46 +203,58 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     const now = new Date();
-    pickupInput.min = formatDateTimeLocal(now);
+    // Ensure pickupInput exists before setting min
+    if (pickupInput) {
+        pickupInput.min = formatDateTimeLocal(now);
 
-    if (!pickupInput.value) {
-        const defaultPickupTime = new Date(now.getTime() + 60 * 60 * 1000);
-        pickupInput.value = formatDateTimeLocal(defaultPickupTime);
+        // Set default times only if the fields are not already filled
+        if (!pickupInput.value) {
+            const defaultPickupTime = new Date(now.getTime() + 60 * 60 * 1000);
+            pickupInput.value = formatDateTimeLocal(defaultPickupTime);
+        }
     }
 
-    if (!returnInput.value) {
-        const defaultReturnTime = new Date(new Date(pickupInput.value).getTime() + 4 * 60 * 60 * 1000);
+    if (returnInput && !returnInput.value) {
+        // Ensure pickupInput.value is valid before creating a Date from it
+        const pickupDateVal = pickupInput ? pickupInput.value : now;
+        const defaultReturnTime = new Date(new Date(pickupDateVal).getTime() + 4 * 60 * 60 * 1000);
         returnInput.value = formatDateTimeLocal(defaultReturnTime);
     }
-    returnInput.min = pickupInput.value;
+    
+    if (pickupInput && returnInput) {
+        returnInput.min = pickupInput.value;
+        pickupInput.addEventListener('change', () => {
+            const pickupDate = new Date(pickupInput.value);
+            returnInput.min = formatDateTimeLocal(pickupDate);
+            if (new Date(returnInput.value) <= pickupDate) {
+                const newReturnDate = new Date(pickupDate.getTime() + 4 * 60 * 60 * 1000);
+                returnInput.value = formatDateTimeLocal(newReturnDate);
+            }
+        });
+    }
 
-    pickupInput.addEventListener('change', () => {
-        const pickupDate = new Date(pickupInput.value);
-        returnInput.min = formatDateTimeLocal(pickupDate);
-        if (new Date(returnInput.value) <= pickupDate) {
-            const newReturnDate = new Date(pickupDate.getTime() + 4 * 60 * 60 * 1000);
-            returnInput.value = formatDateTimeLocal(newReturnDate);
-        }
-    });
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', () => {
+            const pickupDate = new Date(pickupInput.value);
+            const returnDate = new Date(returnInput.value);
 
-    calculateBtn.addEventListener('click', () => {
-        const pickupDate = new Date(pickupInput.value);
-        const returnDate = new Date(returnInput.value);
+            if (isNaN(pickupDate) || isNaN(returnDate) || returnDate <= pickupDate) {
+                // We agreed not to use alert(). Let's use a non-blocking message.
+                // For now, we'll just log to console and prevent calculation.
+                console.error("Invalid pickup or return date.");
+                // You could also display this error message in the 'fare-details' section
+                return;
+            }
 
-        if (isNaN(pickupDate) || isNaN(returnDate) || returnDate <= pickupDate) {
-            alert("Please select a valid pickup and return date. The return date must be after the pickup date.");
-            return;
-        }
+            const diffMilliseconds = returnDate - pickupDate;
+            const diffHours = diffMilliseconds / (1000 * 60 * 60);
+            const totalFare = diffHours * hourlyRate;
 
-        const diffMilliseconds = returnDate - pickupDate;
-        const diffHours = diffMilliseconds / (1000 * 60 * 60);
-        const totalFare = diffHours * hourlyRate;
-
-        totalHoursSpan.textContent = diffHours.toFixed(1);
-        estimatedFareSpan.textContent = `₹${totalFare.toFixed(0)}`;
-        fareDetails.classList.add('visible');
-    });
+            totalHoursSpan.textContent = diffHours.toFixed(1);
+            estimatedFareSpan.textContent = `₹${totalFare.toFixed(0)}`;
+            fareDetails.classList.add('visible');
+        });
+    }
 });
 </script>
 {% endblock scripts %}
-

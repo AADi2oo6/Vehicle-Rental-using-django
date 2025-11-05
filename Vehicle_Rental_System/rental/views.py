@@ -237,23 +237,26 @@ def vehicle_list_view(request):
 
 @login_required
 def booking_view(request, vehicle_id):
-    customer_id = request.session.get('customer_id')
-    if not customer_id:
-        messages.error(request, "You must be logged in to make a booking.")
-        return redirect('home')
-
-    customer = get_object_or_404(Customer, id=customer_id)
+    customer = get_object_or_404(Customer, id=request.session.get('customer_id'))
     vehicle = get_object_or_404(Vehicle, id=vehicle_id)
+    
+    context = {
+        'vehicle': vehicle, 
+        'customer': customer, 
+        'values': request.GET, # Pre-fill from search
+        'show_payment_modal': False,
+    }
 
     if request.method == 'POST':
+        # --- This view now VALIDATES and SHOWS THE MODAL ---
         pickup_str = request.POST.get('pickup_datetime')
         return_str = request.POST.get('return_datetime')
         pickup_location = request.POST.get('pickup_location')
         return_location = request.POST.get('return_location')
         
+        # --- Validation Block ---
         if vehicle.location.lower() not in pickup_location.lower():
             messages.error(request, f"Sorry, this vehicle is not available for pickup in your selected area. It is based in {vehicle.location}.")
-            # We redirect back to the same page so the user can correct their input
             return redirect('booking', vehicle_id=vehicle.id)
 
         if not all([pickup_str, return_str, pickup_location, return_location]):
@@ -266,48 +269,115 @@ def booking_view(request, vehicle_id):
         if not (pickup_datetime and return_datetime and return_datetime > pickup_datetime):
             messages.error(request, "Invalid pickup or return date.")
             return redirect('booking', vehicle_id=vehicle.id)
-
+        
+        # --- Calculation Block ---
         try:
-            with transaction.atomic():
-                duration_hours = (return_datetime - pickup_datetime).total_seconds() / 3600
-                total_amount = Decimal(duration_hours) * vehicle.hourly_rate
-                security_deposit = total_amount * Decimal('0.20')
-
-                new_booking = RentalBooking.objects.create(
-                    customer=customer,
-                    vehicle=vehicle,
-                    pickup_datetime=pickup_datetime,
-                    return_datetime=return_datetime,
-                    pickup_location=pickup_location,
-                    return_location=return_location,
-                    hourly_rate=vehicle.hourly_rate,
-                    total_amount=total_amount,
-                    security_deposit=security_deposit,
-                    booking_status='Confirmed'
-                )
-
-                # Create log entry
-                ActivityLog.objects.create(
-                    customer=customer,
-                    action_type='BOOKING_CREATED',
-                    details=f"Created booking #{new_booking.id} for vehicle {vehicle.vehicle_number}."
-                )
-
-                messages.success(request, f"Booking successful! Your booking ID is #{new_booking.id}.")
-                return redirect('my_bookings')
-
-        except DatabaseError as e:
-            if 'Booking conflict' in str(e):
-                messages.error(request, "Sorry, this vehicle is already booked for the selected time slot. Please choose different dates.")
-            else:
-                messages.error(request, f"A database error occurred. Please try again.")
-            return redirect('booking', vehicle_id=vehicle.id)
+            duration_hours = (return_datetime - pickup_datetime).total_seconds() / 3600
+            total_amount = Decimal(duration_hours) * vehicle.hourly_rate
+            security_deposit = total_amount * Decimal('0.20') # 20% security deposit
         except Exception as e:
-            messages.error(request, f"An unexpected error occurred: {e}")
+            messages.error(request, f"Could not calculate fare. Please check your dates. Error: {e}")
             return redirect('booking', vehicle_id=vehicle.id)
 
-    context = {'vehicle': vehicle, 'customer': customer, 'values': request.GET}
+        # --- Show Modal ---
+        # Instead of saving, we re-render the page with the modal visible
+        # and pass all the confirmed data to the modal's form.
+        context.update({
+            'show_payment_modal': True,
+            'form_data': request.POST,
+            'security_deposit_amount': security_deposit.quantize(Decimal('0.01')),
+            'total_amount': total_amount.quantize(Decimal('0.01')),
+        })
+        messages.info(request, "Please confirm your payment option to finalize the booking.")
+        return render(request, "booking.html", context)
+
+    # Standard GET request
     return render(request, "booking.html", context)
+ 
+
+@login_required
+def confirm_booking_pay_later(request, vehicle_id):
+    """
+    Handles the final "Pay Later" confirmation from the modal.
+    This view performs the ATOMIC transaction.
+    """
+    if request.method != 'POST':
+        messages.error(request, "Invalid request.")
+        return redirect('booking', vehicle_id=vehicle_id)
+
+    customer = get_object_or_404(Customer, id=request.session.get('customer_id'))
+    vehicle = get_object_or_404(Vehicle, id=vehicle_id)
+
+    # --- DBMS Concept: ACID Transaction ---
+    # We are performing THREE database inserts. All must succeed,
+    # or none of them will. transaction.atomic() guarantees this.
+    try:
+        with transaction.atomic():
+            # 1. Get all the data from the hidden form fields
+            pickup_datetime = parse_datetime(request.POST.get('pickup_datetime'))
+            return_datetime = parse_datetime(request.POST.get('return_datetime'))
+            pickup_location = request.POST.get('pickup_location')
+            return_location = request.POST.get('return_location')
+            total_amount = Decimal(request.POST.get('total_amount'))
+            security_deposit = Decimal(request.POST.get('security_deposit_amount'))
+
+            # --- Query 1: INSERT into RentalBooking ---
+            new_booking = RentalBooking.objects.create(
+                customer=customer,
+                vehicle=vehicle,
+                pickup_datetime=pickup_datetime,
+                return_datetime=return_datetime,
+                pickup_location=pickup_location,
+                return_location=return_location,
+                hourly_rate=vehicle.hourly_rate,
+                total_amount=total_amount,
+                security_deposit=security_deposit,
+                booking_status='Confirmed' # Confirmed, but pending payment
+            )
+
+            # --- Query 2: INSERT into Payment (Security Deposit) ---
+            Payment.objects.create(
+                booking=new_booking,
+                customer=customer,
+                amount=security_deposit,
+                payment_method='Cash', # Placeholder, as it's 'Pay Later'
+                payment_type='Security Deposit',
+                payment_status='Pending' # DBMS Concept: Using a constraint
+            )
+
+            # --- Query 3: INSERT into Payment (Full Amount) ---
+            Payment.objects.create(
+                booking=new_booking,
+                customer=customer,
+                amount=total_amount,
+                payment_method='Cash',
+                payment_type='Full Payment',
+                payment_status='Pending'
+            )
+
+            # --- Query 4: INSERT into ActivityLog ---
+            ActivityLog.objects.create(
+                customer=customer,
+                action_type='BOOKING_CREATED',
+                details=f"Created booking #{new_booking.id} (Pay Later) for vehicle {vehicle.vehicle_number}."
+            )
+
+        # If the transaction.atomic() block succeeds, we commit and redirect.
+        messages.success(request, f"Booking #{new_booking.id} confirmed! Please pay at the counter.")
+        return redirect('my_bookings')
+
+    except DatabaseError as e:
+        # If the trigger fails (e.g., booking conflict)
+        if 'Booking conflict' in str(e):
+            messages.error(request, "Sorry, this vehicle was just booked by someone else. Please try a different time.")
+        else:
+            messages.error(request, f"A database error occurred. Please try again.")
+        return redirect('booking', vehicle_id=vehicle.id)
+    except Exception as e:
+        # If any other error occurs (e.g., data conversion), the transaction is rolled back.
+        messages.error(request, f"An unexpected error occurred: {e}")
+        return redirect('booking', vehicle_id=vehicle_id)
+
 
 @login_required
 def booking_detail_view(request, booking_id):
