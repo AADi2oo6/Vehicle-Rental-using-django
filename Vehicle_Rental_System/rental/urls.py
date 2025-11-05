@@ -14,4 +14,6 @@ urlpatterns = [
     path("profile/", views.my_profile_view, name="my_profile"),
     path("profile/bookings/", views.my_bookings_view, name="my_bookings"),
     path("api/all-reviews/", views.all_reviews_api, name="all_reviews_api"),
+
+    path("profile/edit/", views.edit_profile_view, name="edit_profile"),
 ]

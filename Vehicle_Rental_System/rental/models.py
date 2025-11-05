@@ -146,6 +146,7 @@ class ActivityLog(models.Model):
         ('LOGIN', 'User Login'),
         ('LOGOUT', 'User Logout'),
         ('BOOKING_CREATED', 'Booking Created'),
+        ('PROFILE_UPDATE', 'Profile Updated'),
     ]
 
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True)

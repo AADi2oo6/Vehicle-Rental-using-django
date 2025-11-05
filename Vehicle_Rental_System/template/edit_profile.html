@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}
+    <title>Edit My Profile - Velo-Rent</title>
+{% endblock title %}
+{% block style %}
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .profile-nav-link.active {
+            background-color: #eff6ff;
+            color: #1d4ed8;
+            border-right: 3px solid #1d4ed8;
+        }
+    </style>
+{% endblock style %}
+
+{% block content %}
+<main class="container mx-auto px-6 py-12">
+    <div class="flex flex-col lg:flex-row gap-8">
+        <!-- Profile Sidebar -->
+        <aside class="lg:w-1/4">
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                <div class="flex flex-col items-center text-center border-b pb-4 mb-4">
+                    <img class="h-24 w-24 rounded-full object-cover mb-3" src="{{ customer.profile_picture.url }}" alt="Profile Picture">
+                    <h2 class="text-xl font-bold">{{ customer.first_name }} {{ customer.last_name }}</h2>
+                    <p class="text-sm text-gray-500">{{ customer.email }}</p>
+                </div>
+                <nav class="flex flex-col space-y-1">
+                    <a href="{% url 'my_profile' %}" class="profile-nav-link active flex items-center gap-3 px-4 py-2.5 rounded-md font-medium text-gray-700 hover:bg-gray-100">
+                        <i class="fa-solid fa-user w-5 text-center"></i> My Profile
+                    </a>
+                    <a href="{% url 'my_bookings' %}" class="profile-nav-link flex items-center gap-3 px-4 py-2.5 rounded-md font-medium text-gray-700 hover:bg-gray-100">
+                        <i class="fa-solid fa-car w-5 text-center"></i> My Bookings
+                    </a>
+                    <a href="#" class="profile-nav-link flex items-center gap-3 px-4 py-2.5 rounded-md font-medium text-gray-700 hover:bg-gray-100">
+                        <i class="fa-solid fa-shield-halved w-5 text-center"></i> Security
+                    </a>
+                    <a href="{% url 'logout' %}" class="profile-nav-link flex items-center gap-3 px-4 py-2.5 rounded-md font-medium text-red-600 hover:bg-red-50">
+                        <i class="fa-solid fa-right-from-bracket w-5 text-center"></i> Logout
+                    </a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="lg:w-3/4">
+            <!-- Edit Personal Information Form -->
+            <div class="bg-white p-8 rounded-lg shadow-md mb-8">
+                <h3 class="text-2xl font-bold mb-6">Edit Personal Information</h3>
+                <!-- Make sure to set enctype for file uploads -->
+                <form method="POST" action="{% url 'edit_profile' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="first_name" class="block text-sm font-medium text-gray-700">First Name</label>
+                            <input type="text" name="first_name" id="first_name" value="{{ customer.first_name }}" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="last_name" class="block text-sm font-medium text-gray-700">Last Name</label>
+                            <input type="text" name="last_name" id="last_name" value="{{ customer.last_name }}" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700">Email (Read-only)</label>
+                            <input type="email" name="email" id="email" value="{{ customer.email }}" readonly class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 text-gray-500">
+                        </div>
+                        <div>
+                            <label for="phone" class="block text-sm font-medium text-gray-700">Phone</label>
+                            <input type="text" name="phone" id="phone" value="{{ customer.phone }}" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="address" class="block text-sm font-medium text-gray-700">Address</label>
+                            <input type="text" name="address" id="address" value="{{ customer.address|default:'' }}" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="city" class="block text-sm font-medium text-gray-700">City</label>
+                            <input type="text" name="city" id="city" value="{{ customer.city|default:'' }}" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="state" class="block text-sm font-medium text-gray-700">State</label>
+                            <input type="text" name="state" id="state" value="{{ customer.state|default:'' }}" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="zip_code" class="block text-sm font-medium text-gray-700">Zip Code</label>
+                            <input type="text" name="zip_code" id="zip_code" value="{{ customer.zip_code|default:'' }}" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="date_of_birth" class="block text-sm font-medium text-gray-700">Date of Birth</label>
+                            <!-- Format date for HTML input type 'date' -->
+                            <input type="date" name="date_of_birth" id="date_of_birth" value="{{ customer.date_of_birth|date:'Y-m-d' }}" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="license_number" class="block text-sm font-medium text-gray-700">License Number</label>
+                            <input type="text" name="license_number" id="license_number" value="{{ customer.license_number|default:'' }}" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="profile_picture" class="block text-sm font-medium text-gray-700">Profile Picture</label>
+                            <input type="file" name="profile_picture" id="profile_picture" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                            <p class="text-xs text-gray-500 mt-1">Current: {{ customer.profile_picture.name|cut:"profile_pics/" }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end gap-4 mt-8 pt-6 border-t">
+                        <a href="{% url 'my_profile' %}" class="px-6 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
+                            Cancel
+                        </a>
+                        <button type="submit" class="px-6 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock content %}

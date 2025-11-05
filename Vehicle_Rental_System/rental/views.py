@@ -334,6 +334,63 @@ def my_profile_view(request):
     }
     return render(request, "my_profile.html", context)
 
+
+@login_required
+def edit_profile_view(request):
+    """
+    Handles displaying and updating the customer's profile.
+    """
+    customer = get_object_or_404(Customer, id=request.session.get('customer_id'))
+
+    if request.method == 'POST':
+        # --- DBMS Concept: ACID Transaction ---
+        # We wrap the update in a transaction. If any part fails
+        # (e.g., the ActivityLog save fails), the customer profile
+        # update will be rolled back, ensuring data consistency.
+        try:
+            with transaction.atomic():
+                # --- DBMS Concept: CRUD (Update) ---
+                # This block performs the SQL UPDATE query.
+                customer.first_name = request.POST.get('first_name')
+                customer.last_name = request.POST.get('last_name')
+                customer.phone = request.POST.get('phone')
+                customer.address = request.POST.get('address')
+                customer.city = request.POST.get('city')
+                customer.state = request.POST.get('state')
+                customer.zip_code = request.POST.get('zip_code')
+                customer.license_number = request.POST.get('license_number')
+                
+                dob = request.POST.get('date_of_birth')
+                if dob:
+                    customer.date_of_birth = dob
+                else:
+                    customer.date_of_birth = None # Handle empty date
+                
+                # Handle profile picture upload
+                if 'profile_picture' in request.FILES:
+                    customer.profile_picture = request.FILES['profile_picture']
+                
+                customer.save() # This is when the UPDATE query runs and our Trigger fires
+
+                # --- Application-Level Log ---
+                # This log is simpler and shows the action was initiated by the app.
+                # The database trigger will log the *specific details*.
+                ActivityLog.objects.create(
+                    customer=customer,
+                    action_type='PROFILE_UPDATE',
+                    details="Profile updated via web form."
+                )
+
+            messages.success(request, "Your profile has been updated successfully!")
+            return redirect('my_profile')
+        except Exception as e:
+            messages.error(request, f"An error occurred while updating your profile: {e}")
+
+    # --- DBMS Concept: CRUD (Read) ---
+    # This block handles the GET request, performing a SQL SELECT.
+    return render(request, "edit_profile.html", {'customer': customer})
+
+
 @login_required
 def my_bookings_view(request):
     customer_id = request.session.get('customer_id')
