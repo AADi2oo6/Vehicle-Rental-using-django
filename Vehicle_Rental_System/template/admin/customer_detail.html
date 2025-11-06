@@ -1,0 +1,132 @@
+{% extends "admin/bases.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0">Customer Details: {{ customer.first_name }} {{ customer.last_name }}</h2>
+        <p class="text-muted">
+            Status: 
+            <span class="badge font-weight-bold {% if customer.is_verified %}badge-success{% else %}badge-secondary{% endif %}">
+                {% if customer.is_verified %}Verified{% else %}Unverified{% endif %}
+            </span>
+        </p>
+    </div>
+    <a href="{% url 'admin_customers' %}" class="btn btn-secondary">&larr; Back to All Customers</a>
+</div>
+
+<div class="row">
+    <!-- Customer Info -->
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Customer Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-2 text-center">
+                        <img src="{% if customer.profile_picture %}/media/{{ customer.profile_picture }}{% else %}/static/default_profile_pic.png{% endif %}" alt="Profile" class="img-fluid rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">
+                    </div>
+                    <div class="col-md-5">
+                        <dl class="row">
+                            <dt class="col-sm-4">Customer ID</dt>
+                            <dd class="col-sm-8">{{ customer.id }}</dd>
+
+                            <dt class="col-sm-4">Email</dt>
+                            <dd class="col-sm-8">{{ customer.email }}</dd>
+
+                            <dt class="col-sm-4">Phone</dt>
+                            <dd class="col-sm-8">{{ customer.phone }}</dd>
+
+                            <dt class="col-sm-4">Member Since</dt>
+                            <dd class="col-sm-8">{{ customer.date_joined|date:"Y-m-d" }}</dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-5">
+                        <dl class="row">
+                            <dt class="col-sm-4">Address</dt>
+                            <dd class="col-sm-8">{{ customer.address|default:'N/A' }}</dd>
+
+                            <dt class="col-sm-4">Location</dt>
+                            <dd class="col-sm-8">{{ customer.city|default:'N/A' }}, {{ customer.state|default:'N/A' }}</dd>
+
+                            <dt class="col-sm-4">License No.</dt>
+                            <dd class="col-sm-8">{{ customer.license_number|default:'Not Provided' }}</dd>
+
+                            <dt class="col-sm-4">Membership</dt>
+                            <dd class="col-sm-8">{{ customer.membership_tier }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Booking History -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5>Booking History</h5>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-striped mb-0">
+            <thead>
+                <tr>
+                    <th>Booking ID</th>
+                    <th>Vehicle</th>
+                    <th>Pickup Date</th>
+                    <th>Return Date</th>
+                    <th>Total Amount</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for booking in bookings %}
+                <tr>
+                    <td><a href="{% url 'booking_detail' booking.booking_id %}">#{{ booking.booking_id }}</a></td>
+                    <td>{{ booking.vehicle_name }}</td>
+                    <td>{{ booking.pickup_datetime|date:"Y-m-d" }}</td>
+                    <td>{{ booking.return_datetime|date:"Y-m-d" }}</td>
+                    <td>₹{{ booking.total_amount|floatformat:2 }}</td>
+                    <td><span class="badge {% if booking.booking_status == 'Completed' %}badge-success{% elif booking.booking_status == 'Active' %}badge-info{% else %}badge-warning{% endif %}">{{ booking.booking_status }}</span></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center text-muted">No bookings found for this customer.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Payment History -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5>Payment History</h5>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-striped mb-0">
+            <thead>
+                <tr>
+                    <th>Payment ID</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Method</th>
+                    <th>Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in payments %}
+                <tr>
+                    <td>#{{ payment.id }}</td>
+                    <td>{{ payment.payment_date|date:"Y-m-d" }}</td>
+                    <td>₹{{ payment.amount|floatformat:2 }}</td>
+                    <td>{{ payment.payment_method }}</td>
+                    <td>{{ payment.payment_type }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-muted">No payments found for this customer.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

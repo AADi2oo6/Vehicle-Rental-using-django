@@ -15,9 +15,4 @@ class Migration(migrations.Migration):
             name='location',
             field=models.CharField(default='Pune', max_length=100),
         ),
-        migrations.AlterField(
-            model_name='customer',
-            name='password',
-            field=models.CharField(default='pbkdf2_sha256$870000$pzTYJTdAZoO00nzhOUztkS$jVZrUBrFDfAOVfIlaY+Xptpxt9sGjVbuJJSNs5+/RfA=', max_length=128),
-        ),
     ]

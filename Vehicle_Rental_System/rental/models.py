@@ -79,7 +79,7 @@ class Vehicle(models.Model):
         return self.vehicle_number
 
 class RentalBooking(models.Model):
-    BOOKING_STATUS = [('Confirmed', 'Confirmed'), ('Active', 'Active'), ('Completed', 'Completed'), ('Cancelled', 'Cancelled')]
+    BOOKING_STATUS = [('Pending', 'Pending'), ('Confirmed', 'Confirmed'), ('Active', 'Active'), ('Completed', 'Completed'), ('Cancelled', 'Cancelled')]
 
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE)
@@ -98,7 +98,7 @@ class RentalBooking(models.Model):
     
     total_amount = models.DecimalField(max_digits=12, decimal_places=2)
     security_deposit = models.DecimalField(max_digits=10, decimal_places=2)
-    booking_status = models.CharField(max_length=20, choices=BOOKING_STATUS, default='Confirmed')
+    booking_status = models.CharField(max_length=20, choices=BOOKING_STATUS, default='Pending')
     special_requests = models.TextField(blank=True, null=True)
     created_by = models.CharField(max_length=50, default='System')
 
@@ -168,3 +168,56 @@ class FeedbackReview(models.Model):
 
     def __str__(self):
         return f"Review {self.id}"
+
+
+class AdminBookingListView(models.Model):
+    """
+    An unmanaged model representing the vw_AdminBookingList database view.
+    Django will not create, modify, or delete the underlying database view.
+    """
+    booking_id = models.BigAutoField(primary_key=True)
+    booking_date = models.DateTimeField()
+    pickup_datetime = models.DateTimeField()
+    return_datetime = models.DateTimeField()
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    booking_status = models.CharField(max_length=20)
+    customer_id = models.BigIntegerField()
+    customer_full_name = models.CharField(max_length=101)
+    vehicle_id = models.BigIntegerField()
+    vehicle_name = models.CharField(max_length=101)
+    vehicle_number = models.CharField(max_length=20)
+
+    class Meta:
+        managed = False
+        db_table = 'vw_AdminBookingList'
+        verbose_name = 'Admin Booking List View'
+        verbose_name_plural = 'Admin Booking List Views'
+
+
+class AdminCustomerListView(models.Model):
+    """
+    An unmanaged model representing the vw_AdminCustomerList database view.
+    Django will not create, modify, or delete the underlying database view.
+    """
+    id = models.BigAutoField(primary_key=True)
+    user_id = models.BigIntegerField(null=True, blank=True)
+    first_name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
+    email = models.EmailField()
+    phone = models.CharField(max_length=15)
+    address = models.TextField(blank=True, null=True)
+    city = models.CharField(max_length=50, blank=True, null=True)
+    state = models.CharField(max_length=50, blank=True, null=True)
+    zip_code = models.CharField(max_length=10, blank=True, null=True)
+    license_number = models.CharField(max_length=20, null=True, blank=True)
+    registration_date = models.DateTimeField()
+    is_verified = models.BooleanField()
+    is_active = models.BooleanField()
+    membership_tier = models.CharField(max_length=10)
+    profile_picture = models.CharField(max_length=100, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'vw_AdminCustomerList'
+        verbose_name = 'Admin Customer List View'
+        verbose_name_plural = 'Admin Customer List Views'

@@ -13,14 +13,12 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.http import HttpResponse
 from django.utils.dateparse import parse_datetime
 from django.db import transaction
-from datetime import date, timedelta, datetime
-import csv
-from .models import Vehicle, Customer, FeedbackReview, RentalBooking, Payment, MaintenanceRecord, CustomerActivityLog
+from datetime import date, timedelta, datetime, timezone
+import csv, decimal
+from .models import Vehicle, Customer, FeedbackReview, RentalBooking, Payment, MaintenanceRecord, CustomerActivityLog, AdminBookingListView, AdminCustomerListView
 from django.http import JsonResponse
 from django.db.models import Sum
-from .forms import PaymentForm, CustomerProfileForm, CustomerPictureForm
-from .models import Payment
-from .forms import AdminBookingForm # Import the new form
+from .forms import PaymentForm, CustomerProfileForm
 
 @login_required
 def get_dashboard_data(request):
@@ -110,7 +108,11 @@ def register_view(request):
                 messages.success(request, 'Registration successful! Please log in.')
                 return redirect('home')
         except Exception as e:
-            messages.error(request, f'An error occurred during registration: {e}')
+            # Check if the error is a database operational error from our trigger
+            if isinstance(e, transaction.TransactionManagementError) and hasattr(e.__cause__, 'args') and e.__cause__.args[0] == 45000:
+                messages.error(request, e.__cause__.args[1]) # Display the trigger's custom message
+            else:
+                messages.error(request, f'An error occurred during registration: {e}')
             return redirect('home')
     return redirect('home') # Redirect if GET request
 
@@ -208,6 +210,7 @@ def booking_view(request, vehicle_id):
         total_amount = duration_hours * vehicle.hourly_rate
 
         with transaction.atomic():
+            # Step 1: Create the booking with a 'Pending' status (this is now the model's default)
             booking = RentalBooking.objects.create(
                 customer=customer,
                 vehicle=vehicle,
@@ -218,15 +221,38 @@ def booking_view(request, vehicle_id):
                 hourly_rate=vehicle.hourly_rate,
                 total_amount=total_amount,
                 security_deposit=5000, # Example fixed security deposit
-                booking_status='Confirmed'
             )
-            messages.success(request, f"Booking successful for {vehicle.make} {vehicle.model}!")
+
+            # Step 2: Create a corresponding 'Pending' payment record for the advance amount
+            Payment.objects.create(
+                booking=booking,
+                customer=customer,
+                amount=total_amount * Decimal('0.2'), # Example: 20% advance payment
+                payment_method='UPI', # Default method, can be changed on payment page
+                payment_type='Advance',
+                payment_status='Pending' # Crucial: The payment is pending
+            )
+
+            messages.info(request, f"Your booking for {vehicle.make} {vehicle.model} is pending. Please complete the payment to confirm.")
             return redirect('my_bookings')
 
     context = {
         'vehicle': vehicle,
     }
     return render(request, "booking.html", context)
+
+@login_required
+def confirm_payment_view(request, booking_id):
+    """
+    Simulates a successful payment, updating the booking and payment status.
+    """
+    booking = get_object_or_404(RentalBooking, id=booking_id, customer__user=request.user)
+    with transaction.atomic():
+        booking.payment_set.filter(payment_status='Pending').update(payment_status='Completed')
+        booking.booking_status = 'Confirmed'
+        booking.save()
+    messages.success(request, f"Payment successful! Your booking #{booking.id} is now confirmed.")
+    return redirect('my_bookings')
 
 def about_us_view(request):
     """
@@ -262,28 +288,54 @@ def edit_profile_view(request):
     customer = get_object_or_404(Customer, user=request.user)
 
     if request.method == 'POST':
-        # Instantiate both forms with POST data
-        profile_form = CustomerProfileForm(request.POST, instance=customer)
-        picture_form = CustomerPictureForm(request.POST, request.FILES, instance=customer)
+        # Instantiate the form with POST data and files for the image
+        form = CustomerProfileForm(request.POST, request.FILES, instance=customer)
+        if form.is_valid():
+            # Instead of form.save(), we will call the stored procedure
+            # to ensure both User and Customer models are updated atomically.
+            try:
+                with connection.cursor() as cursor:
+                    # The form handles the profile picture upload separately
+                    if 'profile_picture' in request.FILES:
+                        customer.profile_picture = request.FILES['profile_picture']
+                        customer.save(update_fields=['profile_picture'])
 
-        # Check which form was submitted based on a hidden input or button name if needed,
-        # but here we can just check both.
-        if profile_form.is_valid() and picture_form.is_valid():
-            profile_form.save()
-            picture_form.save()
-            messages.success(request, "Your profile has been updated successfully!")
-            return redirect('my_profile')
+                    # Call the stored procedure for all other text-based fields
+                    cursor.callproc('sp_UpdateUserProfile', [
+                        customer.id,
+                        form.cleaned_data['first_name'],
+                        form.cleaned_data['last_name'],
+                        form.cleaned_data['phone'],
+                        form.cleaned_data['address'],
+                        form.cleaned_data['city'],
+                        form.cleaned_data['state'],
+                        form.cleaned_data['zip_code'],
+                        form.cleaned_data['date_of_birth'],
+                        form.cleaned_data['license_number'],
+                        form.cleaned_data['is_subscribed_to_newsletter']
+                    ])
+                
+                messages.success(request, "Your profile has been updated successfully!")
+                return redirect('my_profile')
+            except Exception as e:
+                # Specifically catch the OperationalError from the database
+                if isinstance(e, transaction.TransactionManagementError) and hasattr(e.__cause__, 'args') and e.__cause__.args[0] == 45000:
+                    # The actual MySQL error is wrapped. We extract its custom message.
+                    error_message = e.__cause__.args[1]
+                    messages.error(request, error_message)
+                else:
+                    # For any other type of error, show a generic message
+                    messages.error(request, f"An error occurred while updating your profile: {e}")
+
         else:
             messages.error(request, "There was an error updating your profile. Please correct the errors below.")
     else:
         # For GET request, instantiate forms with current customer data
-        profile_form = CustomerProfileForm(instance=customer)
-        picture_form = CustomerPictureForm(instance=customer)
+        form = CustomerProfileForm(instance=customer)
 
     context = {
         'customer': customer,
-        'profile_form': profile_form,
-        'picture_form': picture_form,
+        'form': form,
     }
     return render(request, "edit_profile.html", context)
 
@@ -581,10 +633,6 @@ def return_vehicle_view(request, booking_id):
                 booking.actual_return_datetime = actual_return_datetime
                 booking.save()
 
-                # Update vehicle status to 'Available'
-                booking.vehicle.status = 'Available'
-                booking.vehicle.save()
-
                 # Create a new payment record for the final charge if it's positive
                 if final_charge > 0:
                     Payment.objects.create(
@@ -661,45 +709,43 @@ def bookings_management_view(request):
     """
     Provides a comprehensive view for managing rental bookings.
     - Displays all bookings in a filterable and sortable table.
-    - Includes multi-table data from Customer and Vehicle.
+    - UPDATED: Now uses specific stored procedures for each status filter.
     """
-    # Start with a base queryset, prefetching related data for efficiency
-    bookings = RentalBooking.objects.select_related('customer', 'vehicle').order_by('-booking_date')
-
-    # --- Filtering ---
-    search_query = request.GET.get('q', '').strip()
-    start_date_str = request.GET.get('start_date', '').strip()
-    end_date_str = request.GET.get('end_date', '').strip()
-    selected_status = request.GET.get('status', '').strip()
-
-    if search_query:
-        bookings = bookings.filter(
-            Q(id__icontains=search_query) |
-            Q(customer__first_name__icontains=search_query) |
-            Q(customer__last_name__icontains=search_query) |
-            Q(vehicle__make__icontains=search_query) |
-            Q(vehicle__model__icontains=search_query) |
-            Q(vehicle__vehicle_number__icontains=search_query)
-        )
-
-    if start_date_str:
-        bookings = bookings.filter(pickup_datetime__gte=start_date_str)
-    if end_date_str:
-        bookings = bookings.filter(return_datetime__lte=end_date_str)
-    if selected_status:
-        bookings = bookings.filter(booking_status=selected_status)
-
-    # --- Sorting ---
-    sort_by = request.GET.get('sort', 'booking_date')
-    order = request.GET.get('order', 'desc')
-    if order == 'desc':
-        sort_by = f"-{sort_by.lstrip('-')}"
-    else:
-        sort_by = sort_by.lstrip('-')
+    # --- Get filter and sort parameters from the request ---
+    customer_name = request.GET.get('customer_name') or None
+    booking_date_str = request.GET.get('booking_date') or None
+    selected_status = request.GET.get('status') or None
     
+    sort_by = request.GET.get('sort', 'booking_date')
+    order = 'DESC' if request.GET.get('order', 'desc') == 'desc' else 'ASC'
+
+    # Whitelist valid sort fields to prevent SQL injection
     valid_sort_fields = ['booking_date', 'pickup_datetime', 'return_datetime', 'total_amount', 'booking_status']
-    if sort_by.strip('-') in valid_sort_fields:
-        bookings = bookings.order_by(sort_by)
+    if sort_by not in valid_sort_fields:
+        sort_by = 'booking_date' # Default sort
+
+    # --- Determine which Stored Procedure to call based on the selected status ---
+    if selected_status == 'Confirmed':
+        procedure_name = 'sp_GetConfirmedBookings'
+    elif selected_status == 'Active':
+        procedure_name = 'sp_GetActiveBookings'
+    elif selected_status == 'Completed':
+        procedure_name = 'sp_GetCompletedBookings'
+    elif selected_status == 'Cancelled':
+        procedure_name = 'sp_GetCancelledBookings'
+    else: # Default to "All"
+        procedure_name = 'sp_GetAllBookings'
+
+    with connection.cursor() as cursor:
+        cursor.callproc(procedure_name, [
+            customer_name,
+            booking_date_str,
+            sort_by,
+            order
+        ])
+        # The dictfetchall utility converts the raw results into a list of dictionaries,
+        # which is easy to work with in the template.
+        bookings = dictfetchall(cursor)
 
     # CSV Export
     if 'export' in request.GET and request.GET['export'] == 'csv':
@@ -707,17 +753,17 @@ def bookings_management_view(request):
         response['Content-Disposition'] = 'attachment; filename="bookings.csv"'
         writer = csv.writer(response)
         writer.writerow(['ID', 'Customer Name', 'Customer ID', 'Vehicle', 'Vehicle Number', 'Pickup Date', 'Return Date', 'Total Amount', 'Status'])
-        for booking in bookings: # Use the filtered queryset
+        for booking in bookings: # The raw results can be used directly here
             writer.writerow([
-                booking.id,
-                f"{booking.customer.first_name} {booking.customer.last_name}",
-                booking.customer.id,
-                f"{booking.vehicle.make} {booking.vehicle.model}",
-                booking.vehicle.vehicle_number,
-                booking.pickup_datetime.strftime('%Y-%m-%d %H:%M'),
-                booking.return_datetime.strftime('%Y-%m-%d %H:%M'),
-                booking.total_amount,
-                booking.booking_status
+                booking.get('booking_id'),
+                booking.get('customer_full_name'),
+                booking.get('customer_id'),
+                booking.get('vehicle_name'),
+                booking.get('vehicle_number'),
+                booking.get('pickup_datetime').strftime('%Y-%m-%d %H:%M'),
+                booking.get('return_datetime').strftime('%Y-%m-%d %H:%M'),
+                booking.get('total_amount'),
+                booking.get('booking_status')
             ])
         return response
 
@@ -729,14 +775,24 @@ def bookings_management_view(request):
         if not booking_ids:
             messages.warning(request, "Please select at least one booking to perform a bulk action.")
         else:
-            if action == 'mark_completed':
-                updated_count = RentalBooking.objects.filter(id__in=booking_ids).update(booking_status='Completed')
-                messages.success(request, f"{updated_count} bookings marked as Completed.")
-            elif action == 'cancel_selected':
-                updated_count = RentalBooking.objects.filter(id__in=booking_ids).update(booking_status='Cancelled')
-                messages.success(request, f"{updated_count} bookings have been cancelled.")
-            return redirect('bookings_management')
+            try:
+                # Convert list of IDs to a comma-separated string for the stored procedure
+                booking_ids_str = ",".join(booking_ids)
+                new_status = ""
+                
+                if action == 'mark_completed':
+                    new_status = 'Completed'
+                elif action == 'cancel_selected':
+                    new_status = 'Cancelled'
 
+                if new_status:
+                    with connection.cursor() as cursor:
+                        cursor.callproc('sp_AdminBulkUpdateBookingStatus', [booking_ids_str, new_status, request.user.id])
+                    messages.success(request, f"{len(booking_ids)} bookings have been updated to '{new_status}'.")
+            except Exception as e:
+                messages.error(request, f"An error occurred during the bulk update: {e}")
+            
+            return redirect('bookings_management')
     # --- Pagination ---
     paginator = Paginator(bookings, 10) # 10 bookings per page
     page_number = request.GET.get('page')
@@ -744,10 +800,9 @@ def bookings_management_view(request):
 
     context = {
         'bookings': page_obj,
-        'search_query': search_query,
-        'start_date': start_date_str,
-        'end_date': end_date_str,
-        'selected_status': selected_status,
+        'customer_name': customer_name,
+        'booking_date': booking_date_str,
+        'selected_status': selected_status or '',
         'sort_by': sort_by.strip('-'),
         'order': order,
     }
@@ -769,77 +824,31 @@ def booking_detail_view(request, booking_id):
     
     # Fetch related payments for this booking
     payments = Payment.objects.filter(booking=booking).order_by('-payment_date')
+    try:
+        with connection.cursor() as cursor:
+            # Call the stored procedure that returns multiple result sets
+            cursor.callproc('sp_GetBookingDetails', [booking_id])
+
+            # Fetch the first result set (booking details)
+            booking_details = dictfetchall(cursor)
+            if not booking_details:
+                messages.error(request, f"Booking with ID {booking_id} not found.")
+                return redirect('bookings_management')
+            booking = booking_details[0]
+
+            # Fetch the second result set (payments)
+            cursor.nextset()
+            payments = dictfetchall(cursor)
+
+    except Exception as e:
+        messages.error(request, f"An error occurred while fetching booking details: {e}")
+        return redirect('bookings_management')
 
     context = {
         'booking': booking,
         'payments': payments,
     }
     return render(request, 'admin/booking_detail.html', context)
-
-@login_required
-def admin_add_booking_view(request):
-    """
-    Admin view to add a new booking.
-    """
-    if not request.user.is_superuser:
-        messages.error(request, "You do not have permission to add bookings.")
-        return redirect('home')
-
-    if request.method == 'POST':
-        form = AdminBookingForm(request.POST)
-        if form.is_valid():
-            customer = form.cleaned_data['customer']
-            vehicle = form.cleaned_data['vehicle']
-            pickup_datetime = form.cleaned_data['pickup_datetime']
-            return_datetime = form.cleaned_data['return_datetime']
-            pickup_location = form.cleaned_data['pickup_location']
-            return_location = form.cleaned_data['return_location']
-            special_requests = form.cleaned_data['special_requests']
-
-            # Basic validation
-            if return_datetime <= pickup_datetime:
-                messages.error(request, "Return date/time must be after pickup date/time.")
-                return render(request, 'admin/add_booking.html', {'form': form})
-
-            try:
-                with transaction.atomic():
-                    # Check for booking conflicts
-                    conflicting_bookings = RentalBooking.objects.filter(
-                        vehicle=vehicle,
-                        pickup_datetime__lt=return_datetime,
-                        return_datetime__gt=pickup_datetime,
-                        booking_status__in=['Confirmed', 'Active']
-                    ).exists()
-
-                    if conflicting_bookings:
-                        messages.error(request, "This vehicle is not available for the selected time slot.")
-                        return render(request, 'admin/add_booking.html', {'form': form})
-
-                    # Calculate total amount and security deposit
-                    duration_hours = (return_datetime - pickup_datetime).total_seconds() / 3600
-                    hourly_rate = vehicle.hourly_rate # Use vehicle's current hourly rate
-                    total_amount = duration_hours * hourly_rate
-                    security_deposit = total_amount * 0.2 # Example: 20% security deposit
-
-                    new_booking = form.save(commit=False)
-                    new_booking.hourly_rate = hourly_rate
-                    new_booking.total_amount = total_amount
-                    new_booking.security_deposit = security_deposit
-                    new_booking.booking_status = 'Confirmed' # Admin adds confirmed booking
-                    new_booking.created_by = request.user.username # Or a more specific admin identifier
-                    new_booking.save()
-
-                    messages.success(request, f"Booking #{new_booking.id} added successfully!")
-                    return redirect('bookings_management')
-
-            except Exception as e:
-                messages.error(request, f"An error occurred while adding booking: {e}")
-        # If form is not valid, errors will be displayed by the template
-    else:
-        form = AdminBookingForm()
-
-    context = {'form': form}
-    return render(request, 'admin/add_booking.html', context)
 
 @login_required
 def cancel_booking_view(request, booking_id):
@@ -885,60 +894,284 @@ def activate_booking_view(request, booking_id):
     return redirect('bookings_management')
 
 @login_required
+def complete_booking_view(request, booking_id):
+    """
+    Admin action to directly mark a booking as completed.
+    This is a shortcut for when the full return/billing process is not needed.
+    """
+    if not request.user.is_superuser:
+        messages.error(request, "Access denied.")
+        return redirect('home')
+
+    booking = get_object_or_404(RentalBooking, id=booking_id)
+    if booking.booking_status in ['Active', 'Confirmed']:
+        with transaction.atomic():
+            booking.booking_status = 'Completed'
+            # If the actual return time isn't set, default it to the scheduled return time.
+            if not booking.actual_return_datetime:
+                booking.actual_return_datetime = booking.return_datetime
+            booking.save()
+        messages.success(request, f"Booking #{booking.id} has been marked as Completed.")
+    else:
+        messages.warning(request, f"Booking #{booking.id} cannot be completed (Status: {booking.booking_status}).")
+    return redirect('bookings_management')
+
+@login_required
 @user_passes_test(lambda u: u.is_superuser)
 def admin_customers_view(request):
     """
-    Displays a filterable, sortable, and paginated list of all customers
-    for the admin panel.
+    Displays a filterable and sortable list of customers using raw SQL queries.
     """
-    # Base queryset
-    customer_list = Customer.objects.all()
+    # --- Build Raw SQL Query based on filters ---
+    base_query = "SELECT * FROM vw_AdminCustomerList"
+    where_clauses = []
+    params = []
 
-    # Universal Search
+    # Get filter values from the request
     search_query = request.GET.get('q', '').strip()
+    verification_status = request.GET.get('verification_status', '').strip()
+    membership_tier = request.GET.get('membership_tier', '').strip()
+    city = request.GET.get('city', '').strip()
+    state = request.GET.get('state', '').strip()
+
+    # Dynamically build the WHERE clause with parameterization
     if search_query:
-        customer_list = customer_list.filter(
-            Q(first_name__icontains=search_query) |
-            Q(last_name__icontains=search_query) |
-            Q(email__icontains=search_query) |
-            Q(phone__icontains=search_query) |
-            Q(license_number__icontains=search_query)
-        )
+        like_query = f"%{search_query}%"
+        where_clauses.append("(first_name LIKE %s OR last_name LIKE %s OR email LIKE %s OR phone LIKE %s OR license_number LIKE %s)")
+        params.extend([like_query] * 5)
 
-    # Filtering by status
-    verification_status = request.GET.get('verification_status')
     if verification_status == 'verified':
-        customer_list = customer_list.filter(is_verified=True)
+        where_clauses.append("is_verified = TRUE")
     elif verification_status == 'unverified':
-        customer_list = customer_list.filter(is_verified=False)
-    membership_tier = request.GET.get('membership_tier')
-    if membership_tier:
-        customer_list = customer_list.filter(membership_tier=membership_tier)
+        where_clauses.append("is_verified = FALSE")
 
-    # Sorting logic
-    sort_by = request.GET.get('sort', '-registration_date')
-    valid_sort_fields = ['first_name', 'email', 'registration_date', 'credit_score']
-    if sort_by.strip('-') in valid_sort_fields:
-        customer_list = customer_list.order_by(sort_by)
-    else:
-        # Fallback to default sort to prevent errors
-        sort_by = '-registration_date'
-        customer_list = customer_list.order_by(sort_by)
+    if membership_tier:
+        where_clauses.append("membership_tier = %s")
+        params.append(membership_tier)
+
+    if city:
+        where_clauses.append("city LIKE %s")
+        params.append(f"%{city}%")
+
+    if state:
+        where_clauses.append("state LIKE %s")
+        params.append(f"%{state}%")
+
+    if where_clauses:
+        base_query += " WHERE " + " AND ".join(where_clauses)
+
+    # Add sorting to the query
+    sort_by = request.GET.get('sort', 'registration_date')
+    order = 'DESC' if request.GET.get('order', 'desc') == 'desc' else 'ASC'
+    valid_sort_fields = ['first_name', 'email', 'registration_date']
+    if sort_by not in valid_sort_fields:
+        sort_by = 'registration_date'
+    base_query += f" ORDER BY {sort_by} {order}"
+
+    # Execute the raw query
+    customer_list = list(AdminCustomerListView.objects.raw(base_query, params))
+
+    # --- Bulk Actions ---
+    if request.method == 'POST' and 'bulk_action' in request.POST:
+        customer_ids = request.POST.getlist('customer_ids')
+        action = request.POST.get('action')
+
+        if not customer_ids:
+            messages.warning(request, "Please select at least one customer.")
+        else:
+            try:
+                customer_ids_str = ",".join(customer_ids)
+                if action in ['verify_selected', 'unverify_selected']:
+                    new_status = (action == 'verify_selected')
+                    with connection.cursor() as cursor:
+                        cursor.callproc('sp_AdminBulkUpdateVerificationStatus', [customer_ids_str, new_status, request.user.id])
+                    status_text = "verified" if new_status else "un-verified"
+                    messages.success(request, f"{len(customer_ids)} customers have been {status_text}.")
+                elif action in ['activate_selected', 'deactivate_selected']:
+                    new_status = (action == 'activate_selected')
+                    with connection.cursor() as cursor:
+                        cursor.callproc('sp_AdminBulkUpdateCustomerStatus', [customer_ids_str, new_status, request.user.id])
+                    status_text = "activated" if new_status else "deactivated"
+                    messages.success(request, f"{len(customer_ids)} customers have been {status_text}.")
+            except Exception as e:
+                messages.error(request, f"An error occurred during the bulk update: {e}")
+        return redirect('admin_customers')
 
     # Pagination
     paginator = Paginator(customer_list, 10) # 10 customers per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-
     context = {
         'customers': page_obj,
         'total_customers': paginator.count,
         'search_query': search_query,
-        'sort_by': sort_by,
+        'sort_by': sort_by.strip('-'),
+        'order': order,
         'verification_status': verification_status,
         'membership_tier': membership_tier,
+        'city': city,
+        'state': state,
     }
     return render(request, "admin/customers.html", context)
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def export_customers_csv_view(request):
+    """
+    Exports a filtered list of customers to a CSV file using a raw, parameterized SQL query.
+    """
+    # --- Build Raw SQL Query based on filters ---
+    base_query = "SELECT * FROM vw_AdminCustomerList"
+    where_clauses = []
+    params = []
+
+    # Get all the same filter values from the request
+    search_query = request.GET.get('q', '')
+    verification_status = request.GET.get('verification_status', '')
+    membership_tier = request.GET.get('membership_tier', '')
+    city = request.GET.get('city', '')
+    state = request.GET.get('state', '')
+
+    if search_query:
+        like_query = f"%{search_query}%"
+        where_clauses.append("(first_name LIKE %s OR last_name LIKE %s OR email LIKE %s OR phone LIKE %s OR license_number LIKE %s)")
+        params.extend([like_query] * 5)
+
+    if verification_status == 'verified':
+        where_clauses.append("is_verified = TRUE")
+    elif verification_status == 'unverified':
+        where_clauses.append("is_verified = FALSE")
+
+    if membership_tier:
+        where_clauses.append("membership_tier = %s")
+        params.append(membership_tier)
+
+    if city:
+        where_clauses.append("city LIKE %s")
+        params.append(f"%{city}%")
+
+    if state:
+        where_clauses.append("state LIKE %s")
+        params.append(f"%{state}%")
+
+    if where_clauses:
+        base_query += " WHERE " + " AND ".join(where_clauses)
+
+    # Add sorting to the query
+    sort_by = request.GET.get('sort', 'registration_date')
+    order = 'DESC' if request.GET.get('order', 'desc') == 'desc' else 'ASC'
+    valid_sort_fields = ['first_name', 'email', 'registration_date']
+    if sort_by not in valid_sort_fields:
+        sort_by = 'registration_date'
+    base_query += f" ORDER BY {sort_by} {order}"
+
+    # Execute the raw query
+    customer_list = list(AdminCustomerListView.objects.raw(base_query, params))
+
+    # --- Bulk Actions ---
+    if request.method == 'POST' and 'bulk_action' in request.POST:
+        customer_ids = request.POST.getlist('customer_ids')
+        action = request.POST.get('action')
+
+        if not customer_ids:
+            messages.warning(request, "Please select at least one customer.")
+        else:
+            try:
+                customer_ids_str = ",".join(customer_ids)
+                if action in ['verify_selected', 'unverify_selected']:
+                    new_status = (action == 'verify_selected')
+                    with connection.cursor() as cursor:
+                        cursor.callproc('sp_AdminBulkUpdateVerificationStatus', [customer_ids_str, new_status, request.user.id])
+                    status_text = "verified" if new_status else "un-verified"
+                    messages.success(request, f"{len(customer_ids)} customers have been {status_text}.")
+                elif action in ['activate_selected', 'deactivate_selected']:
+                    new_status = (action == 'activate_selected')
+                    with connection.cursor() as cursor:
+                        cursor.callproc('sp_AdminBulkUpdateCustomerStatus', [customer_ids_str, new_status, request.user.id])
+                    status_text = "activated" if new_status else "deactivated"
+                    messages.success(request, f"{len(customer_ids)} customers have been {status_text}.")
+            except Exception as e:
+                messages.error(request, f"An error occurred during the bulk update: {e}")
+        return redirect('admin_customers')
+
+    # Pagination
+    paginator = Paginator(customer_list, 10) # 10 customers per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    context = {
+        'customers': page_obj,
+        'total_customers': paginator.count,
+        'search_query': search_query,
+        'sort_by': sort_by.strip('-'),
+        'order': order,
+        'verification_status': verification_status,
+        'membership_tier': membership_tier,
+        'city': city,
+        'state': state,
+    }
+    return render(request, "admin/customers.html", context)
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def export_customers_csv_view(request):
+    """
+    Exports a filtered list of customers to a CSV file using a raw, parameterized SQL query.
+    """
+    # --- Build Raw SQL Query based on filters ---
+    base_query = "SELECT * FROM vw_AdminCustomerList"
+    where_clauses = []
+    params = []
+
+    # Get all the same filter values from the request
+    search_query = request.GET.get('q', '')
+    verification_status = request.GET.get('verification_status', '')
+    membership_tier = request.GET.get('membership_tier', '')
+    city = request.GET.get('city', '')
+    state = request.GET.get('state', '')
+
+    # Dynamically build the WHERE clause with parameterization
+    if search_query:
+        like_query = f"%{search_query}%"
+        where_clauses.append("(first_name LIKE %s OR last_name LIKE %s OR email LIKE %s OR phone LIKE %s OR license_number LIKE %s)")
+        params.extend([like_query] * 5)
+
+    if verification_status == 'verified':
+        where_clauses.append("is_verified = TRUE")
+    elif verification_status == 'unverified':
+        where_clauses.append("is_verified = FALSE")
+
+    if membership_tier:
+        where_clauses.append("membership_tier = %s")
+        params.append(membership_tier)
+
+    if city:
+        where_clauses.append("city LIKE %s")
+        params.append(f"%{city}%")
+
+    if state:
+        where_clauses.append("state LIKE %s")
+        params.append(f"%{state}%")
+
+    if where_clauses:
+        base_query += " WHERE " + " AND ".join(where_clauses)
+
+    # Execute the raw query using a direct database cursor
+    with connection.cursor() as cursor:
+        cursor.execute(base_query, params)
+        customers = dictfetchall(cursor)
+
+    # Generate the CSV response
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="customers.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['ID', 'First Name', 'Last Name', 'Email', 'Phone', 'City', 'State', 'Membership', 'Verified'])
+    for customer in customers:
+        writer.writerow([
+            customer['id'], customer['first_name'], customer['last_name'], customer['email'],
+            customer['phone'], customer['city'], customer['state'], customer['membership_tier'],
+            customer['is_verified']
+        ])
+    return response
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
@@ -946,21 +1179,28 @@ def verify_customer_view(request, customer_id):
     """
     Admin view to mark a customer as verified.
     Performs a targeted UPDATE.
+    UPDATED: Now calls the `sp_AdminVerifyUser` stored procedure to enforce database-level validation.
     """
     customer = get_object_or_404(Customer, id=customer_id)
-
-    if not customer.is_verified:
-        customer.is_verified = True
-        customer.save(update_fields=['is_verified']) # Only update this field
-        CustomerActivityLog.objects.create(
-            customer=customer,
-            activity_type='Account Verification',
-            description=f'Customer account verified by admin {request.user.email}'
-        )
-        messages.success(request, f"Customer {customer.email} has been verified.")
-    else:
+ 
+    if customer.is_verified:
         messages.info(request, f"Customer {customer.email} is already verified.")
+        return redirect('admin_customers')
+ 
+    try:
+        with connection.cursor() as cursor:
+            # Call the stored procedure to perform the verification and its checks
+            cursor.callproc('sp_AdminVerifyUser', [customer.id])
+        
+        # The AFTER UPDATE trigger on the database now handles the admin audit log automatically.
+        messages.success(request, f"Customer {customer.email} has been successfully verified.")
+
+    except Exception as e:
+        # This will catch the SIGNAL from the stored procedure if validation fails.
+        messages.error(request, f"Verification failed: {e}")
+
     return redirect('admin_customers')
+
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
@@ -971,10 +1211,91 @@ def unverify_customer_view(request, customer_id):
     customer = get_object_or_404(Customer, id=customer_id)
 
     if customer.is_verified:
-        customer.is_verified = False
-        customer.save(update_fields=['is_verified'])
-        messages.success(request, f"Customer {customer.email}'s verification has been revoked.")
+        try:
+            with connection.cursor() as cursor:
+                # Call the stored procedure, passing the admin's user ID for auditing
+                cursor.callproc('sp_AdminUnverifyUser', [customer.id, request.user.id])
+            messages.success(request, f"Customer {customer.email}'s verification has been revoked.")
+        except Exception as e:
+            messages.error(request, f"An error occurred: {e}")
     else:
         messages.info(request, f"Customer {customer.email} is already unverified.")
     
     return redirect('admin_customers')
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def admin_customer_detail_ajax_view(request, customer_id):
+    """
+    Fetches detailed customer data via a stored procedure and returns it as JSON
+    for use in an AJAX-powered modal.
+    """
+    try:
+        with connection.cursor() as cursor:
+            cursor.callproc('sp_GetCustomerDetails', [customer_id])
+
+            # Fetch customer details
+            customer_details = dictfetchall(cursor)
+            if not customer_details:
+                return JsonResponse({'error': 'Customer not found'}, status=404)
+            
+            customer = customer_details[0]
+            # Convert non-serializable types to strings
+            for key, value in customer.items():
+                if isinstance(value, (datetime, date)):
+                    customer[key] = value.isoformat()
+
+            # Fetch booking history
+            cursor.nextset()
+            bookings = dictfetchall(cursor)
+            for booking in bookings:
+                for key, value in booking.items():
+                    if isinstance(value, (datetime, date)):
+                        booking[key] = value.isoformat()
+                    elif isinstance(value, decimal.Decimal):
+                        booking[key] = str(value)
+
+            # The third result set (payments) is not needed for this modal view
+
+            return JsonResponse({'customer': customer, 'bookings': bookings})
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def admin_customer_detail_view(request, customer_id):
+    """
+    Displays a detailed view of a single customer, including their bookings and payments,
+    by calling the `sp_GetCustomerDetails` stored procedure.
+    """
+    try:
+        with connection.cursor() as cursor:
+            # Call the stored procedure that returns multiple result sets
+            cursor.callproc('sp_GetCustomerDetails', [customer_id])
+
+            # Fetch the first result set (customer details)
+            customer_details = dictfetchall(cursor)
+            if not customer_details:
+                messages.error(request, f"Customer with ID {customer_id} not found.")
+                return redirect('admin_customers')
+            customer = customer_details[0]
+
+            # Fetch the second result set (bookings)
+            cursor.nextset()
+            bookings = dictfetchall(cursor)
+
+            # Fetch the third result set (payments)
+            cursor.nextset()
+            payments = dictfetchall(cursor)
+
+    except Exception as e:
+        messages.error(request, f"An error occurred while fetching customer details: {e}")
+        return redirect('admin_customers')
+
+    context = {
+        'customer': customer,
+        'bookings': bookings,
+        'payments': payments,
+    }
+    return render(request, 'admin/customer_detail.html', context)

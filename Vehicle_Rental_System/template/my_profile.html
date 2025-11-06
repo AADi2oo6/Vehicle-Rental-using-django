@@ -58,8 +58,11 @@
                         <div><span class="font-semibold text-gray-900">Email:</span> {{ customer.email }}</div>
                         <div><span class="font-semibold text-gray-900">Phone:</span> {{ customer.phone }}</div>
                         <div><span class="font-semibold text-gray-900">Date of Birth:</span> {{ customer.date_of_birth|date:"M d, Y" }}</div>
-                        <div class="md:col-span-2"><span class="font-semibold text-gray-900">Address:</span> {{ customer.address }}, {{ customer.city }}, {{ customer.state }} - {{ customer.zip_code }}</div>
-                        <div><span class="font-semibold text-gray-900">License Number:</span> {{ customer.license_number }}</div>
+                        <div class="md:col-span-2"><span class="font-semibold text-gray-900">Address:</span> {{ customer.address|default:'Not Provided' }}</div>
+                        <div><span class="font-semibold text-gray-900">City:</span> {{ customer.city|default:'Not Provided' }}</div>
+                        <div><span class="font-semibold text-gray-900">State:</span> {{ customer.state|default:'Not Provided' }}</div>
+                        <div><span class="font-semibold text-gray-900">ZIP Code:</span> {{ customer.zip_code|default:'Not Provided' }}</div>
+                        <div><span class="font-semibold text-gray-900">License Number:</span> {{ customer.license_number|default:'Not Provided' }}</div>
                         <div><span class="font-semibold text-gray-900">Account Status:</span> {% if customer.is_verified %}<span class="px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">Verified</span>{% else %}<span class="px-2 py-1 text-xs font-semibold text-yellow-800 bg-yellow-100 rounded-full">Not Verified</span>{% endif %}</div>
                     </div>
                 </div>

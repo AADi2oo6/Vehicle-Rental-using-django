@@ -17,7 +17,6 @@ def create_customer_profile(sender, instance, created, **kwargs):
                 email=instance.email,
                 first_name=instance.first_name if instance.first_name else instance.username,
                 last_name=instance.last_name,
-                password=instance.password, # Password is already hashed in User model
                 # Default values for new fields
                 membership_tier='Bronze',
                 is_subscribed_to_newsletter=True, # Default to subscribed
@@ -51,7 +50,7 @@ def log_profile_update(sender, instance, **kwargs):
             for field in instance._meta.fields:
                 if getattr(instance, field.name) != getattr(old_instance, field.name):
                     # Exclude fields that change automatically or are not user-editable
-                    if field.name not in ['registration_date', 'credit_score', 'referral_code', 'user', 'password', 'is_active']:
+                    if field.name not in ['registration_date', 'credit_score', 'referral_code', 'user', 'is_active']:
                         changed_fields.append(f"{field.verbose_name} changed from '{getattr(old_instance, field.name)}' to '{getattr(instance, field.name)}'")
             
             if changed_fields:

@@ -447,8 +447,8 @@ def insert_data():
         for vehicle in vehicles_data:
             v_values = (
                 vehicle['vehicle_number'], vehicle['make'], vehicle['model'], vehicle['year'],
-                vehicle['color'], vehicle['vehicle_type'], vehicle['fuel_type'], vehicle['seating_capacity'],
-                vehicle['transmission'], vehicle['daily_rate'], vehicle['mileage'],
+                vehicle['color'], vehicle['vehicle_type'], vehicle['fuel_type'], vehicle['seating_capacity'], # Assuming hourly_rate is daily_rate / 24 for sample data
+                vehicle['transmission'], (vehicle['daily_rate'] / 24), vehicle['mileage'],
                 vehicle['insurance_expiry'], vehicle['last_service_date'], 'Available'
             )
             cursor.execute(v_query, v_values)
@@ -469,7 +469,7 @@ def insert_data():
             rb_values = (
                 booking['customer_id'], booking['vehicle_id'], pickup_datetime, return_datetime,
                 actual_return_datetime, booking['pickup_location'], booking['return_location'],
-                booking['daily_rate'], booking['total_amount'], booking['security_deposit'],
+                (booking['daily_rate'] / 24), booking['total_amount'], booking['security_deposit'],
                 booking['booking_status']
             )
             cursor.execute(rb_query, rb_values)

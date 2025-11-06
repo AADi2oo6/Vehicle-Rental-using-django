@@ -15,11 +15,6 @@ class Migration(migrations.Migration):
             name='is_verified',
             field=models.BooleanField(default=False),
         ),
-        migrations.AddField(
-            model_name='customer',
-            name='password',
-            field=models.CharField(default='pbkdf2_sha256$870000$O4TrRShJcCsnSwi4l6zp6z$HtLPcb2pKF8hyjSZT3QQkgnV0qT4NJ8vlNQQYDoplVc=', max_length=128),
-        ),
         migrations.AlterField(
             model_name='customer',
             name='date_of_birth',

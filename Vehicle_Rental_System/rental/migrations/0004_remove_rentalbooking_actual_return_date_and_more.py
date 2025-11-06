@@ -56,9 +56,4 @@ class Migration(migrations.Migration):
             name='hourly_rate',
             field=models.DecimalField(decimal_places=2, default=0.0, max_digits=10),
         ),
-        migrations.AlterField(
-            model_name='customer',
-            name='password',
-            field=models.CharField(default='pbkdf2_sha256$870000$W1p8HkV562u2ZGPtZ2uCta$T7rBdYh3df1IrecW6PnBj06NKzwk7RgYh3r6vSEENMs=', max_length=128),
-        ),
     ]

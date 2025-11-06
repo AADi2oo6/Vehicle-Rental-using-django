@@ -5,7 +5,6 @@
     <h2>Bookings Management</h2>
     <div>
         <a href="?{{ request.GET.urlencode }}&export=csv" class="btn btn-success"><i class="fas fa-download"></i> Export CSV</a>
-        <a href="{% url 'admin_add_booking' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Add New Booking</a>
     </div>
 </div>
 <p class="text-muted">This page provides a single table view of all rental bookings, with options for filtering and sorting.</p>
@@ -13,17 +12,14 @@
 <!-- Search and Filter Form -->
 <form method="get" class="card card-body mb-4">
     <div class="row">
-        <div class="col-md-4">
-            <input type="text" name="q" class="form-control" placeholder="Search by ID, Customer, Vehicle..." value="{{ search_query|default:'' }}">
+        <div class="col-md-5">
+            <input type="text" name="customer_name" class="form-control" placeholder="Filter by Customer Name..." value="{{ customer_name|default:'' }}">
         </div>
-        <div class="col-md-3">
-            <input type="date" name="start_date" class="form-control" value="{{ start_date|default:'' }}">
-        </div>
-        <div class="col-md-3">
-            <input type="date" name="end_date" class="form-control" value="{{ end_date|default:'' }}">
+        <div class="col-md-5">
+            <input type="date" name="booking_date" class="form-control" placeholder="Filter by Booking Date" value="{{ booking_date|default:'' }}">
         </div>
         <div class="col-md-2">
-            <button type="submit" class="btn btn-info btn-block">Filter</button>
+            <button type="submit" class="btn btn-info btn-block w-100">Filter</button>
         </div>
     </div>
 </form>
@@ -70,11 +66,11 @@
         <tbody>
             {% for booking in bookings %}
             <tr>
-                <td><input type="checkbox" name="booking_ids" value="{{ booking.id }}" class="booking-checkbox"></td>
+                <td><input type="checkbox" name="booking_ids" value="{{ booking.booking_id }}" class="booking-checkbox"></td>
                 <td>{{ booking.booking_date|date:"Y-m-d" }}</td>
-                <td>{{ booking.customer.first_name }} {{ booking.customer.last_name }}</td>
-                <td>{{ booking.customer.id }}</td>
-                <td>{{ booking.vehicle.make }} {{ booking.vehicle.model }}</td>
+                <td>{{ booking.customer_full_name }}</td>
+                <td>{{ booking.customer_id }}</td>
+                <td>{{ booking.vehicle_name }} ({{ booking.vehicle_number }})</td>
                 <td>{{ booking.pickup_datetime|date:"Y-m-d H:i" }}</td>
                 <td>{{ booking.return_datetime|date:"Y-m-d H:i" }}</td>
                 <td>₹{{ booking.total_amount|floatformat:2 }}</td>
@@ -89,15 +85,16 @@
                     </span>
                 </td>
                 <td>
-                    <a href="{% url 'booking_detail' booking.id %}" class="btn btn-sm btn-info" title="View Details"><i class="fas fa-eye"></i> View</a>
+                    <a href="{% url 'booking_detail' booking.booking_id %}" class="btn btn-sm btn-info" title="View Details"><i class="fas fa-eye"></i> View</a>
                     
                     {% if booking.booking_status == 'Confirmed' %}
-                        <a href="{% url 'activate_booking' booking.id %}" class="btn btn-sm btn-success" title="Mark as Active"><i class="fas fa-play-circle"></i> Activate</a>
-                        <a href="{% url 'cancel_booking' booking.id %}" class="btn btn-sm btn-danger" title="Cancel Booking" onclick="return confirm('Are you sure you want to cancel this booking?');"><i class="fas fa-times-circle"></i> Cancel</a>
+                        <a href="{% url 'activate_booking' booking.booking_id %}" class="btn btn-sm btn-success" title="Mark as Active"><i class="fas fa-play-circle"></i> Activate</a>
+                        <a href="{% url 'cancel_booking' booking.booking_id %}" class="btn btn-sm btn-danger" title="Cancel Booking" onclick="return confirm('Are you sure you want to cancel this booking?');"><i class="fas fa-times-circle"></i> Cancel</a>
                     {% endif %}
 
                     {% if booking.booking_status == 'Active' %}
-                        <a href="{% url 'return_vehicle' booking.id %}" class="btn btn-sm btn-warning" title="Finalize Return"><i class="fas fa-check-circle"></i> Return</a>
+                        <a href="{% url 'return_vehicle' booking.booking_id %}" class="btn btn-sm btn-warning" title="Finalize Return"><i class="fas fa-check-circle"></i> Return</a>
+                        <a href="{% url 'complete_booking' booking.booking_id %}" class="btn btn-sm btn-success" title="Mark as Completed" onclick="return confirm('Are you sure you want to directly mark this booking as completed?');"><i class="fas fa-flag-checkered"></i> Complete</a>
                     {% endif %}
                 </td>
             </tr>

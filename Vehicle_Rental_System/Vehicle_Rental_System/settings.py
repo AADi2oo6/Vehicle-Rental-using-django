@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rental.apps.RentalConfig',
+    'widget_tweaks',
 ]
 
 MIDDLEWARE = [
@@ -61,7 +62,9 @@ ROOT_URLCONF = 'Vehicle_Rental_System.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['template',],
+        # This line tells Django to look for a 'template' directory (no 's')
+        # at the project's root level, matching your folder structure.
+        'DIRS': [BASE_DIR / 'template'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -84,7 +87,7 @@ WSGI_APPLICATION = 'Vehicle_Rental_System.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'DBMS_CP',
+        'NAME': 'cp',
         'USER': 'root',
         'HOST': 'localhost',
         'PORT': '3306',
@@ -107,9 +110,14 @@ DATABASES = {
         #
         # 4. Make sure the .env file is listed in your .gitignore file so it is NEVER committed.
         # --------------------------------------------------------------------------
-        'PASSWORD': os.getenv('DB_PASSWORD', 'YOUR_LOCAL_PASSWORD'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
     }
 }
+
+# --- Password Check ---
+# Ensure the database password is set, otherwise the application cannot run.
+if not DATABASES['default']['PASSWORD']:
+    raise ValueError("DB_PASSWORD environment variable not set. Please create a .env file and add your database password.")
 
 
 # Password validation
@@ -148,8 +156,12 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [
+    # Look for a 'static' folder inside the BASE_DIR (Vehicle_Rental_System/static/)
     BASE_DIR / "static",
 ]
+# This setting is for production and tells Django where to collect all static files.
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 

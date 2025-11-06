@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rental', '0014_alter_customer_password'),
+        ('rental', '0010_alter_customer_password_alter_payment_payment_status_and_more'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -32,11 +32,6 @@ class Migration(migrations.Migration):
             model_name='customer',
             name='user',
             field=models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL),
-        ),
-        migrations.AlterField(
-            model_name='customer',
-            name='password',
-            field=models.CharField(default='pbkdf2_sha256$1000000$ZjSQbgDejgMEzDbsVCHRa2$S9GHRHs1k9TBbBazemuXm55xysW/3uywmdmfsAjNaR4=', max_length=128),
         ),
         migrations.CreateModel(
             name='CustomerActivityLog',

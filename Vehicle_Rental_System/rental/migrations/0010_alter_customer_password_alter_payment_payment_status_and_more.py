@@ -6,15 +6,10 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rental', '0009_alter_customer_password'),
+        ('rental', '0004_remove_rentalbooking_actual_return_date_and_more'),
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name='customer',
-            name='password',
-            field=models.CharField(default='pbkdf2_sha256$1000000$5wCmhyToYB5SRwqh2eRFlN$r/pxquQUknyHQjhXdKEFkv/gHMqObdFoWPNFzyJyN6s=', max_length=128),
-        ),
         migrations.AlterField(
             model_name='payment',
             name='payment_status',

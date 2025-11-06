@@ -1,0 +1,75 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Velo-Rent - Your Journey, Your Wheels{% endblock %}</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .hero-section {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url("{% static 'vehicle/bg.png' %}");
+            background-size: cover;
+            background-position: center;
+        }
+        .message-toast { animation: slide-in 0.5s ease-out forwards, fade-out 0.5s ease-in 4.5s forwards; }
+        @keyframes slide-in { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fade-out { from { opacity: 1; } to { opacity: 0; display: none; } }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="text-gray-800">
+
+    <!-- Django Messages Toast Notifications -->
+    {% if messages %}
+    <div class="fixed top-5 right-5 z-[100]">
+        {% for message in messages %}
+        <div class="message-toast bg-white rounded-lg shadow-lg p-4 mb-2 flex items-center border-l-4 {% if message.tags == 'success' %}border-green-500{% elif message.tags == 'error' %}border-red-500{% else %}border-blue-500{% endif %}">
+            <div class="text-lg">
+                {% if message.tags == 'success' %}✅{% elif message.tags == 'error' %}❌{% else %}ℹ️{% endif %}
+            </div>
+            <div class="ml-3">
+                <p class="font-semibold {% if message.tags == 'success' %}text-green-800{% elif message.tags == 'error' %}text-red-800{% else %}text-blue-800{% endif %}">{{ message }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Header Section -->
+    {% include "_header.html" %}
+
+    <main>
+        {% block content %}
+        <!-- Page-specific content will go here -->
+        {% endblock %}
+    </main>
+
+    <!-- Footer Section -->
+    {% include "_footer.html" %}
+
+    <!-- Auth Modal (if not logged in) -->
+    {% if not customer %}
+        {% include "_auth_modal.html" %}
+    {% endif %}
+
+    <!-- Page-specific scripts can go here -->
+    {% block scripts %}
+    {% endblock %}
+</body>
+</html>
