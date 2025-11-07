@@ -1,0 +1,46 @@
+{% extends "admin/bases.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4 class="mb-0">Admin Login</h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger" role="alert">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="{{ form.username.id_for_label }}" class="font-weight-bold">Username</label>
+                            <input type="text" name="username" class="form-control form-control-lg" required id="{{ form.username.id_for_label }}" placeholder="Enter username">
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ form.password.id_for_label }}" class="font-weight-bold">Password</label>
+                            <input type="password" name="password" class="form-control form-control-lg" required id="{{ form.password.id_for_label }}" placeholder="Enter password">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg btn-block mt-3">Login</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

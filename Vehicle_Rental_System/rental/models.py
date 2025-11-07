@@ -182,3 +182,119 @@ class DetailedReview(models.Model):
         managed = False  # This is the key: tells Django not to touch this in the database
         db_table = 'vw_detailed_reviews' # Links this model to our database view
 
+
+# MySQL Views for Payment Statuses
+class CompletedPayment(models.Model):
+    """
+    Read-only model for completed payments view
+    """
+    PAYMENT_METHODS = [('Cash', 'Cash'), ('Credit Card', 'Credit Card'), ('Debit Card', 'Debit Card'), ('UPI', 'UPI'), ('Net Banking', 'Net Banking')]
+    PAYMENT_TYPES = [('Advance', 'Advance'), ('Full Payment', 'Full Payment'), ('Security Deposit', 'Security Deposit'), ('Fine', 'Fine'), ('Refund', 'Refund')]
+    PAYMENT_STATUS = [('Pending', 'Pending'), ('Completed', 'Completed'), ('Failed', 'Failed'), ('Refunded', 'Refunded')]
+
+    id = models.IntegerField(primary_key=True)
+    booking = models.ForeignKey(RentalBooking, on_delete=models.DO_NOTHING, to_field='id')
+    customer = models.ForeignKey(Customer, on_delete=models.DO_NOTHING, to_field='id')
+    payment_date = models.DateTimeField()
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS)
+    payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPES)
+    transaction_id = models.CharField(max_length=50, blank=True, null=True)
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS)
+    reference_number = models.CharField(max_length=50, blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
+    processed_by = models.CharField(max_length=50)
+
+    class Meta:
+        managed = False
+        db_table = 'vw_completed_payments'
+
+    def __str__(self):
+        return f"Completed Payment {self.id}"
+
+
+class PendingPayment(models.Model):
+    """
+    Read-only model for pending payments view
+    """
+    PAYMENT_METHODS = [('Cash', 'Cash'), ('Credit Card', 'Credit Card'), ('Debit Card', 'Debit Card'), ('UPI', 'UPI'), ('Net Banking', 'Net Banking')]
+    PAYMENT_TYPES = [('Advance', 'Advance'), ('Full Payment', 'Full Payment'), ('Security Deposit', 'Security Deposit'), ('Fine', 'Fine'), ('Refund', 'Refund')]
+    PAYMENT_STATUS = [('Pending', 'Pending'), ('Completed', 'Completed'), ('Failed', 'Failed'), ('Refunded', 'Refunded')]
+
+    id = models.IntegerField(primary_key=True)
+    booking = models.ForeignKey(RentalBooking, on_delete=models.DO_NOTHING, to_field='id')
+    customer = models.ForeignKey(Customer, on_delete=models.DO_NOTHING, to_field='id')
+    payment_date = models.DateTimeField()
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS)
+    payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPES)
+    transaction_id = models.CharField(max_length=50, blank=True, null=True)
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS)
+    reference_number = models.CharField(max_length=50, blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
+    processed_by = models.CharField(max_length=50)
+
+    class Meta:
+        managed = False
+        db_table = 'vw_pending_payments'
+
+    def __str__(self):
+        return f"Pending Payment {self.id}"
+
+
+class RefundedPayment(models.Model):
+    """
+    Read-only model for refunded payments view
+    """
+    PAYMENT_METHODS = [('Cash', 'Cash'), ('Credit Card', 'Credit Card'), ('Debit Card', 'Debit Card'), ('UPI', 'UPI'), ('Net Banking', 'Net Banking')]
+    PAYMENT_TYPES = [('Advance', 'Advance'), ('Full Payment', 'Full Payment'), ('Security Deposit', 'Security Deposit'), ('Fine', 'Fine'), ('Refund', 'Refund')]
+    PAYMENT_STATUS = [('Pending', 'Pending'), ('Completed', 'Completed'), ('Failed', 'Failed'), ('Refunded', 'Refunded')]
+
+    id = models.IntegerField(primary_key=True)
+    booking = models.ForeignKey(RentalBooking, on_delete=models.DO_NOTHING, to_field='id')
+    customer = models.ForeignKey(Customer, on_delete=models.DO_NOTHING, to_field='id')
+    payment_date = models.DateTimeField()
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS)
+    payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPES)
+    transaction_id = models.CharField(max_length=50, blank=True, null=True)
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS)
+    reference_number = models.CharField(max_length=50, blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
+    processed_by = models.CharField(max_length=50)
+
+    class Meta:
+        managed = False
+        db_table = 'vw_refunded_payments'
+
+    def __str__(self):
+        return f"Refunded Payment {self.id}"
+
+
+class FailedPayment(models.Model):
+    """
+    Read-only model for failed payments view
+    """
+    PAYMENT_METHODS = [('Cash', 'Cash'), ('Credit Card', 'Credit Card'), ('Debit Card', 'Debit Card'), ('UPI', 'UPI'), ('Net Banking', 'Net Banking')]
+    PAYMENT_TYPES = [('Advance', 'Advance'), ('Full Payment', 'Full Payment'), ('Security Deposit', 'Security Deposit'), ('Fine', 'Fine'), ('Refund', 'Refund')]
+    PAYMENT_STATUS = [('Pending', 'Pending'), ('Completed', 'Completed'), ('Failed', 'Failed'), ('Refunded', 'Refunded')]
+
+    id = models.IntegerField(primary_key=True)
+    booking = models.ForeignKey(RentalBooking, on_delete=models.DO_NOTHING, to_field='id')
+    customer = models.ForeignKey(Customer, on_delete=models.DO_NOTHING, to_field='id')
+    payment_date = models.DateTimeField()
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS)
+    payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPES)
+    transaction_id = models.CharField(max_length=50, blank=True, null=True)
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS)
+    reference_number = models.CharField(max_length=50, blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
+    processed_by = models.CharField(max_length=50)
+
+    class Meta:
+        managed = False
+        db_table = 'vw_failed_payments'
+
+    def __str__(self):
+        return f"Failed Payment {self.id}"

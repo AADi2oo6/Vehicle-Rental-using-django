@@ -1,8 +1,20 @@
 # rental/urls.py
 from django.urls import path
+from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [  
+    # Authentication URLs
+    path("login/", auth_views.LoginView.as_view(
+        template_name='admin/login_standalone.html',
+        redirect_authenticated_user=True,
+        next_page='/admin_new/'
+    ), name="admin_login"),
+    path("logout/", auth_views.LogoutView.as_view(
+        template_name='admin/logout.html',
+        next_page='admin_login'
+    ), name="admin_logout"),
+    
     # Custom admin dashboard URLs
     path("", views.admin_dashboard_view, name="admin_dashboard"),
     path("maintenance/", views.admin_maintenance_view, name="admin_maintenance"),
@@ -18,8 +30,9 @@ urlpatterns = [
 
     path("api/data/", views.get_dashboard_data, name="get_dashboard_data"),
     path("change-password/", views.change_password_view, name="change_password"),
+    path("test-mysql-views/", views.test_mysql_views, name="test_mysql_views"),
 
-         # New Self-Join Report URL
+    # New Self-Join Report URL
     path("payments/analytics/", views.payment_analytics_view, name="payment_analytics_report"),
 
 ]

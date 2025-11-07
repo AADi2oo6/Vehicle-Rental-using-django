@@ -12,6 +12,18 @@
         </div>
     </div>
     
+    <!-- Display messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    
     <p class="text-muted">This page provides a single table view of all payment transactions, along with aggregated reports.</p>
     
     <form method="get" class="card card-body mb-4">

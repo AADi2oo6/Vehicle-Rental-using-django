@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Vehicle Rental System</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         body { 
-            font-family: 'Inter', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f8f9fa; 
         }
         .sidebar { 
@@ -18,26 +19,54 @@
             left: 0;
             top: 0;
             bottom: 0;
+            overflow-y: auto;
         }
         .sidebar a { 
             color: #fff; 
             text-decoration: none; 
-            padding: 10px 15px; 
+            padding: 12px 15px; 
             display: block; 
+            border-radius: 4px;
+            margin: 0 10px;
         }
         .sidebar a:hover { 
             background-color: #495057; 
         }
+        .sidebar a.active {
+            background-color: #007bff;
+        }
         .main-content { 
-            margin-left: 16.666667%; 
+            margin-left: 250px; 
             padding: 30px; 
         }
         .card { 
             margin-bottom: 20px; 
+            border-radius: 10px;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
         }
-        /* Add a style for the top navbar to ensure it doesn't overlap */
         .navbar {
             padding: 0.5rem 1rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .btn-primary:hover {
+            background-color: #0069d9;
+            border-color: #0062cc;
+        }
+        .alert {
+            border-radius: 5px;
+        }
+        .page-title {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .sidebar-form {
+            display: inline;
         }
     </style>
 </head>
@@ -48,32 +77,90 @@
                 <div class="sidebar-sticky">
                     <h5 class="text-white text-center mb-4">Admin Panel</h5>
                     <ul class="nav flex-column">
-                        <li class="nav-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
-                        <li class="nav-item"><a href="{% url 'admin_payments' %}">Payments</a></li>
-                        <li class="nav-item"><a href="{% url 'admin_maintenance' %}">Maintenance</a></li>
-                        <li class="nav-item"><a href="{% url 'admin_queries' %}">SQL Queries</a></li>
-                        <li class="nav-item"><a href="{% url 'bookings_management' %}">Bookings</a></li>
-                        <li class="nav-item"><a href="#">Customers</a></li>
-                        <li class="nav-item"><a href="#">Vehicles</a></li>
-                        <li class="nav-item"><a href="{% url 'logout' %}">Logout</a></li>
+                        <li class="nav-item">
+                            <a href="{% url 'admin_dashboard' %}" class="{% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+                                <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{% url 'admin_payments' %}" class="{% if request.resolver_match.url_name == 'admin_payments' %}active{% endif %}">
+                                <i class="fas fa-credit-card mr-2"></i> Payments
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{% url 'admin_maintenance' %}" class="{% if request.resolver_match.url_name == 'admin_maintenance' %}active{% endif %}">
+                                <i class="fas fa-wrench mr-2"></i> Maintenance
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{% url 'admin_queries' %}" class="{% if request.resolver_match.url_name == 'admin_queries' %}active{% endif %}">
+                                <i class="fas fa-database mr-2"></i> SQL Queries
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{% url 'bookings_management' %}" class="{% if request.resolver_match.url_name == 'bookings_management' %}active{% endif %}">
+                                <i class="fas fa-calendar-alt mr-2"></i> Bookings
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#">
+                                <i class="fas fa-users mr-2"></i> Customers
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#">
+                                <i class="fas fa-car mr-2"></i> Vehicles
+                            </a>
+                        </li>
+                        {% if user.is_authenticated %}
+                            <li class="nav-item mt-3">
+                                <form method="post" action="{% url 'admin_logout' %}" class="sidebar-form">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-link text-white" style="text-decoration: none; text-align: left; padding: 12px 15px; width: 100%;">
+                                        <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                                    </button>
+                                </form>
+                            </li>
+                        {% else %}
+                            <li class="nav-item mt-3">
+                                <a href="{% url 'admin_login' %}">
+                                    <i class="fas fa-sign-in-alt mr-2"></i> Login
+                                </a>
+                            </li>
+                        {% endif %}
                     </ul>
                 </div>
             </nav>
 
-            <main role="main" class="col-md-10 ml-sm-auto px-4 main-content">
-                <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded shadow-sm">
+            <main role="main" class="col-md-10 ml-sm-auto main-content">
+                <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded">
                     <div class="collapse navbar-collapse justify-content-end" id="navbarNavDropdown">
                         <ul class="navbar-nav">
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    Hello, Admin
-                                </a>
-                                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdownMenuLink">
-                                    <a class="dropdown-item" href="{% url 'change_password' %}">Change Password</a>
-                                    <div class="dropdown-divider"></div>
-                                    <a class="dropdown-item" href="{% url 'logout' %}">Logout</a>
-                                </div>
-                            </li>
+                            {% if user.is_authenticated %}
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <i class="fas fa-user-circle mr-1"></i> Hello, {{ user.username }}
+                                    </a>
+                                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdownMenuLink">
+                                        <a class="dropdown-item" href="{% url 'change_password' %}">
+                                            <i class="fas fa-key mr-2"></i> Change Password
+                                        </a>
+                                        <div class="dropdown-divider"></div>
+                                        <form method="post" action="{% url 'admin_logout' %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item">
+                                                <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                                            </button>
+                                        </form>
+                                    </div>
+                                </li>
+                            {% else %}
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'admin_login' %}">
+                                        <i class="fas fa-sign-in-alt mr-1"></i> Login
+                                    </a>
+                                </li>
+                            {% endif %}
                         </ul>
                     </div>
                 </nav>

@@ -13,24 +13,12 @@ from django.contrib.auth import update_session_auth_hash
 from django.db import transaction
 from datetime import date, timedelta, datetime
 from rental.models import Vehicle , RentalBooking, Payment, MaintenanceRecord
+from rental.models import CompletedPayment, PendingPayment, RefundedPayment, FailedPayment  # Add this import
 from django.http import JsonResponse
 from django.db.models import Sum
 from rental.forms import PaymentForm  # Import the new form
 from rental.models import Payment
 # Create your views here.
-def get_dashboard_data(request):
-    total_revenue = Payment.objects.filter(payment_status='Completed').aggregate(total=Sum('amount'))['total'] or 0
-    pending_payments_count = Payment.objects.filter(payment_status='Pending').count()
-    active_rentals_count = RentalBooking.objects.filter(booking_status='Active').count()
-    maintenance_vehicles_count = Vehicle.objects.filter(status='Maintenance').count()
-
-    data = {
-        'total_revenue': total_revenue,
-        'pending_payments_count': pending_payments_count,
-        'active_rentals_count': active_rentals_count,
-        'maintenance_vehicles_count': maintenance_vehicles_count,
-    }
-    return JsonResponse(data)
 @login_required
 def admin_dashboard_view(request):
     """
@@ -38,56 +26,26 @@ def admin_dashboard_view(request):
     but falls back to reliable ORM calculation.
     """
     
-    if not request.user.is_superuser:
-        messages.error(request, "You do not have permission to view this page.")
-        return redirect('home')
+    # Check if user is authenticated and is a superuser
+    if not request.user.is_authenticated or not request.user.is_superuser:
+        messages.error(request, "You must log in to access the admin panel.")
+        return redirect('admin_login')
 
-    current_month = date.today().month
-    current_year = date.today().year
-    total_revenue = 0
-    
-    # --- Fallback Calculation (The reliable truth value) ---
-    # We calculate this first so we always have the correct number if the procedure fails.
-    orm_revenue = Payment.objects.filter(
-        payment_status='Completed',
-        payment_date__year=current_year,
-        payment_date__month=current_month
+    # Use simple ORM queries to get dashboard data
+    # Get total revenue (sum of all completed payments)
+    total_revenue = Payment.objects.filter(
+        payment_status='Completed'
     ).aggregate(total=Sum('amount'))['total'] or 0
-    total_revenue = orm_revenue # Start with the correct ORM value
-
-    try:
-        # --- STIPULATED STORED PROCEDURE CALL (For Assignment Demonstration) ---
-        with connection.cursor() as cursor:
-            # 1. Set the MySQL session variable to 0
-            cursor.execute("SET @p_total_revenue = 0;") 
-            
-            # 2. Execute the Stored Procedure
-            cursor.callproc('GET_TOTAL_REVENUE', [current_year, current_month, 0])
-            
-            # 3. Retrieve the OUT parameter
-            cursor.execute("SELECT @p_total_revenue;")
-            result = cursor.fetchone()
-            
-            # 4. If the result is a non-zero value, use it. Otherwise, rely on ORM.
-            if result and result[0] is not None and float(result[0]) > 0:
-                total_revenue = result[0]
-                messages.success(request, "Revenue calculated via PL/SQL Procedure.")
-            else:
-                 raise Exception("success orm")
-
-
-    except Exception as e:
-        # If the procedure fails entirely (e.g., deleted), the ORM value is already set above.
-        print(f"orm {e}")
-        
-        
-        # total_revenue is already set to orm_revenue before the try block.
-
-    # --- Remaining Django ORM Queries ---
-    pending_payments_count = Payment.objects.filter(payment_status='Pending').count()
-    active_rentals_count = RentalBooking.objects.filter(booking_status='Active').count()
-    maintenance_vehicles_count = Vehicle.objects.filter(status='Maintenance').count()
     
+    # Get count of pending payments
+    pending_payments_count = Payment.objects.filter(payment_status='Pending').count()
+    
+    # Get count of active rentals
+    active_rentals_count = RentalBooking.objects.filter(booking_status='Active').count()
+    
+    # Get count of vehicles in maintenance
+    maintenance_vehicles_count = Vehicle.objects.filter(status='Maintenance').count()
+
     recent_payments = Payment.objects.select_related('customer').order_by('-payment_date')[:5]
     recent_bookings = RentalBooking.objects.select_related('customer', 'vehicle').order_by('-booking_date')[:5]
     
@@ -100,6 +58,7 @@ def admin_dashboard_view(request):
         'recent_bookings': recent_bookings,
     }
     return render(request, "admin_dashboard_bootstrap.html", context)
+
 # Add this new view for AJAX requests
 @login_required
 def get_dashboard_data(request):
@@ -107,12 +66,23 @@ def get_dashboard_data(request):
     Returns the latest dashboard data as a JSON response for AJAX requests.
     This view enables dynamic updates without a full page reload.
     """
-    if not request.user.is_superuser:
+    # Check if user is authenticated and is a superuser
+    if not request.user.is_authenticated or not request.user.is_superuser:
         return JsonResponse({'error': 'You do not have permission to view this data.'}, status=403)
     
-    total_revenue = Payment.objects.filter(payment_status='Completed').aggregate(total=Sum('amount'))['total'] or 0
+    # Use simple ORM queries to get dashboard data
+    # Get total revenue (sum of all completed payments)
+    total_revenue = Payment.objects.filter(
+        payment_status='Completed'
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    # Get count of pending payments
     pending_payments_count = Payment.objects.filter(payment_status='Pending').count()
+    
+    # Get count of active rentals
     active_rentals_count = RentalBooking.objects.filter(booking_status='Active').count()
+    
+    # Get count of vehicles in maintenance
     maintenance_vehicles_count = Vehicle.objects.filter(status='Maintenance').count()
     
     data = {
@@ -163,24 +133,48 @@ def admin_payments_view(request):
         messages.error(request, "You do not have permission to view this page.")
         return redirect('home')
     
-    # --- Base Query ---
-    payments = Payment.objects.select_related('customer', 'booking__vehicle').order_by('-payment_date')
+    # --- Base Query using MySQL Views ---
+    # Get the selected payment status view
+    payment_status = request.GET.get('status', '').lower()
+    
+    if payment_status == 'completed':
+        payments = CompletedPayment.objects.select_related('customer', 'booking__vehicle').order_by('-payment_date')
+    elif payment_status == 'pending':
+        payments = PendingPayment.objects.select_related('customer', 'booking__vehicle').order_by('-payment_date')
+    elif payment_status == 'refunded':
+        payments = RefundedPayment.objects.select_related('customer', 'booking__vehicle').order_by('-payment_date')
+    elif payment_status == 'failed':
+        payments = FailedPayment.objects.select_related('customer', 'booking__vehicle').order_by('-payment_date')
+    else:
+        # Default to all payments using the original model
+        payments = Payment.objects.select_related('customer', 'booking__vehicle').order_by('-payment_date')
+        payment_status = 'all'  # Set to 'all' for template
     
     # --- Filtering Variables ---
     search_query = request.GET.get('q', '').strip()
-    payment_status = request.GET.get('status')
     start_date_str = request.GET.get('start_date')
     end_date_str = request.GET.get('end_date')
 
     # --- 1. Apply Universal Search (Text) ---
     if search_query:
-        payments = payments.filter(
-            Q(id__icontains=search_query) |
-            Q(customer__first_name__icontains=search_query) |
-            Q(customer__last_name__icontains=search_query) |
-            Q(transaction_id__icontains=search_query) |
-            Q(booking__vehicle__vehicle_number__icontains=search_query)
-        )
+        if payment_status in ['completed', 'pending', 'refunded', 'failed']:
+            # For view-based queries, use simpler search that leverages indexes
+            payments = payments.extra(
+                where=["""(id LIKE %s OR 
+                          customer_id IN (SELECT id FROM rental_customer WHERE first_name LIKE %s OR last_name LIKE %s) OR
+                          booking_id IN (SELECT id FROM rental_rentalbooking WHERE vehicle_id IN (SELECT id FROM rental_vehicle WHERE vehicle_number LIKE %s)) OR
+                          transaction_id LIKE %s)"""],
+                params=[f'%{search_query}%', f'%{search_query}%', f'%{search_query}%', f'%{search_query}%', f'%{search_query}%']
+            )
+        else:
+            # For the main Payment model, use the existing search
+            payments = payments.filter(
+                Q(id__icontains=search_query) |
+                Q(customer__first_name__icontains=search_query) |
+                Q(customer__last_name__icontains=search_query) |
+                Q(transaction_id__icontains=search_query) |
+                Q(booking__vehicle__vehicle_number__icontains=search_query)
+            )
 
     # --- 2. Apply Date Range Filter ---
     if start_date_str and end_date_str:
@@ -192,10 +186,6 @@ def admin_payments_view(request):
         except ValueError:
             messages.error(request, "Invalid date format. Please use YYYY-MM-DD.")
 
-    # --- 3. Apply Status Filter ---
-    if payment_status:
-        payments = payments.filter(payment_status=payment_status)
-    
     # --- 4. Apply Sorting ---
     sort_by = request.GET.get('sort', 'payment_date')
     order = request.GET.get('order', 'desc')
@@ -205,6 +195,7 @@ def admin_payments_view(request):
         payments = payments.order_by(f'-{sort_by}')
 
     # --- 5. Aggregation for Reports ---
+    # Use the original Payment model for aggregations since views don't support aggregation well
     monthly_revenue = Payment.objects.filter(payment_status='Completed').annotate(
         month=TruncMonth('payment_date')
     ).values('month').annotate(total_revenue=Sum('amount')).order_by('month')
@@ -216,7 +207,7 @@ def admin_payments_view(request):
         'payments': payments,
         'monthly_revenue': monthly_revenue,
         'top_customers': top_customers,
-        'selected_status': payment_status,
+        'selected_status': payment_status.capitalize() if payment_status != 'all' else 'All',
         'sort_by': sort_by,
         'order': order,
         'search_query': search_query,
@@ -252,12 +243,35 @@ def payment_delete_view(request, payment_id):
     if not request.user.is_superuser:
         messages.error(request, "You do not have permission to view this page.")
         return redirect('home')
+    
     payment = get_object_or_404(Payment, id=payment_id)
+    
     if request.method == 'POST':
-        payment.delete()
-        messages.success(request, f"Payment ID {payment.id} deleted successfully.")
-    return redirect('admin_payments')
-    pass
+        try:
+            # Check if payment is completed - prevent deletion
+            if payment.payment_status == 'Completed':
+                messages.error(request, "Cannot delete completed payments. Please refund the payment instead.")
+                return redirect('admin_payments')
+            
+            # If not completed, proceed with deletion
+            payment_details = f"Payment ID {payment.id} for {payment.customer.first_name} {payment.customer.last_name}"
+            payment.delete()
+            messages.success(request, f"Payment {payment_details} deleted successfully.")
+            
+        except Exception as e:
+            # Handle any database errors (including trigger errors)
+            error_message = str(e)
+            if "Cannot delete completed payments" in error_message:
+                messages.error(request, "Cannot delete completed payments. Please refund the payment instead.")
+            else:
+                messages.error(request, f"Failed to delete payment: {error_message}")
+                
+        return redirect('admin_payments')
+    
+    # For GET requests, show confirmation page
+    context = {'payment': payment}
+    return render(request, "admin/payment_confirm_delete.html", context)
+
 @login_required
 def payment_analytics_view(request):
     """
@@ -561,3 +575,33 @@ def bookings_management_view(request):
         'end_date': end_date_str,
     }
     return render(request, "admin/rental_bookings.html", context)
+
+def test_mysql_views(request):
+    """
+    Test view to check if MySQL views are working properly
+    """
+    if not request.user.is_authenticated or not request.user.is_superuser:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    try:
+        # Test each view
+        completed_count = CompletedPayment.objects.count()
+        pending_count = PendingPayment.objects.count()
+        refunded_count = RefundedPayment.objects.count()
+        failed_count = FailedPayment.objects.count()
+        
+        # Test a sample query from each view
+        completed_sample = list(CompletedPayment.objects.all()[:3].values('id', 'amount', 'payment_status'))
+        pending_sample = list(PendingPayment.objects.all()[:3].values('id', 'amount', 'payment_status'))
+        
+        return JsonResponse({
+            'completed_count': completed_count,
+            'pending_count': pending_count,
+            'refunded_count': refunded_count,
+            'failed_count': failed_count,
+            'completed_sample': completed_sample,
+            'pending_sample': pending_sample,
+            'status': 'success'
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
