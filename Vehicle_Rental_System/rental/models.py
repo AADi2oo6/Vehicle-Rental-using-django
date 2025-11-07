@@ -19,6 +19,8 @@ class Customer(models.Model):
     is_verified = models.BooleanField(default=False)
     credit_score = models.IntegerField(blank=True, null=True)
     profile_picture = models.ImageField(upload_to='profile_pics/', default='profile_pics/default.jpg', blank=True, null=True)
+    membership_tier = models.CharField(max_length=20, default='Bronze')
+    is_subscribed_to_newsletter = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         if self.license_number:
