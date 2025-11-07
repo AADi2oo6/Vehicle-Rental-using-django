@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}
+<title>Razorpay Payment - Velo-Rent</title>
+{% endblock title %}
+
+{% block style %}
+<style>
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #f8fafc;
+    }
+    .payment-container {
+        max-width: 500px;
+        margin: 50px auto;
+        padding: 30px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .payment-button {
+        background-color: #00b8d4;
+        color: white;
+        padding: 15px 30px;
+        border: none;
+        border-radius: 5px;
+        font-size: 18px;
+        cursor: pointer;
+        width: 100%;
+        margin-top: 20px;
+    }
+    .payment-button:hover {
+        background-color: #0097a7;
+    }
+    .booking-details {
+        background-color: #f1f5f9;
+        padding: 20px;
+        border-radius: 5px;
+        margin: 20px 0;
+    }
+    .success-message {
+        background-color: #d1fae5;
+        color: #065f46;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 20px 0;
+        text-align: center;
+    }
+</style>
+{% endblock style %}
+
+{% block content %}
+<div class="payment-container">
+    <h1 class="text-2xl font-bold mb-6 text-center">Complete Your Payment</h1>
+    
+    <div class="booking-details">
+        <h2 class="text-xl font-semibold mb-4">Booking Details</h2>
+        <p><strong>Vehicle:</strong> {{ booking.vehicle.make }} {{ booking.vehicle.model }}</p>
+        <p><strong>Pickup:</strong> {{ booking.pickup_datetime|date:"d M Y, H:i" }}</p>
+        <p><strong>Return:</strong> {{ booking.return_datetime|date:"d M Y, H:i" }}</p>
+        <p><strong>Total Amount:</strong> ₹{{ booking.total_amount }}</p>
+    </div>
+    
+    <div class="text-center">
+        <p class="mb-4">Click the button below to proceed with Razorpay payment</p>
+        <button id="rzp-button1" class="payment-button">
+            Pay ₹{{ booking.total_amount }} with Razorpay
+        </button>
+    </div>
+    
+    <div class="mt-6 text-center">
+        <a href="{% url 'booking_detail' booking.id %}" class="text-blue-600 hover:underline">
+            ← Back to Booking Details
+        </a>
+    </div>
+</div>
+
+<!-- Razorpay Checkout Script -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+document.getElementById('rzp-button1').onclick = function(e) {
+    var options = {
+        "key": "{{ razorpay_key }}", // Enter the Key ID generated from the Dashboard
+        "amount": "{{ amount }}", // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
+        "currency": "{{ currency }}",
+        "name": "Velo-Rent",
+        "description": "Vehicle Booking Payment",
+        "image": "https://example.com/your_logo",
+        "order_id": "{{ order_id }}", // This is a sample Order ID. Pass the `id` obtained in the response of Step 1
+        "handler": function (response) {
+            // Handle successful payment by sending data to callback URL
+            fetch("{% url 'razorpay_payment_callback' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    'razorpay_order_id': response.razorpay_order_id,
+                    'razorpay_payment_id': response.razorpay_payment_id,
+                    'razorpay_signature': response.razorpay_signature
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Show success message and redirect
+                    alert("Payment successful! Your booking is now confirmed.");
+                    window.location.href = "{% url 'booking_detail' booking.id %}";
+                } else {
+                    alert("Payment verification failed: " + data.message);
+                }
+            })
+            .catch(error => {
+                alert("Error verifying payment: " + error);
+            });
+        },
+        "prefill": {
+            "name": "{{ customer.first_name }} {{ customer.last_name }}",
+            "email": "{{ customer.email }}",
+            "contact": "{{ customer.phone }}"
+        },
+        "notes": {
+            "booking_id": "{{ booking.id }}",
+            "vehicle": "{{ booking.vehicle.make }} {{ booking.vehicle.model }}"
+        },
+        "theme": {
+            "color": "#3399cc"
+        }
+    };
+    var rzp1 = new Razorpay(options);
+    rzp1.open();
+    e.preventDefault();
+}
+</script>
+{% endblock content %}

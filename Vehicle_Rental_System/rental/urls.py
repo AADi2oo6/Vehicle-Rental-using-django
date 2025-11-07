@@ -25,4 +25,8 @@ urlpatterns = [
     path("review/<int:review_id>/delete/", views.delete_review, name="delete_review"),
 
     path("booking/confirm/<int:vehicle_id>/", views.confirm_booking_pay_later, name="confirm_booking_pay_later"),
+    
+    # Razorpay Payment URLs
+    path("booking/<int:vehicle_id>/pay/", views.initiate_razorpay_payment, name="initiate_razorpay_payment"),
+    path("payment/razorpay/callback/", views.razorpay_payment_callback, name="razorpay_payment_callback"),
 ]

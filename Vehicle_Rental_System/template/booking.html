@@ -163,9 +163,9 @@
                         </div>
                     </div>
                     <div>
-                        <button type="button" class="w-full py-3 px-5 text-left bg-gray-200 text-gray-500 rounded-lg cursor-not-allowed" disabled>
+                        <button type="button" id="online-payment-btn" class="w-full py-3 px-5 text-left bg-green-600 text-white rounded-lg hover:bg-green-700">
                             <span class="font-bold">Pay ₹{{ security_deposit_amount }} Now</span>
-                            <span class="block text-sm">Online payment gateway (Coming Soon)</span>
+                            <span class="block text-sm">Online payment with Razorpay</span>
                         </button>
                     </div>
                 </div>
@@ -181,7 +181,7 @@
     {% endif %}
 
 
-    <div id="booking-data" data-hourly-rate="{{ vehicle.hourly_rate }}"></div>
+    <div id="booking-data" data-hourly-rate="{{ vehicle.hourly_rate }}" data-vehicle-id="{{ vehicle.id }}"></div>
     
 {% endblock content %}
 
@@ -253,6 +253,26 @@ document.addEventListener('DOMContentLoaded', function() {
             totalHoursSpan.textContent = diffHours.toFixed(1);
             estimatedFareSpan.textContent = `₹${totalFare.toFixed(0)}`;
             fareDetails.classList.add('visible');
+        });
+    }
+    
+    // Razorpay Payment Integration
+    const onlinePaymentBtn = document.getElementById('online-payment-btn');
+    if (onlinePaymentBtn) {
+        onlinePaymentBtn.addEventListener('click', function(e) {
+            // Instead of redirecting, submit the form to the Razorpay payment initiation view
+            // Get the payment modal form (the parent form of the online payment button)
+            const paymentForm = onlinePaymentBtn.closest('form');
+            if (paymentForm) {
+                // Change the form action to point to the Razorpay payment initiation view
+                const vehicleId = document.getElementById('booking-data').dataset.vehicleId;
+                paymentForm.action = '/booking/' + vehicleId + '/pay/';
+                paymentForm.submit();
+            } else {
+                // Fallback: redirect to booking page
+                const vehicleId = document.getElementById('booking-data').dataset.vehicleId;
+                window.location.href = '/book/' + vehicleId + '/';
+            }
         });
     }
 });

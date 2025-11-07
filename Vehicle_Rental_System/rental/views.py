@@ -17,6 +17,10 @@ from django.http import JsonResponse
 from django.db.models import Sum
 from .forms import PaymentForm
 from decimal import Decimal
+import razorpay
+from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+import json
 
 @login_required
 def get_dashboard_data(request):
@@ -652,3 +656,183 @@ def all_reviews_api(request):
     
     # Convert the queryset to a list and return as a JSON response
     return JsonResponse(list(reviews), safe=False)
+
+
+@login_required
+def initiate_razorpay_payment(request, vehicle_id):
+    """
+    Initiates a Razorpay payment for a new booking.
+    This view is called when user clicks the "Pay Now" button in the booking modal.
+    """
+    if request.method != 'POST':
+        messages.error(request, "Invalid request method.")
+        return redirect('booking', vehicle_id=vehicle_id)
+    
+    customer = get_object_or_404(Customer, id=request.session.get('customer_id'))
+    vehicle = get_object_or_404(Vehicle, id=vehicle_id)
+    
+    try:
+        # Get all the data from the hidden form fields (similar to confirm_booking_pay_later)
+        pickup_datetime = parse_datetime(request.POST.get('pickup_datetime'))
+        return_datetime = parse_datetime(request.POST.get('return_datetime'))
+        pickup_location = request.POST.get('pickup_location')
+        return_location = request.POST.get('return_location')
+        total_amount = Decimal(request.POST.get('total_amount'))
+        security_deposit = Decimal(request.POST.get('security_deposit_amount'))
+        
+        # --- DBMS Concept: ACID Transaction --- 
+        # We are performing database inserts. All must succeed,
+        # or none of them will. transaction.atomic() guarantees this.
+        with transaction.atomic():
+            # Create the booking first
+            new_booking = RentalBooking.objects.create(
+                customer=customer,
+                vehicle=vehicle,
+                pickup_datetime=pickup_datetime,
+                return_datetime=return_datetime,
+                pickup_location=pickup_location,
+                return_location=return_location,
+                hourly_rate=vehicle.hourly_rate,
+                total_amount=total_amount,
+                security_deposit=security_deposit,
+                booking_status='Pending'
+            )
+            
+            # Create payment records
+            Payment.objects.create(
+                booking=new_booking,
+                customer=customer,
+                amount=security_deposit,
+                payment_method='Razorpay', 
+                payment_type='Security Deposit',
+                payment_status='Pending'
+            )
+            
+            Payment.objects.create(
+                booking=new_booking,
+                customer=customer,
+                amount=total_amount,
+                payment_method='Razorpay',
+                payment_type='Full Payment', 
+                payment_status='Pending'
+            )
+            
+            # Create activity log
+            ActivityLog.objects.create(
+                customer=customer,
+                action_type='BOOKING_CREATED',
+                details=f"Created booking #{new_booking.id} (Razorpay Payment) for vehicle {vehicle.vehicle_number}."
+            )
+            
+        # Initialize Razorpay client with test keys from settings
+        client = razorpay.Client(auth=(settings.RAZORPAY_API_KEY, settings.RAZORPAY_API_SECRET_KEY))
+        
+        # Convert amount to paise (smallest currency unit) and ensure it's an integer
+        # For testing, we'll use the security deposit amount
+        amount_in_paise = int(security_deposit * 100)
+        
+        # Create Razorpay order
+        order_data = {
+            'amount': amount_in_paise,
+            'currency': 'INR',
+            'payment_capture': 1  # Auto-capture payment
+        }
+        
+        order = client.order.create(data=order_data)
+        
+        # Store order details in session for verification
+        request.session['razorpay_order_id'] = order['id']
+        request.session['razorpay_amount'] = amount_in_paise
+        request.session['booking_id'] = new_booking.id
+        
+        # Pass order details to template
+        context = {
+            'order_id': order['id'],
+            'amount': amount_in_paise,
+            'currency': 'INR',
+            'booking': new_booking,
+            'razorpay_key': settings.RAZORPAY_API_KEY,
+            'customer': customer
+        }
+        
+        return render(request, 'payment/razorpay_checkout.html', context)
+        
+    except Exception as e:
+        messages.error(request, f"Error initiating payment: {str(e)}")
+        return redirect('booking', vehicle_id=vehicle_id)
+
+
+@csrf_exempt
+def razorpay_payment_callback(request):
+    """
+    Handles Razorpay payment callback.
+    """
+    if request.method == 'POST':
+        try:
+            # Get payment details from POST data
+            payment_data = json.loads(request.body)
+            
+            # Verify payment signature
+            client = razorpay.Client(auth=(settings.RAZORPAY_API_KEY, settings.RAZORPAY_API_SECRET_KEY))
+            
+            # Verify the payment signature
+            params_dict = {
+                'razorpay_order_id': payment_data.get('razorpay_order_id'),
+                'razorpay_payment_id': payment_data.get('razorpay_payment_id'),
+                'razorpay_signature': payment_data.get('razorpay_signature')
+            }
+            
+            try:
+                # Verify the payment signature
+                client.utility.verify_payment_signature(params_dict)
+                
+                # Payment is successful, update booking and payment records
+                booking_id = request.session.get('booking_id')
+                if booking_id:
+                    booking = RentalBooking.objects.get(id=booking_id)
+                    customer = booking.customer
+                    
+                    # Update booking status
+                    booking.booking_status = 'Confirmed'
+                    booking.save()
+                    
+                    # Update payment records
+                    payments = Payment.objects.filter(booking=booking)
+                    razorpay_transaction_id = payment_data.get('razorpay_payment_id')
+                    
+                    # Update each payment with a unique transaction ID
+                    for i, payment in enumerate(payments):
+                        payment.payment_status = 'Completed'
+                        # Create a unique transaction ID for each payment
+                        # If it's the first payment, use the original Razorpay transaction ID
+                        # For subsequent payments, append a suffix
+                        if i == 0:
+                            transaction_id = razorpay_transaction_id
+                        else:
+                            transaction_id = f"{razorpay_transaction_id}_{i+1}"
+                        
+                        # Check if this transaction ID already exists
+                        existing_payment = Payment.objects.filter(transaction_id=transaction_id).first()
+                        if not existing_payment:
+                            payment.transaction_id = transaction_id
+                        else:
+                            # If it still exists, create a more unique ID
+                            import uuid
+                            unique_suffix = str(uuid.uuid4())[:8]
+                            payment.transaction_id = f"{razorpay_transaction_id}_{unique_suffix}"
+                        
+                        payment.save()
+                    
+                    # Create success message
+                    messages.success(request, 'Payment successful! Your booking is confirmed.')
+                    return JsonResponse({'status': 'success', 'redirect_url': f'/booking/{booking_id}/'})
+                else:
+                    return JsonResponse({'status': 'error', 'message': 'Booking not found'})
+                    
+            except razorpay.errors.SignatureVerificationError:
+                return JsonResponse({'status': 'error', 'message': 'Invalid payment signature'})
+                
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+    
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
