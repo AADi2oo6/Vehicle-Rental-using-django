@@ -1,0 +1,145 @@
+{% extends "admin/bases.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Activity Log</h2>
+</div>
+
+<!-- Display messages -->
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<p class="text-muted">This page shows system activity logs including payment events and user actions.</p>
+
+<!-- Filter Form -->
+<form method="get" class="card card-body mb-4">
+    <div class="row">
+        <div class="col-md-3">
+            <label>Action Type</label>
+            <select name="action_type" class="form-control">
+                <option value="">All Actions</option>
+                <option value="PAYMENT_CREATED" {% if request.GET.action_type == 'PAYMENT_CREATED' %}selected{% endif %}>Payment Created</option>
+                <option value="PAYMENT_STATUS_CHANGED" {% if request.GET.action_type == 'PAYMENT_STATUS_CHANGED' %}selected{% endif %}>Payment Status Changed</option>
+                <option value="PAYMENT_AMOUNT_CHANGED" {% if request.GET.action_type == 'PAYMENT_AMOUNT_CHANGED' %}selected{% endif %}>Payment Amount Changed</option>
+                <option value="PAYMENT_DELETE_ATTEMPT" {% if request.GET.action_type == 'PAYMENT_DELETE_ATTEMPT' %}selected{% endif %}>Payment Delete Attempt</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label>Trigger Type</label>
+            <select name="trigger_type" class="form-control">
+                <option value="">All Triggers</option>
+                <option value="INSERT" {% if request.GET.trigger_type == 'INSERT' %}selected{% endif %}>Insert</option>
+                <option value="UPDATE" {% if request.GET.trigger_type == 'UPDATE' %}selected{% endif %}>Update</option>
+                <option value="DELETE" {% if request.GET.trigger_type == 'DELETE' %}selected{% endif %}>Delete</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label>Start Date</label>
+            <input type="date" name="start_date" class="form-control" value="{{ start_date|date:'Y-m-d' }}">
+        </div>
+        <div class="col-md-2">
+            <label>End Date</label>
+            <input type="date" name="end_date" class="form-control" value="{{ end_date|date:'Y-m-d' }}">
+        </div>
+        <div class="col-md-2">
+            <label>&nbsp;</label>
+            <button type="submit" class="btn btn-primary btn-block">Filter</button>
+        </div>
+    </div>
+</form>
+
+<!-- Activity Log Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Recent Activity</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Action Type</th>
+                        <th>Trigger Type</th>
+                        <th>Details</th>
+                        <th>Customer ID</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in activity_logs %}
+                    <tr>
+                        <td>{{ log.id }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if log.action_type == 'PAYMENT_CREATED' %}badge-success
+                                {% elif log.action_type == 'PAYMENT_STATUS_CHANGED' %}badge-warning
+                                {% elif log.action_type == 'PAYMENT_AMOUNT_CHANGED' %}badge-info
+                                {% elif log.action_type == 'PAYMENT_DELETE_ATTEMPT' %}badge-danger
+                                {% else %}badge-secondary{% endif %}">
+                                {{ log.action_type }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge 
+                                {% if log.trigger_type == 'INSERT' %}badge-primary
+                                {% elif log.trigger_type == 'UPDATE' %}badge-warning
+                                {% elif log.trigger_type == 'DELETE' %}badge-danger
+                                {% else %}badge-secondary{% endif %}">
+                                {{ log.trigger_type|default:"N/A" }}
+                            </span>
+                        </td>
+                        <td>{{ log.details }}</td>
+                        <td>{{ log.customer_id|default:"N/A" }}</td>
+                        <td>{{ log.timestamp|date:"M d, Y H:i:s" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center">No activity logs found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <nav aria-label="Activity log pagination">
+            <ul class="pagination justify-content-center">
+                {% if activity_logs.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.action_type %}&action_type={{ request.GET.action_type }}{% endif %}{% if request.GET.trigger_type %}&trigger_type={{ request.GET.trigger_type }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ activity_logs.previous_page_number }}{% if request.GET.action_type %}&action_type={{ request.GET.action_type }}{% endif %}{% if request.GET.trigger_type %}&trigger_type={{ request.GET.trigger_type }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">Previous</a>
+                    </li>
+                {% endif %}
+                
+                <li class="page-item active">
+                    <span class="page-link">
+                        Page {{ activity_logs.number }} of {{ activity_logs.paginator.num_pages }}
+                    </span>
+                </li>
+                
+                {% if activity_logs.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ activity_logs.next_page_number }}{% if request.GET.action_type %}&action_type={{ request.GET.action_type }}{% endif %}{% if request.GET.trigger_type %}&trigger_type={{ request.GET.trigger_type }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ activity_logs.paginator.num_pages }}{% if request.GET.action_type %}&action_type={{ request.GET.action_type }}{% endif %}{% if request.GET.trigger_type %}&trigger_type={{ request.GET.trigger_type }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">Last</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

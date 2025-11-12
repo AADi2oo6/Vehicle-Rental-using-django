@@ -1,123 +1,180 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login - Vehicle Rental System</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
     <style>
+        /* Custom styles for the page */
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            padding: 20px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
         }
-        .login-container {
-            width: 100%;
-            max-width: 400px;
-            margin: 0 auto;
-        }
-        .login-card {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-            backdrop-filter: blur(10px);
-        }
-        .login-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            text-align: center;
-            padding: 30px 20px;
-        }
-        .login-body {
-            padding: 30px;
+        .hero-section {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url("{% static 'vehicle/bg.png' %}");
+            background-size: cover;
+            background-position: center;
         }
         .form-control {
-            border-radius: 8px;
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            margin-bottom: 20px;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
         }
         .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
         }
         .btn-login {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            border-radius: 8px;
-            padding: 12px;
-            font-weight: 600;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
         }
         .btn-login:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         }
-        .alert {
-            border-radius: 8px;
+        .message-toast { 
+            animation: slide-in 0.5s ease-out forwards, fade-out 0.5s ease-in 4.5s forwards; 
+        }
+        @keyframes slide-in { 
+            from { transform: translateY(-100%); opacity: 0; } 
+            to { transform: translateY(0); opacity: 1; } 
+        }
+        @keyframes fade-out { 
+            from { opacity: 1; } 
+            to { opacity: 0; display: none; } 
         }
     </style>
 </head>
-<body>
-    <div class="login-container">
-        <div class="login-card">
-            <div class="login-header">
-                <h3><i class="fas fa-lock mr-2"></i>Admin Login</h3>
-                <p class="mb-0">Vehicle Rental System</p>
+<body class="flex flex-col min-h-screen text-gray-800">
+    <!-- Header Section -->
+    <header class="bg-white shadow-md">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="{% url 'home' %}" class="text-2xl font-bold text-blue-600">Velo-Rent</a>
+            <div class="flex items-center space-x-4">
+                <a href="{% url 'home' %}" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to Main Site
+                </a>
             </div>
-            <div class="login-body">
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-                
-                {% if form.non_field_errors %}
-                    <div class="alert alert-danger" role="alert">
-                        {{ form.non_field_errors }}
-                    </div>
-                {% endif %}
-                
-                <form method="post">
-                    {% csrf_token %}
-                    <div class="form-group">
-                        <label for="{{ form.username.id_for_label }}" class="font-weight-bold">Username</label>
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fas fa-user"></i></span>
+        </nav>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center py-12">
+        <div class="w-full max-w-md px-6">
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="bg-blue-600 text-white text-center py-6">
+                    <h3 class="text-2xl font-bold"><i class="fas fa-lock mr-2"></i>Admin Login</h3>
+                    <p class="mt-1 opacity-90">Vehicle Rental System</p>
+                </div>
+                <div class="p-8">
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="message-toast bg-white rounded-lg shadow-lg p-4 mb-4 flex items-center border-l-4 {% if message.tags == 'success' %}border-green-500{% elif message.tags == 'error' %}border-red-500{% else %}border-blue-500{% endif %}">
+                            <div class="text-lg">
+                                {% if message.tags == 'success' %}✅{% elif message.tags == 'error' %}❌{% else %}ℹ️{% endif %}
                             </div>
-                            <input type="text" name="username" class="form-control" required id="{{ form.username.id_for_label }}" placeholder="Enter your username">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="{{ form.password.id_for_label }}" class="font-weight-bold">Password</label>
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                            <div class="ml-3">
+                                <p class="font-semibold {% if message.tags == 'success' %}text-green-800{% elif message.tags == 'error' %}text-red-800{% else %}text-blue-800{% endif %}">{{ message }}</p>
                             </div>
-                            <input type="password" name="password" class="form-control" required id="{{ form.password.id_for_label }}" placeholder="Enter your password">
                         </div>
-                    </div>
-                    <button type="submit" class="btn btn-login btn-block text-white mt-3">
-                        <i class="fas fa-sign-in-alt mr-2"></i>Login
-                    </button>
-                </form>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-exclamation-circle text-red-500"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-red-700">{{ form.non_field_errors }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-5">
+                            <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-user text-gray-400"></i>
+                                </div>
+                                <input type="text" name="username" class="form-control pl-10 w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" required id="{{ form.username.id_for_label }}" placeholder="Enter your username">
+                            </div>
+                        </div>
+                        <div class="mb-6">
+                            <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-lock text-gray-400"></i>
+                                </div>
+                                <input type="password" name="password" class="form-control pl-10 w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" required id="{{ form.password.id_for_label }}" placeholder="Enter your password">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-login w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <i class="fas fa-sign-in-alt mr-2"></i>Login
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
-    </div>
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    </main>
+
+    <footer class="bg-gray-800 text-white">
+        <div class="container mx-auto px-6 py-10">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-lg font-bold mb-4">Velo-Rent</h3>
+                    <p class="text-gray-400">Your trusted partner for vehicle rentals. High-quality service and a wide selection of cars.</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+                    <ul>
+                        <li class="mb-2"><a href="{% url 'home' %}" class="hover:text-blue-400">Home</a></li>
+                        <li class="mb-2"><a href="#" class="hover:text-blue-400">Vehicles</a></li>
+                        <li class="mb-2"><a href="#" class="hover:text-blue-400">About Us</a></li>
+                        <li class="mb-2"><a href="#" class="hover:text-blue-400">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Support</h3>
+                    <ul>
+                        <li class="mb-2"><a href="#" class="hover:text-blue-400">FAQ</a></li>
+                        <li class="mb-2"><a href="#" class="hover:text-blue-400">Terms of Service</a></li>
+                        <li class="mb-2"><a href="#" class="hover:text-blue-400">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Follow Us</h3>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-900 py-4">
+                <div class="container mx-auto px-6 text-center text-gray-500">
+                    &copy; 2024 Velo-Rent. All Rights Reserved.
+                </div>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>

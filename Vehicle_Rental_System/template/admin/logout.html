@@ -1,86 +1,138 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Logout - Vehicle Rental System</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
     <style>
+        /* Custom styles for the page */
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            padding: 20px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
         }
-        .logout-container {
-            width: 100%;
-            max-width: 500px;
-            margin: 0 auto;
+        .hero-section {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url("{% static 'vehicle/bg.png' %}");
+            background-size: cover;
+            background-position: center;
         }
-        .logout-card {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-            backdrop-filter: blur(10px);
-            text-align: center;
+        .btn-primary, .btn-outline-secondary {
+            transition: all 0.3s ease;
         }
-        .logout-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px 20px;
-        }
-        .logout-body {
-            padding: 40px 30px;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            border-radius: 8px;
-            padding: 12px 25px;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-        .btn-primary:hover {
+        .btn-primary:hover, .btn-outline-secondary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         }
-        .btn-outline-secondary {
-            border-radius: 8px;
-            padding: 12px 25px;
-            font-weight: 600;
+        .message-toast { 
+            animation: slide-in 0.5s ease-out forwards, fade-out 0.5s ease-in 4.5s forwards; 
+        }
+        @keyframes slide-in { 
+            from { transform: translateY(-100%); opacity: 0; } 
+            to { transform: translateY(0); opacity: 1; } 
+        }
+        @keyframes fade-out { 
+            from { opacity: 1; } 
+            to { opacity: 0; display: none; } 
         }
     </style>
 </head>
-<body>
-    <div class="logout-container">
-        <div class="logout-card">
-            <div class="logout-header">
-                <h3><i class="fas fa-sign-out-alt mr-2"></i>Logout</h3>
-                <p class="mb-0">Vehicle Rental System Admin Panel</p>
-            </div>
-            <div class="logout-body">
-                <i class="fas fa-question-circle fa-3x text-warning mb-3"></i>
-                <h4 class="mb-3">Are you sure you want to logout?</h4>
-                <p class="text-muted mb-4">You will need to login again to access the admin panel.</p>
-                
-                <form method="post" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-primary mr-2">
-                        <i class="fas fa-check mr-2"></i>Yes, Logout
-                    </button>
-                </form>
-                <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary">
-                    <i class="fas fa-times mr-2"></i>Cancel
+<body class="flex flex-col min-h-screen text-gray-800">
+    <!-- Header Section -->
+    <header class="bg-white shadow-md">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="{% url 'home' %}" class="text-2xl font-bold text-blue-600">Velo-Rent</a>
+            <div class="flex items-center space-x-4">
+                <a href="{% url 'home' %}" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to Main Site
                 </a>
             </div>
+        </nav>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center py-12">
+        <div class="w-full max-w-md px-6">
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="bg-blue-600 text-white text-center py-6">
+                    <h3 class="text-2xl font-bold"><i class="fas fa-sign-out-alt mr-2"></i>Logout</h3>
+                    <p class="mt-1 opacity-90">Vehicle Rental System Admin Panel</p>
+                </div>
+                <div class="p-8 text-center">
+                    <div class="flex justify-center mb-4">
+                        <i class="fas fa-question-circle fa-3x text-yellow-500"></i>
+                    </div>
+                    <h4 class="text-xl font-bold mb-3">Are you sure you want to logout?</h4>
+                    <p class="text-gray-600 mb-6">You will need to login again to access the admin panel.</p>
+                    
+                    <form method="post" class="inline-block mr-3">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-primary flex items-center justify-center py-3 px-6 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <i class="fas fa-check mr-2"></i>Yes, Logout
+                        </button>
+                    </form>
+                    <a href="{% url 'admin_dashboard' %}" class="btn-outline-secondary inline-flex items-center justify-center py-3 px-6 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <i class="fas fa-times mr-2"></i>Cancel
+                    </a>
+                </div>
+            </div>
         </div>
-    </div>
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    </main>
+
+    <footer class="bg-gray-800 text-white">
+        <div class="container mx-auto px-6 py-10">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-lg font-bold mb-4">Velo-Rent</h3>
+                    <p class="text-gray-400">Your trusted partner for vehicle rentals. High-quality service and a wide selection of cars.</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+                    <ul>
+                        <li class="mb-2"><a href="{% url 'home' %}" class="hover:text-blue-400">Home</a></li>
+                        <li class="mb-2"><a href="#" class="hover:text-blue-400">Vehicles</a></li>
+                        <li class="mb-2"><a href="#" class="hover:text-blue-400">About Us</a></li>
+                        <li class="mb-2"><a href="#" class="hover:text-blue-400">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Support</h3>
+                    <ul>
+                        <li class="mb-2"><a href="#" class="hover:text-blue-400">FAQ</a></li>
+                        <li class="mb-2"><a href="#" class="hover:text-blue-400">Terms of Service</a></li>
+                        <li class="mb-2"><a href="#" class="hover:text-blue-400">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Follow Us</h3>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-900 py-4">
+                <div class="container mx-auto px-6 text-center text-gray-500">
+                    &copy; 2024 Velo-Rent. All Rights Reserved.
+                </div>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>

@@ -88,6 +88,16 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a href="{% url 'payment_trends' %}" class="{% if request.resolver_match.url_name == 'payment_trends' %}active{% endif %}">
+                                <i class="fas fa-chart-line mr-2"></i> Payment Trends
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{% url 'activity_log' %}" class="{% if request.resolver_match.url_name == 'activity_log' %}active{% endif %}">
+                                <i class="fas fa-history mr-2"></i> Activity Log
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a href="{% url 'admin_maintenance' %}" class="{% if request.resolver_match.url_name == 'admin_maintenance' %}active{% endif %}">
                                 <i class="fas fa-wrench mr-2"></i> Maintenance
                             </a>

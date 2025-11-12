@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db import connection, transaction 
 from django.contrib import messages
@@ -12,18 +11,15 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 from django.db import transaction
 from datetime import date, timedelta, datetime
-from rental.models import Vehicle , RentalBooking, Payment, MaintenanceRecord
+from rental.models import Vehicle, Customer, FeedbackReview, RentalBooking, Payment, MaintenanceRecord, ActivityLog
 from rental.models import CompletedPayment, PendingPayment, RefundedPayment, FailedPayment  # Add this import
 from django.http import JsonResponse
-from django.db.models import Sum
 from rental.forms import PaymentForm  # Import the new form
-from rental.models import Payment
-# Create your views here.
+
 @login_required
 def admin_dashboard_view(request):
     """
-    Retrieves key metrics (revenue, counts). Attempts Stored Procedure call
-    but falls back to reliable ORM calculation.
+    Retrieves key metrics using Stored Procedure for better performance.
     """
     
     # Check if user is authenticated and is a superuser
@@ -31,23 +27,46 @@ def admin_dashboard_view(request):
         messages.error(request, "You must log in to access the admin panel.")
         return redirect('admin_login')
 
-    # Use simple ORM queries to get dashboard data
-    # Get total revenue (sum of all completed payments)
-    total_revenue = Payment.objects.filter(
-        payment_status='Completed'
-    ).aggregate(total=Sum('amount'))['total'] or 0
-    
-    # Get count of pending payments
-    pending_payments_count = Payment.objects.filter(payment_status='Pending').count()
-    
-    # Get count of active rentals
-    active_rentals_count = RentalBooking.objects.filter(booking_status='Active').count()
-    
-    # Get count of vehicles in maintenance
-    maintenance_vehicles_count = Vehicle.objects.filter(status='Maintenance').count()
-
-    recent_payments = Payment.objects.select_related('customer').order_by('-payment_date')[:5]
-    recent_bookings = RentalBooking.objects.select_related('customer', 'vehicle').order_by('-booking_date')[:5]
+    try:
+        # Use the new stored procedure to get all dashboard metrics
+        with connection.cursor() as cursor:
+            cursor.callproc('GetAdminDashboardMetrics')
+            
+            # Fetch all result sets
+            results = []
+            while True:
+                try:
+                    result = cursor.fetchall()
+                    results.append(result)
+                    if not cursor.nextset():
+                        break
+                except:
+                    break
+            
+            # Process results
+            total_revenue = results[0][0][0] if results and len(results) > 0 and len(results[0]) > 0 else 0
+            pending_payments_count = results[1][0][0] if len(results) > 1 and len(results[1]) > 0 else 0
+            active_rentals_count = results[2][0][0] if len(results) > 2 and len(results[2]) > 0 else 0
+            maintenance_vehicles_count = results[3][0][0] if len(results) > 3 and len(results[3]) > 0 else 0
+            
+            # Get recent data using ORM (as procedures don't handle this)
+            recent_payments = Payment.objects.select_related('customer').order_by('-payment_date')[:5]
+            recent_bookings = RentalBooking.objects.select_related('customer', 'vehicle').order_by('-booking_date')[:5]
+            
+    except Exception as e:
+        # Fallback to ORM queries if procedure fails
+        messages.warning(request, "Using fallback queries for dashboard data.")
+        
+        # Use simple ORM queries to get dashboard data
+        total_revenue = Payment.objects.filter(
+            payment_status='Completed'
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        
+        pending_payments_count = Payment.objects.filter(payment_status='Pending').count()
+        active_rentals_count = RentalBooking.objects.filter(booking_status='Active').count()
+        maintenance_vehicles_count = Vehicle.objects.filter(status='Maintenance').count()
+        recent_payments = Payment.objects.select_related('customer').order_by('-payment_date')[:5]
+        recent_bookings = RentalBooking.objects.select_related('customer', 'vehicle').order_by('-booking_date')[:5]
     
     context = {
         'total_revenue': total_revenue, 
@@ -93,7 +112,6 @@ def get_dashboard_data(request):
     }
     return JsonResponse(data)
 
-
 @login_required
 def admin_maintenance_view(request):
     if not request.user.is_superuser:
@@ -113,6 +131,7 @@ def admin_maintenance_view(request):
         'cost_per_vehicle': cost_per_vehicle,
     }
     return render(request, "admin/maintenance.html", context)
+
 @login_required
 def admin_queries_view(request):
     if not request.user.is_superuser:
@@ -236,7 +255,6 @@ def payment_form_view(request, payment_id=None):
     
     context = {'form': form}
     return render(request, "admin/payment_form.html", context)
-
 
 @login_required
 def payment_delete_view(request, payment_id):
@@ -443,7 +461,6 @@ def return_vehicle_view(request, booking_id):
     }
     return render(request, 'admin/return_vehicle_form.html', context)
 
-
 def change_password_view(request):
     """
     Allows a logged-in admin to change their password.
@@ -575,6 +592,160 @@ def bookings_management_view(request):
         'end_date': end_date_str,
     }
     return render(request, "admin/rental_bookings.html", context)
+
+@login_required
+def payment_trends_view(request):
+    """
+    Display payment trends using the stored procedure.
+    """
+    if not request.user.is_superuser:
+        messages.error(request, "You do not have permission to view this page.")
+        return redirect('home')
+    
+    # Default to last 12 months
+    from datetime import date, timedelta
+    end_date = date.today()
+    start_date = end_date - timedelta(days=365)
+    
+    # Get dates from request
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    
+    if start_date_str:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+    if end_date_str:
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+    
+    try:
+        with connection.cursor() as cursor:
+            cursor.callproc('GetPaymentTrendsByMonth', [start_date, end_date])
+            trends_data = cursor.fetchall()
+            
+            # Process data for charting
+            trends_dict = {}
+            for row in trends_data:
+                month, method, count, total, avg = row
+                if month not in trends_dict:
+                    trends_dict[month] = {}
+                trends_dict[month][method] = {
+                    'count': count,
+                    'total': float(total),
+                    'avg': float(avg)
+                }
+            
+    except Exception as e:
+        messages.error(request, f"Failed to retrieve payment trends: {e}")
+        trends_dict = {}
+    
+    context = {
+        'trends_data': trends_dict,
+        'start_date': start_date,
+        'end_date': end_date,
+    }
+    return render(request, "admin/payment_trends.html", context)
+
+@login_required
+def activity_log_view(request):
+    """
+    Display activity logs for payment and other system events.
+    """
+    if not request.user.is_superuser:
+        messages.error(request, "You do not have permission to view this page.")
+        return redirect('home')
+    
+    # Get filter parameters
+    action_type = request.GET.get('action_type', '')
+    trigger_type = request.GET.get('trigger_type', '')
+    start_date_str = request.GET.get('start_date', '')
+    end_date_str = request.GET.get('end_date', '')
+    
+    try:
+        # Build the query for activity logs
+        with connection.cursor() as cursor:
+            # Base query - now includes trigger_type
+            query = """
+                SELECT 
+                    al.id,
+                    al.action_type,
+                    al.trigger_type,
+                    al.details,
+                    al.timestamp,
+                    al.customer_id
+                FROM rental_activitylog al
+                WHERE 1=1
+            """
+            params = []
+            
+            # Apply filters
+            if action_type:
+                query += " AND al.action_type = %s"
+                params.append(action_type)
+                
+            if trigger_type:
+                query += " AND al.trigger_type = %s"
+                params.append(trigger_type)
+                
+            if start_date_str:
+                query += " AND al.timestamp >= %s"
+                params.append(start_date_str)
+                
+            if end_date_str:
+                query += " AND al.timestamp <= %s"
+                params.append(end_date_str + ' 23:59:59')
+            
+            query += " ORDER BY al.timestamp DESC LIMIT 100"
+            
+            cursor.execute(query, params)
+            logs = cursor.fetchall()
+            
+            # Process logs into a more usable format
+            processed_logs = []
+            for log in logs:
+                processed_logs.append({
+                    'id': log[0],
+                    'action_type': log[1],
+                    'trigger_type': log[2],
+                    'details': log[3],
+                    'timestamp': log[4],
+                    'customer_id': log[5]
+                })
+            
+            # Get action type choices for filter dropdown
+            action_choices = [
+                ('PAYMENT_CREATED', 'Payment Created'),
+                ('PAYMENT_STATUS_CHANGED', 'Payment Status Changed'),
+                ('PAYMENT_AMOUNT_CHANGED', 'Payment Amount Changed'),
+                ('PAYMENT_DELETE_ATTEMPT', 'Payment Delete Attempt'),
+                ('REGISTRATION', 'User Registration'),
+                ('LOGIN', 'User Login'),
+                ('LOGOUT', 'User Logout'),
+                ('BOOKING_CREATED', 'Booking Created'),
+                ('PROFILE_UPDATE', 'Profile Updated'),
+            ]
+            
+            # Get trigger type choices for filter dropdown
+            trigger_choices = [
+                ('INSERT', 'Insert'),
+                ('UPDATE', 'Update'),
+                ('DELETE', 'Delete'),
+            ]
+            
+    except Exception as e:
+        messages.error(request, f"Failed to retrieve activity logs: {e}")
+        processed_logs = []
+        action_choices = []
+        trigger_choices = []
+    
+    context = {
+        'activity_logs': processed_logs,
+        'action_choices': action_choices,
+        'trigger_choices': trigger_choices,
+        'selected_action': action_type,
+        'selected_trigger': trigger_type,
+        'start_date': start_date_str,
+        'end_date': end_date_str,
+    }
+    return render(request, "admin/activity_log.html", context)
 
 def test_mysql_views(request):
     """

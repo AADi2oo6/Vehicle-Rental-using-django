@@ -34,5 +34,10 @@ urlpatterns = [
 
     # New Self-Join Report URL
     path("payments/analytics/", views.payment_analytics_view, name="payment_analytics_report"),
-
+    
+    # New Payment Trends URL
+    path("payments/trends/", views.payment_trends_view, name="payment_trends"),
+    
+    # Activity Log URL
+    path("activity-log/", views.activity_log_view, name="activity_log"),
 ]
