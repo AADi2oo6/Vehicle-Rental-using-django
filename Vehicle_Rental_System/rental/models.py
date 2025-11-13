@@ -1,13 +1,19 @@
 from django.db import models
 from django.contrib.auth.hashers import make_password
+<<<<<<< HEAD
 from django.utils import timezone
+=======
+from django.utils import timezone # Import timezone
+from django.contrib.auth.models import User
+import uuid
+>>>>>>> 95b19fba1109557a00be7f13a177d5081bad2746
 
 class Customer(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     email = models.EmailField(unique=True)
-    password = models.CharField(max_length=128, default=make_password('12345678'))
-    phone = models.CharField(max_length=15)
+    phone = models.CharField(max_length=15, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     city = models.CharField(max_length=50, blank=True, null=True)
     state = models.CharField(max_length=50, blank=True, null=True)
@@ -18,17 +24,36 @@ class Customer(models.Model):
     is_active = models.BooleanField(default=True)
     is_verified = models.BooleanField(default=False)
     credit_score = models.IntegerField(blank=True, null=True)
+<<<<<<< HEAD
     profile_picture = models.ImageField(upload_to='profile_pics/', default='profile_pics/default.jpg', blank=True, null=True)
     membership_tier = models.CharField(max_length=20, default='Bronze')
     is_subscribed_to_newsletter = models.BooleanField(default=False)
+=======
+    
+    MEMBERSHIP_TIER_CHOICES = [
+        ('Bronze', 'Bronze'), ('Silver', 'Silver'), ('Gold', 'Gold'), ('Platinum', 'Platinum'),
+    ]
+    membership_tier = models.CharField(max_length=10, choices=MEMBERSHIP_TIER_CHOICES, default='Bronze')
+    is_subscribed_to_newsletter = models.BooleanField(default=False)
+    referral_code = models.CharField(max_length=10, unique=True, blank=True, null=True)
+>>>>>>> 95b19fba1109557a00be7f13a177d5081bad2746
 
-    def save(self, *args, **kwargs):
-        if self.license_number:
-            self.is_verified = True
-        super().save(*args, **kwargs)
+    profile_picture = models.ImageField(upload_to='profile_pics/', default='profile_pics/default.jpg', blank=True, null=True)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+
+class CustomerActivityLog(models.Model):
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    activity_type = models.CharField(max_length=50) # e.g., 'Registration', 'Profile Update', 'Verification'
+    description = models.TextField(blank=True, null=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.customer.email} - {self.activity_type} at {self.timestamp.strftime('%Y-%m-%d %H:%M')}"
 
 class Vehicle(models.Model):
     VEHICLE_TYPES = [('Car', 'Car'), ('SUV', 'SUV'), ('Truck', 'Truck'), ('Motorcycle', 'Motorcycle'), ('Van', 'Van')]
@@ -141,6 +166,7 @@ class FeedbackReview(models.Model):
     def __str__(self):
         return f"Review {self.id}"
 
+<<<<<<< HEAD
 # NEW: Activity Log Model
 class ActivityLog(models.Model):
     ACTION_CHOICES = [
@@ -298,3 +324,33 @@ class FailedPayment(models.Model):
 
     def __str__(self):
         return f"Failed Payment {self.id}"
+=======
+
+class CustomerDetailsView(models.Model):
+    """
+    This is an UNMANAGED model that represents the V_CustomerDetails database view.
+    'managed = False' tells Django not to create, modify, or delete the
+    underlying database table/view for this model. We manage it manually
+    with SQL in our migration files.
+    """
+    id = models.IntegerField(primary_key=True)
+    first_name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
+    email = models.EmailField()
+    phone = models.CharField(max_length=15, blank=True, null=True)
+    city = models.CharField(max_length=50, blank=True, null=True)
+    state = models.CharField(max_length=50, blank=True, null=True)
+    registration_date = models.DateTimeField()
+    is_verified = models.BooleanField()
+    membership_tier = models.CharField(max_length=10)
+    profile_picture = models.CharField(max_length=100, blank=True, null=True)
+    license_number = models.CharField(max_length=20, blank=True, null=True)
+    total_bookings = models.IntegerField()
+
+    class Meta:
+        managed = False
+        db_table = 'V_CustomerDetails' # The name of our database view
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"
+>>>>>>> 95b19fba1109557a00be7f13a177d5081bad2746

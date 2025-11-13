@@ -16,6 +16,7 @@
     </style>
 {% endblock style %}
 
+<<<<<<< HEAD
 {% block content %}
 <main class="container mx-auto px-6 py-12">
     <!-- Display Messages -->
@@ -63,6 +64,43 @@
                     <h3 class="text-2xl font-bold">Personal Information</h3>
                     <!-- UPDATED: Changed button to an <a> link -->
                     <a href="{% url 'edit_profile' %}" class="text-sm font-medium text-blue-700 hover:underline">Edit Profile</a>
+=======
+    <!-- Header Section -->
+    {% include "_header.html" %}
+
+    <main class="container mx-auto px-6 py-12">
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Profile Sidebar -->
+            {% include "_profile_sidebar.html" %}
+
+            <!-- Main Content -->
+            <div class="lg:w-3/4">
+                {% if not customer.is_verified %}
+                <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-r-lg" role="alert">
+                    <p class="font-bold">Verify Your Account</p>
+                    <p>
+                        Your account is not yet verified. To unlock all features, please 
+                        <a href="{% url 'edit_profile' %}" class="font-semibold underline hover:text-yellow-800">add your 15-character license number</a> to your profile.
+                    </p>
+                </div>
+                {% endif %}
+
+                <!-- Personal Information -->
+                <div class="bg-white p-8 rounded-lg shadow-md mb-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold">Personal Information</h3>    
+                        <a href="{% url 'edit_profile' %}" class="text-sm font-medium text-blue-700 hover:underline">Edit Profile</a>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-600">
+                        <div><span class="font-semibold text-gray-900">Full Name:</span> {{ customer.first_name }} {{ customer.last_name }}</div>
+                        <div><span class="font-semibold text-gray-900">Email:</span> {{ customer.email }}</div>
+                        <div><span class="font-semibold text-gray-900">Phone:</span> {{ customer.phone }}</div>
+                        <div><span class="font-semibold text-gray-900">Date of Birth:</span> {{ customer.date_of_birth|date:"M d, Y" }}</div>
+                        <div class="md:col-span-2"><span class="font-semibold text-gray-900">Address:</span> {{ customer.address }}, {{ customer.city }}, {{ customer.state }} - {{ customer.zip_code }}</div>
+                        <div><span class="font-semibold text-gray-900">License Number:</span> {{ customer.license_number }}</div>
+                        <div><span class="font-semibold text-gray-900">Account Status:</span> {% if customer.is_verified %}<span class="px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">Verified</span>{% else %}<span class="px-2 py-1 text-xs font-semibold text-yellow-800 bg-yellow-100 rounded-full">Not Verified</span>{% endif %}</div>
+                    </div>
+>>>>>>> 95b19fba1109557a00be7f13a177d5081bad2746
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-600">
                     <div><span class="font-semibold text-gray-900">Full Name:</span> {{ customer.first_name }} {{ customer.last_name }}</div>
@@ -75,6 +113,7 @@
                 </div>
             </div>
 
+<<<<<<< HEAD
             <!-- Recent Bookings -->
             <div class="bg-white p-8 rounded-lg shadow-md">
                 <h3 class="text-2xl font-bold mb-6">Recent Bookings</h3>
@@ -84,6 +123,33 @@
                         <div>
                             <p class="font-bold text-lg">{{ booking.vehicle.make }} {{ booking.vehicle.model }}</p>
                             <p class="text-sm text-gray-500">Booked on: {{ booking.booking_date|date:"M d, Y" }}</p>
+=======
+                <!-- Recent Bookings -->
+                <div class="bg-white p-8 rounded-lg shadow-md">
+                    <h3 class="text-2xl font-bold mb-6">Recent Bookings</h3>
+                    <div class="space-y-4">
+                        {% for booking in bookings|slice:":3" %}
+                        <div class="p-4 border rounded-lg flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div>
+                                <p class="font-bold text-lg">{{ booking.vehicle.make }} {{ booking.vehicle.model }}</p>
+                                <p class="text-sm text-gray-500">Booked on: {{ booking.booking_date|date:"M d, Y" }}</p> 
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Pickup: {{ booking.pickup_datetime|date:"M d, Y, P" }}</p>
+                                <p class="text-sm text-gray-500">Return: {{ booking.return_datetime|date:"M d, Y, P" }}</p>
+                            </div>
+                            <div>
+                                <span class="px-3 py-1 text-sm font-semibold rounded-full 
+                                    {% if booking.booking_status == 'Completed' %}bg-green-100 text-green-800
+                                    {% elif booking.booking_status == 'Active' %}bg-blue-100 text-blue-800
+                                    {% elif booking.booking_status == 'Confirmed' %}bg-yellow-100 text-yellow-800
+                                    {% elif booking.booking_status == 'Cancelled' %}bg-red-100 text-red-800
+                                    {% endif %}">
+                                    {{ booking.booking_status }}
+                                </span>
+                            </div>
+                            <a href="#" class="text-sm font-medium text-blue-700 hover:underline">View Details</a>
+>>>>>>> 95b19fba1109557a00be7f13a177d5081bad2746
                         </div>
                         <div>
                             <p class="text-sm text-gray-500">Pickup: {{ booking.pickup_datetime|date:"M d, Y, P" }}</p>
@@ -108,6 +174,13 @@
                 </div>
             </div>
         </div>
+<<<<<<< HEAD
     </div>
 </main>
 {% endblock content %}
+=======
+    </main>
+
+</body>
+</html>
+>>>>>>> 95b19fba1109557a00be7f13a177d5081bad2746

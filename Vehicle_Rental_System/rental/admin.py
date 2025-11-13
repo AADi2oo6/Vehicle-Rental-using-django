@@ -1,4 +1,5 @@
 from django.contrib import admin
+<<<<<<< HEAD
 from .models import Customer, Vehicle, RentalBooking, Payment, MaintenanceRecord, FeedbackReview
 from django.urls import path
 from django.shortcuts import render, redirect, get_object_or_404
@@ -8,6 +9,9 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.db import connection
 import csv
+=======
+from .models import Customer, Vehicle, RentalBooking, Payment, FeedbackReview
+>>>>>>> 95b19fba1109557a00be7f13a177d5081bad2746
 
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
@@ -204,12 +208,6 @@ class PaymentAdmin(admin.ModelAdmin):
     list_display = ('id', 'booking', 'customer', 'amount', 'payment_method', 'payment_status', 'payment_date')
     search_fields = ('booking__id', 'customer__first_name', 'transaction_id')
     list_filter = ('payment_method', 'payment_status', 'payment_type')
-
-@admin.register(MaintenanceRecord)
-class MaintenanceRecordAdmin(admin.ModelAdmin):
-    list_display = ('id', 'vehicle', 'maintenance_date', 'maintenance_type', 'cost', 'status')
-    search_fields = ('vehicle__vehicle_number',)
-    list_filter = ('maintenance_type', 'status')
 
 @admin.register(FeedbackReview)
 class FeedbackReviewAdmin(admin.ModelAdmin):
