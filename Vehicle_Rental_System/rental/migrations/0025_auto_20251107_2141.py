@@ -11,8 +11,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunSQL(
-            "ALTER TABLE rental_customer ALTER COLUMN is_subscribed_to_newsletter SET DEFAULT FALSE;",
-            reverse_sql="ALTER TABLE rental_customer ALTER COLUMN is_subscribed_to_newsletter DROP DEFAULT;"
-        ),
+        # DELETE THE RunSQL OPERATION FROM HERE
     ]

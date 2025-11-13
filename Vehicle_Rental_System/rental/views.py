@@ -1,7 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db import connection, transaction 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q, Sum, F
 from django.db.models.functions import TruncMonth, TruncDay
@@ -22,7 +21,20 @@ from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 import json
 
-@login_required
+def customer_login_required(function):
+    """
+    Custom decorator to check if a customer is logged in.
+    Checks for 'customer_id' in the session.
+    """
+    def wrap(request, *args, **kwargs):
+        if 'customer_id' not in request.session:
+            messages.error(request, "You must be logged in to view this page.")
+            return redirect('home')
+        return function(request, *args, **kwargs)
+    wrap.__doc__ = function.__doc__
+    wrap.__name__ = function.__name__
+    return wrap
+
 def get_dashboard_data(request):
     total_revenue = Payment.objects.filter(payment_status='Completed').aggregate(total=Sum('amount'))['total'] or 0
     pending_payments_count = Payment.objects.filter(payment_status='Pending').count()
@@ -126,6 +138,9 @@ def login_view(request):
         password = request.POST.get('password')
         try:
             customer = Customer.objects.get(email=email)
+            if not customer.is_active:
+                messages.error(request, 'Your account has been deactivated. Please contact support.')
+                return redirect('home')
             if check_password(password, customer.password):
                 request.session['customer_id'] = customer.id
                 
@@ -239,7 +254,7 @@ def vehicle_list_view(request):
     return render(request, "vehicles.html", context)
 
 
-@login_required
+@customer_login_required
 def booking_view(request, vehicle_id):
     customer = get_object_or_404(Customer, id=request.session.get('customer_id'))
     vehicle = get_object_or_404(Vehicle, id=vehicle_id)
@@ -299,7 +314,7 @@ def booking_view(request, vehicle_id):
     return render(request, "booking.html", context)
  
 
-@login_required
+@customer_login_required
 def confirm_booking_pay_later(request, vehicle_id):
     """
     Handles the final "Pay Later" confirmation from the modal.
@@ -383,7 +398,7 @@ def confirm_booking_pay_later(request, vehicle_id):
         return redirect('booking', vehicle_id=vehicle_id)
 
 
-@login_required
+@customer_login_required
 def booking_detail_view(request, booking_id):
     """
     Displays a detailed view of a single booking.
@@ -436,7 +451,7 @@ def about_us_view(request):
     context = {'customer': customer}
     return render(request, "about_us.html", context)
 
-@login_required
+@customer_login_required
 def my_profile_view(request):
     customer_id = request.session.get('customer_id')
     if not customer_id:
@@ -451,7 +466,7 @@ def my_profile_view(request):
     return render(request, "my_profile.html", context)
 
 
-@login_required
+@customer_login_required
 def edit_profile_view(request):
     """
     Handles displaying and updating the customer's profile.
@@ -507,7 +522,7 @@ def edit_profile_view(request):
     return render(request, "edit_profile.html", {'customer': customer})
 
 
-@login_required
+@customer_login_required
 def my_bookings_view(request):
     customer_id = request.session.get('customer_id')
     if not customer_id:
@@ -527,7 +542,7 @@ def my_bookings_view(request):
 from django.http import JsonResponse
 from .models import DetailedReview # Make sure to import the new model
 
-@login_required
+@customer_login_required
 def add_review(request, booking_id):
     """
     Handles the creation of a new review for a specific booking.
@@ -574,7 +589,7 @@ def add_review(request, booking_id):
         
     return redirect('booking_detail', booking_id=booking.id)
 
-@login_required
+@customer_login_required
 def edit_review(request, review_id):
     """
     Handles the updating of an existing review.
@@ -612,7 +627,7 @@ def edit_review(request, review_id):
 
     return redirect('booking_detail', booking_id=review.booking.id)
 
-@login_required
+@customer_login_required
 def delete_review(request, review_id):
     """
     Handles the deletion of an existing review.
@@ -658,7 +673,7 @@ def all_reviews_api(request):
     return JsonResponse(list(reviews), safe=False)
 
 
-@login_required
+@customer_login_required
 def initiate_razorpay_payment(request, vehicle_id):
     """
     Initiates a Razorpay payment for a new booking.

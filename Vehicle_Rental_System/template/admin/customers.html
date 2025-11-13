@@ -1,0 +1,154 @@
+{% extends "admin/bases.html" %}
+{% load static %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="page-title" style="border-bottom: none; margin-bottom: 0;">{{ title|default:"Customer Management" }}</h1>
+    <div>
+        <strong class="mr-3 text-muted">Total Customers: {{ total_customers }}</strong>
+        <a href="{% url 'admin:export_customers_csv' %}?{{ request.GET.urlencode }}" class="btn btn-success"><i class="fas fa-download"></i> Export CSV</a>
+    </div>
+</div>
+
+<!-- Search and Filter Form -->
+<div class="card mb-4">
+    <div class="card-body py-3">
+        <form method="get" class="form-row align-items-end">
+            <div class="form-group col-md-5 mb-0"><input type="text" name="q" id="q" class="form-control" placeholder="Search (Name, Email...)" value="{{ search_query|default:'' }}"></div>
+            <div class="form-group col-md-2 mb-0"><input type="text" name="city" id="city" class="form-control" placeholder="Filter by City" value="{{ city|default:'' }}"></div>
+            <div class="form-group col-md-2 mb-0"><input type="text" name="state" id="state" class="form-control" placeholder="Filter by State" value="{{ state|default:'' }}"></div>
+            <div class="form-group col-md-3 mb-0">
+                <button type="submit" class="btn btn-primary btn-block">Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="bulk_action" value="true">
+
+    <!-- Filter Tabs & Bulk Action Controls -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <a href="?verification_status=verified&q={{ search_query|default:'' }}" class="btn btn-sm {% if verification_status == 'verified' %}btn-success{% else %}btn-outline-success{% endif %}">Verified</a>
+            <a href="?verification_status=unverified&q={{ search_query|default:'' }}" class="btn btn-sm {% if verification_status == 'unverified' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">Unverified</a>
+            <a href="?q={{ search_query|default:'' }}" class="btn btn-sm btn-dark">All</a>
+        </div>
+        <div class="form-inline">
+            <select name="action" class="form-control form-control-sm mr-2">
+                <option value="">Bulk Actions...</option>
+                <option value="verify_selected">Verify Selected</option>
+                <option value="unverify_selected">Unverify Selected</option>
+                <option value="activate_selected">Activate Selected</option>
+                <option value="deactivate_selected">Deactivate Selected</option>
+            </select>
+            <button type="submit" class="btn btn-sm btn-dark">Apply</button>
+        </div>
+    </div>
+
+    <!-- Customer Table -->
+    <div class="table-responsive">
+        <table class="table table-striped table-hover table-bordered align-middle">
+            <thead class="thead-dark">
+                <tr>
+                    <th><input type="checkbox" id="select-all"></th>
+                    <th>
+                        <a href="?sort=first_name&order={% if sort_by == 'first_name' and order == 'asc' %}desc{% else %}asc{% endif %}&{{ request.GET.urlencode|cut:'sort'|cut:'order' }}" class="text-white">
+                            Name {% if sort_by == 'first_name' and order == 'asc' %}▲{% elif sort_by == 'first_name' and order == 'desc' %}▼{% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="?sort=email&order={% if sort_by == 'email' and order == 'asc' %}desc{% else %}asc{% endif %}&{{ request.GET.urlencode|cut:'sort'|cut:'order' }}" class="text-white">
+                            Email & Phone {% if sort_by == 'email' and order == 'asc' %}▲{% elif sort_by == 'email' and order == 'desc' %}▼{% endif %}
+                        </a>
+                    </th>
+                    <th>Location</th>
+                    <th>
+                        <a href="?sort=registration_date&order={% if sort_by == 'registration_date' and order == 'asc' %}desc{% else %}asc{% endif %}&{{ request.GET.urlencode|cut:'sort'|cut:'order' }}" class="text-white">
+                            Registered On {% if sort_by == 'registration_date' and order == 'asc' %}▲{% elif sort_by == 'registration_date' and order == 'desc' %}▼{% endif %}
+                        </a>
+                    </th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in customers %}
+                <tr class="{% if not customer.is_active %}table-secondary text-muted{% endif %}">
+                    <td><input type="checkbox" name="customer_ids" value="{{ customer.id }}" class="customer-checkbox"></td>
+                    <td class="d-flex align-items-center">
+                        {% if customer.profile_picture and customer.profile_picture.url %}
+                            <img src="{{ customer.profile_picture.url }}" alt="pic" class="rounded-circle mr-2" width="30" height="30" style="object-fit: cover;">
+                        {% else %}
+                            <span class="d-inline-block mr-2" style="width: 30px; height: 30px; background-color: #e9ecef; border-radius: 50%; text-align: center; line-height: 30px;">
+                                <i class="fas fa-user text-muted"></i>
+                            </span>
+                        {% endif %}
+                        {{ customer.first_name }} {{ customer.last_name }}
+                    </td>
+                    <td>
+                        {{ customer.email }}<br>
+                        <small class="text-muted">{{ customer.phone }}</small>
+                    </td>
+                    <td>
+                        {% if customer.address or customer.city or customer.state or customer.zip_code %}
+                        {{ customer.address|default:'' }}{% if customer.address and customer.city %},<br>{% endif %}
+                        {{ customer.city|default:'' }}{% if customer.city and customer.state %}, {% endif %}{{ customer.state|default:'' }}{% if customer.zip_code %} - {{ customer.zip_code }}{% endif %}
+                        {% else %}
+                        N/A
+                        {% endif %}
+                    </td>
+                    <td>{{ customer.registration_date|date:"M d, Y" }}</td>
+                    <td>
+                        {% if customer.is_verified %}
+                            <span class="badge badge-success">Verified</span>
+                        {% else %}
+                            <span class="badge badge-warning">Unverified</span>
+                        {% endif %}
+                        {% if not customer.is_active %}
+                            <span class="badge badge-danger ml-1">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'admin:admin_customer_detail' customer.id %}" class="btn btn-sm btn-info">
+                            View
+                        </a>
+                        {% if not customer.is_verified %}
+                            <a href="#" class="btn btn-sm btn-warning">Verify</a>
+                        {% else %}
+                            <a href="#" class="btn btn-sm btn-outline-secondary">Unverify</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-4">No customers found matching your criteria.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extrajs %}
+    {{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('select-all').addEventListener('click', function(event) {
+        const checkboxes = document.querySelectorAll('.customer-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = event.target.checked;
+        });
+    });
+});
+</script>
+{% endblock %}

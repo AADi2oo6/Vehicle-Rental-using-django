@@ -68,6 +68,11 @@
         .sidebar-form {
             display: inline;
         }
+        /* Ensure form inputs have a light background and dark text */
+        .form-control {
+            background-color: #fff !important;
+            color: #495057 !important;
+        }
     </style>
 </head>
 <body>
@@ -113,7 +118,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="#">
+                            <a href="{% url 'admin:admin_customers' %}" class="{% if request.resolver_match.url_name == 'admin_customers' %}active{% endif %}">
                                 <i class="fas fa-users mr-2"></i> Customers
                             </a>
                         </li>
@@ -176,6 +181,7 @@
                 </nav>
 
                 {% block content %}
+                    <!-- The title is now handled within each specific template -->
                 {% endblock %}
             </main>
         </div>
