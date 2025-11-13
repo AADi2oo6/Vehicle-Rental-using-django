@@ -1,4 +1,20 @@
- Django~=5.0
- mysqlclient
- Pillow
- razorpay
+# Django Framework
+Django~=5.0
+
+# Database Connector (for MySQL/MariaDB)
+mysqlclient
+
+# Image Processing
+Pillow
+
+# Payment Gateway
+razorpay
+
+# Environment Variables
+python-dotenv
+
+# Production Web Server
+gunicorn
+
+# Django dependency
+sqlparse

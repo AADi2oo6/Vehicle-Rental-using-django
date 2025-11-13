@@ -68,6 +68,11 @@
         .sidebar-form {
             display: inline;
         }
+        /* Ensure form inputs have a light background and dark text */
+        .form-control {
+            background-color: #fff !important;
+            color: #495057 !important;
+        }
     </style>
 </head>
 <body>
@@ -77,6 +82,7 @@
                 <div class="sidebar-sticky">
                     <h5 class="text-white text-center mb-4">Admin Panel</h5>
                     <ul class="nav flex-column">
+<<<<<<< HEAD
                         <li class="nav-item">
                             <a href="{% url 'admin_dashboard' %}" class="{% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
                                 <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
@@ -113,7 +119,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="#">
+                            <a href="{% url 'admin:admin_customers' %}" class="{% if request.resolver_match.url_name == 'admin_customers' %}active{% endif %}">
                                 <i class="fas fa-users mr-2"></i> Customers
                             </a>
                         </li>
@@ -138,6 +144,15 @@
                                 </a>
                             </li>
                         {% endif %}
+=======
+                        <li class="nav-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+                        <li class="nav-item"><a href="{% url 'admin_payments' %}">Payments</a></li>
+                        <li class="nav-item"><a href="{% url 'admin_queries' %}">SQL Queries</a></li>
+                        <li class="nav-item"><a href="{% url 'bookings_management' %}">Bookings</a></li>
+                        <li class="nav-item"><a href="{% url 'admin_customers' %}">Customers</a></li>
+                        <li class="nav-item"><a href="{% url 'admin_vehicles' %}">Vehicles</a></li>
+                        <li class="nav-item"><a href="{% url 'logout' %}">Logout</a></li>
+>>>>>>> 95b19fba1109557a00be7f13a177d5081bad2746
                     </ul>
                 </div>
             </nav>
@@ -176,6 +191,7 @@
                 </nav>
 
                 {% block content %}
+                    <!-- The title is now handled within each specific template -->
                 {% endblock %}
             </main>
         </div>

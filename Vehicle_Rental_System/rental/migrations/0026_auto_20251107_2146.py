@@ -10,8 +10,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunSQL(
-            "ALTER TABLE rental_customer ALTER COLUMN membership_tier SET DEFAULT 'Bronze';",
-            reverse_sql="ALTER TABLE rental_customer ALTER COLUMN membership_tier DROP DEFAULT;"
-        ),
+        # This operation was moved to a later migration to resolve a dependency conflict.
     ]

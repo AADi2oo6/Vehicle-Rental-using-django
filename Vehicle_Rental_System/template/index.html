@@ -61,7 +61,29 @@
 </head>
 <body class="text-gray-800">
 
+<<<<<<< HEAD
 {% block content %}
+=======
+    <!-- Django Messages Toast Notifications -->
+    {% if messages %}
+    <div class="fixed top-5 right-5 z-[100]">
+        {% for message in messages %}
+        <div class="message-toast bg-white rounded-lg shadow-lg p-4 mb-2 flex items-center border-l-4 {% if message.tags == 'success' %}border-green-500{% elif message.tags == 'error' %}border-red-500{% else %}border-blue-500{% endif %}">
+            <div class="text-lg">
+                {% if message.tags == 'success' %}✅{% elif message.tags == 'error' %}❌{% else %}ℹ️{% endif %}
+            </div>
+            <div class="ml-3">
+                <p class="font-semibold {% if message.tags == 'success' %}text-green-800{% elif message.tags == 'error' %}text-red-800{% else %}text-blue-800{% endif %}">{{ message }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Header Section -->
+    {% include "_header.html" %}
+
+>>>>>>> 95b19fba1109557a00be7f13a177d5081bad2746
     <main>
         <!-- Hero Section with Booking Form -->
         <section class="hero-section text-white py-20 md:py-32">

@@ -5,7 +5,11 @@
     <h2>Bookings Management</h2>
     <div>
         <a href="?{{ request.GET.urlencode }}&export=csv" class="btn btn-success">Export CSV</a>
-        <a href="#" class="btn btn-primary">Add New Booking</a>
+<<<<<<< HEAD
+        
+=======
+        <a href="{% url 'admin_add_booking' %}" class="btn btn-primary">Add New Booking</a>
+>>>>>>> 95b19fba1109557a00be7f13a177d5081bad2746
     </div>
 </div>
 <p class="text-muted">This page provides a single table view of all rental bookings, with options for filtering and sorting.</p>
@@ -87,7 +91,20 @@
                     </span>
                 </td>
                 <td>
-                    <a href="#" class="btn btn-sm btn-primary">View</a>
+                    <button type="button" class="btn btn-sm btn-info view-booking-btn"
+                            data-toggle="modal"
+                            data-target="#bookingDetailModal"
+                            data-booking-id="{{ booking.id }}">
+                        View
+                    </button>
+                    {% if booking.booking_status == 'Confirmed' %}
+                        <a href="{% url 'activate_booking' booking.id %}" class="btn btn-sm btn-success">Activate</a>
+                        <a href="{% url 'cancel_booking' booking.id %}" class="btn btn-sm btn-danger">Cancel</a>
+                    {% elif booking.booking_status == 'Active' %}
+                        <a href="{% url 'return_vehicle' booking.id %}" class="btn btn-sm btn-warning">Return</a>
+                    {% endif %}
+                    <!-- A direct link to the detail page can also be useful -->
+                    <a href="{% url 'booking_detail' booking.id %}" class="btn btn-sm btn-outline-secondary" title="Details Page">...</a>
                 </td>
             </tr>
             {% empty %}
@@ -116,11 +133,99 @@
     </ul>
 </nav>
 
+<!-- Booking Detail Modal -->
+<div class="modal fade" id="bookingDetailModal" tabindex="-1" aria-labelledby="bookingDetailModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title" id="bookingDetailModalLabel">Booking Details</h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6><strong>Booking & Customer</strong></h6>
+                <table class="table table-sm table-borderless">
+                    <tr><th style="width: 150px;">Booking ID:</th><td id="modal-booking-id"></td></tr>
+                    <tr><th>Customer:</th><td id="modal-customer-name"></td></tr>
+                    <tr><th>Status:</th><td><span id="modal-booking-status" class="badge"></span></td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6><strong>Vehicle Details</strong></h6>
+                <table class="table table-sm table-borderless">
+                    <tr><th style="width: 150px;">Vehicle:</th><td id="modal-vehicle-name"></td></tr>
+                    <tr><th>Vehicle Number:</th><td id="modal-vehicle-number"></td></tr>
+                </table>
+            </div>
+        </div>
+        <hr>
+        <h6><strong>Rental Period & Location</strong></h6>
+        <table class="table table-sm table-borderless">
+            <tr><th style="width: 150px;">Pickup:</th><td id="modal-pickup-datetime"></td></tr>
+            <tr><th>Return:</th><td id="modal-return-datetime"></td></tr>
+            <tr><th>Pickup Location:</th><td id="modal-pickup-location"></td></tr>
+            <tr><th>Return Location:</th><td id="modal-return-location"></td></tr>
+        </table>
+        <hr>
+        <h6><strong>Financials & Requests</strong></h6>
+        <table class="table table-sm table-borderless">
+            <tr><th style="width: 150px;">Total Amount:</th><td id="modal-total-amount" class="font-weight-bold"></td></tr>
+            <tr><th>Security Deposit:</th><td id="modal-security-deposit"></td></tr>
+            <tr><th>Special Requests:</th><td id="modal-special-requests"></td></tr>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
     document.getElementById('select-all').addEventListener('click', function(event) {
         const checkboxes = document.querySelectorAll('.booking-checkbox');
         checkboxes.forEach(checkbox => {
             checkbox.checked = event.target.checked;
+        });
+    });
+
+    // Modal population script
+    $(document).ready(function() {
+        $('#bookingDetailModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget);
+            var bookingId = button.data('booking-id');
+            var modal = $(this);
+            var url = `/admin_new/api/booking/${bookingId}/`; // Corrected URL
+
+            $.get(url, function(data) {
+                modal.find('#modal-booking-id').text(data.id);
+                modal.find('#modal-customer-name').text(data.customer_name);
+                modal.find('#modal-vehicle-name').text(data.vehicle_name);
+                modal.find('#modal-vehicle-number').text(data.vehicle_number);
+                modal.find('#modal-pickup-datetime').text(data.pickup_datetime);
+                modal.find('#modal-return-datetime').text(data.return_datetime);
+                modal.find('#modal-pickup-location').text(data.pickup_location);
+                modal.find('#modal-return-location').text(data.return_location);
+                modal.find('#modal-total-amount').text(data.total_amount);
+                modal.find('#modal-security-deposit').text(data.security_deposit);
+                modal.find('#modal-special-requests').text(data.special_requests);
+                
+                var statusBadge = modal.find('#modal-booking-status');
+                statusBadge.text(data.status);
+                var statusClasses = {
+                    'Completed': 'badge-success',
+                    'Active': 'badge-info',
+                    'Confirmed': 'badge-warning',
+                    'Cancelled': 'badge-danger'
+                };
+                statusBadge.removeClass('badge-success badge-info badge-warning badge-danger badge-secondary')
+                           .addClass(statusClasses[data.status] || 'badge-secondary');
+            }).fail(function() {
+                alert("Failed to load booking details.");
+            });
         });
     });
 </script>

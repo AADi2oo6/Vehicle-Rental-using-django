@@ -5,6 +5,8 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
+# In rental/migrations/0028_alter_customer_password.py
+
     dependencies = [
         ('rental', '0027_auto_20251107_2147'),
     ]

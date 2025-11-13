@@ -10,17 +10,26 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import os
+from dotenv import load_dotenv
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file at the project root
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-r$0)r^grb0*wm*+7ejnqwel*!z68mn3vx$&5q@qaxr%##&fy2f'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -37,6 +46,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'widget_tweaks',  # Add this line
+
+    # Your apps
     'rental.apps.RentalConfig',
 ]
 
@@ -47,8 +59,8 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'rental.middleware.CheckAccountActiveMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'rental.middleware.QueryCaptureMiddleware',
 ]
 
 ROOT_URLCONF = 'Vehicle_Rental_System.urls'
@@ -64,6 +76,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'rental.context_processors.customer_context',
             ],
         },
     },
@@ -78,11 +91,19 @@ WSGI_APPLICATION = 'Vehicle_Rental_System.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'course',  # Use the database name from the setup guide
+<<<<<<< HEAD
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT'),
+=======
+        'NAME': 'cp',  # Corrected DB name from your setup guide
         'USER': 'root',    # Replace with your MySQL username
-        'PASSWORD': 'Ishubhai@6655',  # IMPORTANT: Replace with your actual MySQL password
+        'PASSWORD': 'vedantiasatkar1523@',  # IMPORTANT: Replace with your actual MySQL password
         'HOST': 'localhost',          # Or your MySQL server address
         'PORT': '3306',               # Default MySQL port
+>>>>>>> 95b19fba1109557a00be7f13a177d5081bad2746
     }
 }
 
@@ -131,9 +152,32 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
+# Email settings for sending welcome emails (used by signals)
+DEFAULT_FROM_EMAIL = 'noreply@velorent.com'
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # For development, prints emails to console
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+<<<<<<< HEAD
 # Razorpay Settings
-RAZORPAY_API_KEY = 'rzp_test_RcvNXzXenawBJE'  # Replace with your Test Key ID
-RAZORPAY_API_SECRET_KEY = '283cYKslAQ307Soa15ImgS7u'  # Replace with your Test Key Secret
+RAZORPAY_API_KEY = os.getenv('RAZORPAY_API_KEY')
+RAZORPAY_API_SECRET_KEY = os.getenv('RAZORPAY_API_SECRET_KEY')
+
+# ==============================================================================
+# AUTHENTICATION CONFIGURATION
+# ==============================================================================
+# URL to redirect to for login, overriding the default '/accounts/login/'
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'home'
+LOGOUT_REDIRECT_URL = 'home'
+
+AUTHENTICATION_BACKENDS = [
+    'rental.backends.ActiveCustomerBackend', # Our custom backend
+    'django.contrib.auth.backends.ModelBackend', # The default backend
+]
+=======
+# --- Authentication URLs ---
+# Tell Django where to redirect users when they need to log in.
+LOGIN_URL = 'login'
+>>>>>>> 95b19fba1109557a00be7f13a177d5081bad2746

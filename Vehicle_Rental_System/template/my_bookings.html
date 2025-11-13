@@ -33,7 +33,47 @@
 {% endblock style %}
 <body class="text-gray-800">
 
+<<<<<<< HEAD
     {% block content %}
+=======
+    <!-- Header Section -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="{% url 'home' %}" class="text-2xl font-bold text-blue-700">Velo-Rent</a>
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="{% url 'home' %}" class="text-gray-600 hover:text-blue-700">Home</a>
+                <a href="{% url 'vehicle_list' %}" class="text-gray-600 hover:text-blue-700">Vehicles</a>
+                <a href="{% url 'about_us' %}" class="text-gray-600 hover:text-blue-700">About Us</a>
+                <a href="#" class="text-gray-600 hover:text-blue-700">Contact</a>
+            </div>
+            <div class="flex items-center space-x-4">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'my_profile' %}" class="text-blue-700 font-semibold hidden sm:block">Welcome, {{ customer.first_name }}</a>
+                    <a href="{% url 'logout' %}" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">Logout</a>
+                {% else %}
+                    <button onclick="window.location.href='{% url 'login' %}'" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Login</button>
+                    <button onclick="window.location.href='{% url 'register' %}'" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">Register</button>
+                {% endif %}
+                <div class="relative ml-2">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'my_profile' %}">
+                    {% else %}
+                        <a href="{% url 'login' %}">
+                    {% endif %}
+                    <button class="flex items-center space-x-2">
+                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <div class="absolute bottom-0 right-0">
+                            <span class="flex h-3 w-3">
+                                {% if user.is_authenticated %}{% if customer and customer.is_verified %}<span class="relative inline-flex rounded-full h-3 w-3 bg-green-500" title="Verified"></span>{% elif customer %}<span class="relative inline-flex rounded-full h-3 w-3 bg-yellow-400" title="Not Verified"></span>{% else %}<span class="relative inline-flex rounded-full h-3 w-3 bg-red-500" title="Logged Out"></span>{% endif %}{% else %}<span class="relative inline-flex rounded-full h-3 w-3 bg-red-500" title="Logged Out"></span>{% endif %}
+                            </span>
+                        </div>
+                    </button>
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </header>
+>>>>>>> 95b19fba1109557a00be7f13a177d5081bad2746
 
     <main class="container mx-auto px-6 py-12">
         <div class="flex flex-col lg:flex-row gap-8">

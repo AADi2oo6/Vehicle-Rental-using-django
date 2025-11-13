@@ -1,8 +1,29 @@
+<<<<<<< HEAD
 {% extends "base.html" %}
 {% block title %}
     <title>Edit My Profile - Velo-Rent</title>
 {% endblock title %}
 {% block style %}
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Profile - Velo-Rent</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+>>>>>>> 95b19fba1109557a00be7f13a177d5081bad2746
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -13,6 +34,7 @@
             color: #1d4ed8;
             border-right: 3px solid #1d4ed8;
         }
+<<<<<<< HEAD
     </style>
 {% endblock style %}
 
@@ -115,3 +137,91 @@
     </div>
 </main>
 {% endblock content %}
+=======
+        /* Style for form inputs */
+        .form-input {
+            @apply w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500;
+        }
+        .form-label {
+            @apply block text-sm font-medium text-gray-700 mb-1;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Header Section -->
+    {% include "_header.html" %}
+
+    <main class="container mx-auto px-6 py-12">
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Profile Sidebar -->
+            {% include "_profile_sidebar.html" %}
+
+            <!-- Main Content -->
+            <div class="lg:w-3/4">
+                <div class="bg-white p-8 rounded-lg shadow-md">
+                    <h3 class="text-2xl font-bold mb-6">Edit Profile</h3>
+
+                    <!-- Unified Profile Form -->
+                    <form method="post" enctype="multipart/form-data" class="mb-8 pb-8 border-b">
+                        {% csrf_token %}
+                        
+                        <!-- Profile Picture Section -->
+                        <div class="flex items-center gap-6 mb-8">
+                            <img src="{{ customer.profile_picture.url }}" alt="Profile Picture" class="w-24 h-24 rounded-full object-cover" onerror="this.onerror=null;this.src='/static/img/default_profile.png';">
+                            <div class="flex-grow">
+                                <label for="{{ profile_form.profile_picture.id_for_label }}" class="form-label">{{ profile_form.profile_picture.label }}</label>
+                                {{ profile_form.profile_picture }}
+                                <p class="text-xs text-gray-500 mt-1">{{ profile_form.profile_picture.help_text }}</p>
+                                {% for error in profile_form.profile_picture.errors %}
+                                    <p class="text-red-500 text-xs italic mt-1">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Personal Information Section -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {% for field in profile_form %}
+                                {% if field.name != 'profile_picture' %}
+                                    {% comment %} Special handling for the checkbox field {% endcomment %}
+                                    {% if field.name == 'is_subscribed_to_newsletter' %}
+                                        <div class="md:col-span-2 flex items-center gap-3 pt-2">
+                                            {{ field }}
+                                            <label for="{{ field.id_for_label }}" class="form-label mb-0">{{ field.label }}</label>
+                                        </div>
+                                    {% else %}
+                                        {% comment %} Logic to make specific fields span the full width {% endcomment %}
+                                        {% with "address,license_number,referral_code" as full_width_fields %}
+                                        <div class="{% if field.name in full_width_fields %}md:col-span-2{% else %}md:col-span-1{% endif %}">
+                                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                            {{ field }}
+                                            {% for error in field.errors %}
+                                                <p class="text-red-500 text-xs italic mt-1">{{ error }}</p>
+                                            {% endfor %}
+                                        </div>
+                                        {% endwith %}
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+
+                        <div class="mt-8 flex justify-end">
+                            <a href="{% url 'my_profile' %}" class="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 mr-4">Cancel</a>
+                            <button type="submit" class="px-6 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800">Save Profile</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>
+
+<script>
+    // Add the 'form-input' class to all relevant form fields for styling
+    document.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], input[type="date"], textarea').forEach(el => {
+        el.classList.add('form-input');
+    });
+</script>
+>>>>>>> 95b19fba1109557a00be7f13a177d5081bad2746

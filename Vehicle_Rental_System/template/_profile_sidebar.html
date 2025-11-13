@@ -1,0 +1,23 @@
+<aside class="lg:w-1/4">
+    <div class="bg-white p-4 rounded-lg shadow-md">
+        <div class="flex flex-col items-center text-center border-b pb-4 mb-4">
+            <img class="h-24 w-24 rounded-full object-cover mb-3" src="{{ customer.profile_picture.url }}" alt="Profile Picture">
+            <h2 class="text-xl font-bold">{{ customer.first_name }} {{ customer.last_name }}</h2>
+            <p class="text-sm text-gray-500">{{ customer.email }}</p>
+        </div>
+        <nav class="flex flex-col space-y-1">
+            <a href="{% url 'my_profile' %}" class="profile-nav-link {% if request.resolver_match.url_name == 'my_profile' %}active{% endif %} flex items-center gap-3 px-4 py-2.5 rounded-md font-medium text-gray-700 hover:bg-gray-100">
+                <i class="fa-solid fa-user w-5 text-center"></i> My Profile
+            </a>
+            <a href="{% url 'my_bookings' %}" class="profile-nav-link {% if request.resolver_match.url_name == 'my_bookings' %}active{% endif %} flex items-center gap-3 px-4 py-2.5 rounded-md font-medium text-gray-700 hover:bg-gray-100">
+                <i class="fa-solid fa-car w-5 text-center"></i> My Bookings
+            </a>
+            <a href="{% url 'user_change_password' %}" class="profile-nav-link {% if request.resolver_match.url_name == 'user_change_password' %}active{% endif %} flex items-center gap-3 px-4 py-2.5 rounded-md font-medium text-gray-700 hover:bg-gray-100">
+                <i class="fa-solid fa-shield-halved w-5 text-center"></i> Security
+            </a>
+            <a href="{% url 'logout' %}" class="profile-nav-link flex items-center gap-3 px-4 py-2.5 rounded-md font-medium text-red-600 hover:bg-red-50">
+                <i class="fa-solid fa-right-from-bracket w-5 text-center"></i> Logout
+            </a>
+        </nav>
+    </div>
+</aside>
