@@ -1,0 +1,240 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}Maintenance Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2 class="mb-4">Maintenance Management</h2>
+
+    <!-- Display Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        <!-- Left Column: Add/Edit Form and Analytics -->
+        <div class="col-lg-4">
+            <!-- Add Maintenance Record Form -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Add New Maintenance Record</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'admin_maintenance' %}">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <button type="submit" class="btn btn-primary">Add Record</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Cost Breakdown by Vehicle -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Cost Breakdown by Vehicle</h5>
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Vehicle</th>
+                                <th>Total Cost</th>
+                                <th># Events</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in cost_per_vehicle %}
+                            <tr>
+                                <td>{{ item.vehicle__vehicle_number }}</td>
+                                <td>₹{{ item.total_cost|floatformat:2 }}</td>
+                                <td>{{ item.maintenance_count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Upcoming Maintenance -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Upcoming Maintenance</h5>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for record in upcoming_maintenance %}
+                        <li class="list-group-item">{{ record.vehicle.vehicle_number }} - {{ record.maintenance_date }} ({{ record.maintenance_type }})</li>
+                    {% empty %}
+                        <li class="list-group-item">No upcoming maintenance scheduled.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Right Column: Maintenance Records Table -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Maintenance History</h5>
+                    <div>Total Cost: <strong>₹{{ total_maintenance_cost|floatformat:2 }}</strong></div>
+                </div>
+                <div class="card-body">
+                    <!-- Filter Form -->
+                    <form method="get" class="mb-3">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <select name="vehicle_id" class="form-select" onchange="this.form.submit()">
+                                    <option value="">-- Filter by Vehicle --</option>
+                                    {% for vehicle in vehicles %}
+                                        <option value="{{ vehicle.id }}" {% if request.GET.vehicle_id == vehicle.id|stringformat:"s" %}selected{% endif %}>
+                                            {{ vehicle.vehicle_number }} - {{ vehicle.make }} {{ vehicle.model }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <a href="{% url 'admin_maintenance' %}" class="btn btn-secondary w-100">Clear Filter</a>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>
+                                        Vehicle
+                                    </th>
+                                    <th>
+                                        <a href="?sort=maintenance_date&order={% if request.GET.sort == 'maintenance_date' and request.GET.order == 'asc' %}desc{% else %}asc{% endif %}&vehicle_id={{ request.GET.vehicle_id|default:'' }}">
+                                            Date {% if request.GET.sort == 'maintenance_date' %}{% if request.GET.order == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
+                                        </a>
+                                    </th>
+                                    <th>Type</th>
+                                    <th>
+                                        <a href="?sort=cost&order={% if request.GET.sort == 'cost' and request.GET.order == 'asc' %}desc{% else %}asc{% endif %}&vehicle_id={{ request.GET.vehicle_id|default:'' }}">
+                                            Cost {% if request.GET.sort == 'cost' %}{% if request.GET.order == 'asc' %}▲{% else %}▼{% endif %}{% endif %}
+                                        </a>
+                                    </th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in maintenance_records %}
+                                <tr>
+                                    <td>{{ record.id }}</td>
+                                    <td>{{ record.vehicle_number }}</td>
+                                    <td>{{ record.maintenance_date|date:"Y-m-d" }}</td>
+                                    <td>{{ record.maintenance_type }}</td>
+                                    <td>₹{{ record.cost|floatformat:2 }}</td>
+                                    <td>
+                                        <form method="post" action="{% url 'update_maintenance_status' record.id %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                                                {% for status_val, status_name in form.fields.status.choices %}
+                                                    <option value="{{ status_val }}" {% if record.status == status_val %}selected{% endif %}>{{ status_name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'maintenance_edit' record.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                        <form method="post" action="{% url 'maintenance_delete' record.id %}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this record?');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center">No maintenance records found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if maintenance_records.has_other_pages %}
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center">
+                            {% if maintenance_records.has_previous %}
+                                <li class="page-item"><a class="page-link" href="?page=1">&laquo; First</a></li>
+                                <li class="page-item"><a class="page-link" href="?page={{ maintenance_records.previous_page_number }}">Previous</a></li>
+                            {% endif %}
+
+                            <li class="page-item disabled"><a class="page-link" href="#">Page {{ maintenance_records.number }} of {{ maintenance_records.paginator.num_pages }}</a></li>
+
+                            {% if maintenance_records.has_next %}
+                                <li class="page-item"><a class="page-link" href="?page={{ maintenance_records.next_page_number }}">Next</a></li>
+                                <li class="page-item"><a class="page-link" href="?page={{ maintenance_records.paginator.num_pages }}">Last &raquo;</a></li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const calculateBtn = document.getElementById('calculate-cost-btn');
+    const resultDiv = document.getElementById('cost-result');
+    const errorDiv = document.getElementById('cost-error');
+    const resultValue = document.getElementById('cost-per-day-value');
+
+    calculateBtn.addEventListener('click', function() {
+        const vehicleId = document.getElementById('calc-vehicle').value;
+        const startDate = document.getElementById('calc-start-date').value;
+        const endDate = document.getElementById('calc-end-date').value;
+
+        // Basic validation
+        if (!vehicleId || !startDate || !endDate) {
+            errorDiv.textContent = 'Please select a vehicle and both start and end dates.';
+            errorDiv.style.display = 'block';
+            resultDiv.style.display = 'none';
+            return;
+        }
+
+        // Hide previous results/errors
+        errorDiv.style.display = 'none';
+        resultDiv.style.display = 'none';
+
+        const url = `{% url 'maintenance_cost_per_day' %}?vehicle_id=${vehicleId}&start_date=${startDate}&end_date=${endDate}`;
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw new Error(err.error || 'Server error'); });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    errorDiv.textContent = data.error;
+                    errorDiv.style.display = 'block';
+                } else {
+                    resultValue.textContent = `₹${data.cost_per_day}`;
+                    resultDiv.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                errorDiv.textContent = 'An error occurred: ' + error.message;
+                errorDiv.style.display = 'block';
+            });
+    });
+});
+</script>
+{% endblock %}

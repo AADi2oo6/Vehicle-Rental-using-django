@@ -8,7 +8,7 @@ from django.db import connection, transaction
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, Count
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.core.cache import cache
@@ -452,7 +452,8 @@ def admin_maintenance_view(request):
     ).order_by('maintenance_date')
 
     cost_per_vehicle = MaintenanceRecord.objects.values('vehicle_id', 'vehicle__vehicle_number').annotate(
-        total_cost=Sum('cost')
+        total_cost=Sum('cost'),
+        maintenance_count=Count('id')
     ).order_by('-total_cost')
 
     # --- Calculate Total Maintenance Cost ---
@@ -474,6 +475,47 @@ def admin_maintenance_view(request):
     }
     return render(request, "admin/maintenance.html", context)
 
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def calculate_maintenance_cost_per_day_view(request):
+    """
+    Calculates the maintenance cost per day for a given vehicle and date range using a raw SQL query.
+    Returns data as JSON for an AJAX request.
+    """
+    vehicle_id = request.GET.get('vehicle_id')
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+
+    if not all([vehicle_id, start_date_str, end_date_str]):
+        return JsonResponse({'error': 'Vehicle, start date, and end date are required.'}, status=400)
+
+    try:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        if start_date > end_date:
+            return JsonResponse({'error': 'Start date cannot be after end date.'}, status=400)
+
+        query = """
+            SELECT
+                COALESCE(SUM(cost) / (DATEDIFF(%s, %s) + 1), 0) AS cost_per_day
+            FROM rental_maintenancerecord
+            WHERE vehicle_id = %s
+              AND maintenance_date BETWEEN %s AND %s;
+        """
+        params = [end_date, start_date, vehicle_id, start_date, end_date]
+
+        with connection.cursor() as cursor:
+            cursor.execute(query, params)
+            result = cursor.fetchone()
+            cost_per_day = result[0] if result else 0.0
+
+        return JsonResponse({'cost_per_day': f'{cost_per_day:.2f}'})
+
+    except ValueError:
+        return JsonResponse({'error': 'Invalid date format. Please use YYYY-MM-DD.'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': f'An unexpected error occurred: {str(e)}'}, status=500)
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
